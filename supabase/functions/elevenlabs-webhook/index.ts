@@ -15,11 +15,12 @@ serve(async (req) => {
     const body = await req.json()
     console.log('📦 Received body:', JSON.stringify(body, null, 2))
     
-    let transcript = body.transcript || body.text || body.message
+    let transcript: string = body.transcript || body.text || body.message || ''
     
     // Test mode: fetch transcript by conversationId
-    if (body.conversationId && !transcript) {
+    if (body.conversationId && (!transcript || transcript === '')) {
       console.log('🔍 Fetching transcript for conversation:', body.conversationId)
+      console.log('Current transcript value:', transcript, 'Type:', typeof transcript)
       
       const elevenLabsApiKey = Deno.env.get('ELEVENLABS_API_KEY')
       if (!elevenLabsApiKey) {
@@ -51,21 +52,36 @@ serve(async (req) => {
           }
           
           const data = await response.json()
-          console.log('📊 ElevenLabs response:', JSON.stringify(data, null, 2))
+          
+          // Log just the first message to see structure
+          if (data.messages && data.messages.length > 0) {
+            console.log('📊 First message structure:', JSON.stringify(data.messages[0], null, 2))
+          }
           
           // Extract transcript from the conversation data
           // Based on the response structure, messages is an array of conversation turns
           if (data.messages && Array.isArray(data.messages)) {
-            transcript = data.messages
-              .filter((m: any) => m.message && typeof m.message === 'string')
+            const extractedMessages = data.messages
+              .filter((m: any) => {
+                // Check if message exists and is a string
+                const hasMessage = m.message && typeof m.message === 'string' && m.message.trim() !== ''
+                if (hasMessage) {
+                  console.log(`✓ Found message from ${m.role}: ${m.message.substring(0, 50)}...`)
+                }
+                return hasMessage
+              })
               .map((m: any) => `${m.role}: ${m.message}`)
               .join('\n\n')
+            
+            transcript = extractedMessages
+            console.log(`📝 Extracted ${extractedMessages.split('\n\n').length} messages, total length: ${extractedMessages.length} chars`)
           } else {
             transcript = data.transcript || data.text || data.conversation?.transcript
           }
           
-          if (!transcript) {
-            console.log('❓ Could not find transcript in response structure')
+          if (!transcript || (typeof transcript === 'string' && transcript.trim() === '')) {
+            console.log('❓ No valid transcript found')
+            console.log('Available keys in response:', Object.keys(data))
             throw new Error('Unable to extract transcript from ElevenLabs response')
           }
         } catch (error) {
@@ -74,11 +90,11 @@ serve(async (req) => {
         }
       }
       
-      console.log('📝 Using transcript:', transcript)
+      console.log('📝 Using transcript (length):', transcript.length, 'chars')
     }
     
-    if (!transcript) {
-      throw new Error('No transcript found. Provide either "transcript" field or "conversationId" for testing.')
+    if (!transcript || typeof transcript !== 'string') {
+      throw new Error('No valid transcript found. Provide either "transcript" field or "conversationId" for testing.')
     }
 
     const geminiApiKey = Deno.env.get('GEMINI_API_KEY')
@@ -92,9 +108,13 @@ serve(async (req) => {
     console.log('🤖 Generating creative text...')
     const textModel = genAI.getGenerativeModel({ model: "gemini-1.5-flash" })
     
+    // Ensure transcript is a string
+    const transcriptText = typeof transcript === 'string' ? transcript : JSON.stringify(transcript)
+    console.log('📄 Transcript preview:', transcriptText.substring(0, 200) + '...')
+    
     const textPrompt = `Based on this conversation transcript, create a creative and vivid image description that captures the essence and mood of the conversation. Be specific about visual elements, colors, lighting, and composition. Keep it under 100 words.
 
-Transcript: ${transcript}`
+Transcript: ${transcriptText}`
 
     const textResult = await textModel.generateContent(textPrompt)
     const imagePrompt = textResult.response.text()
