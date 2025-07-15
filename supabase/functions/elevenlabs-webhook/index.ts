@@ -15,11 +15,71 @@ serve(async (req) => {
     const body = await req.json()
     console.log('📦 Received body:', JSON.stringify(body, null, 2))
     
-    const transcript = body.transcript || body.text || body.message
-    if (!transcript) {
-      throw new Error('No transcript found in request body. Expected "transcript" field.')
+    let transcript = body.transcript || body.text || body.message
+    
+    // Test mode: fetch transcript by conversationId
+    if (body.conversationId && !transcript) {
+      console.log('🔍 Fetching transcript for conversation:', body.conversationId)
+      
+      const elevenLabsApiKey = Deno.env.get('ELEVENLABS_API_KEY')
+      if (!elevenLabsApiKey) {
+        console.warn('⚠️ ELEVENLABS_API_KEY not set, using mock data')
+        // Fallback to mock transcripts
+        const mockTranscripts: Record<string, string> = {
+          "test-1": "I had an amazing experience at the beach today. The sunset was incredible with orange and pink clouds reflecting on the calm water.",
+          "test-2": "Let's discuss the architecture of modern cities. I'm fascinated by how skyscrapers pierce through the fog on misty mornings.",
+          "test-3": "The forest was so peaceful today. Birds chirping, sunlight filtering through the leaves, and a gentle breeze rustling the branches."
+        }
+        transcript = mockTranscripts[body.conversationId]
+        if (!transcript) {
+          throw new Error(`No mock transcript for: ${body.conversationId}. Available: ${Object.keys(mockTranscripts).join(', ')}`)
+        }
+      } else {
+        // Fetch real conversation from ElevenLabs
+        try {
+          const conversationUrl = `https://api.elevenlabs.io/v1/convai/conversations/${body.conversationId}`
+          console.log('🌐 Fetching from:', conversationUrl)
+          
+          const response = await fetch(conversationUrl, {
+            headers: {
+              'xi-api-key': elevenLabsApiKey
+            }
+          })
+          
+          if (!response.ok) {
+            throw new Error(`ElevenLabs API error: ${response.status} ${response.statusText}`)
+          }
+          
+          const data = await response.json()
+          console.log('📊 ElevenLabs response:', JSON.stringify(data, null, 2))
+          
+          // Extract transcript from the conversation data
+          // Based on the response structure, messages is an array of conversation turns
+          if (data.messages && Array.isArray(data.messages)) {
+            transcript = data.messages
+              .filter((m: any) => m.message && typeof m.message === 'string')
+              .map((m: any) => `${m.role}: ${m.message}`)
+              .join('\n\n')
+          } else {
+            transcript = data.transcript || data.text || data.conversation?.transcript
+          }
+          
+          if (!transcript) {
+            console.log('❓ Could not find transcript in response structure')
+            throw new Error('Unable to extract transcript from ElevenLabs response')
+          }
+        } catch (error) {
+          console.error('❌ Error fetching from ElevenLabs:', error)
+          throw new Error(`Failed to fetch conversation: ${error.message}`)
+        }
+      }
+      
+      console.log('📝 Using transcript:', transcript)
     }
-    console.log('📝 Extracted transcript:', transcript)
+    
+    if (!transcript) {
+      throw new Error('No transcript found. Provide either "transcript" field or "conversationId" for testing.')
+    }
 
     const geminiApiKey = Deno.env.get('GEMINI_API_KEY')
     if (!geminiApiKey) {
