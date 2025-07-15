@@ -61,6 +61,7 @@ serve(async (req) => {
           // Extract transcript from the conversation data
           // Based on the response structure, messages is an array of conversation turns
           if (data.messages && Array.isArray(data.messages)) {
+            console.log(`🔍 Processing ${data.messages.length} messages...`)
             const extractedMessages = data.messages
               .filter((m: any) => {
                 // Check if message exists and is a string
@@ -74,7 +75,8 @@ serve(async (req) => {
               .join('\n\n')
             
             transcript = extractedMessages
-            console.log(`📝 Extracted ${extractedMessages.split('\n\n').length} messages, total length: ${extractedMessages.length} chars`)
+            console.log(`📝 Extracted messages into string of length: ${extractedMessages.length} chars`)
+            console.log(`📝 Type of transcript after extraction: ${typeof transcript}`)
           } else {
             transcript = data.transcript || data.text || data.conversation?.transcript
           }
@@ -88,6 +90,12 @@ serve(async (req) => {
           console.error('❌ Error fetching from ElevenLabs:', error)
           throw new Error(`Failed to fetch conversation: ${error.message}`)
         }
+      }
+      
+      // Ensure transcript is always a string at this point
+      if (typeof transcript !== 'string') {
+        console.error('❌ Transcript is not a string, type:', typeof transcript)
+        transcript = JSON.stringify(transcript)
       }
       
       console.log('📝 Using transcript (length):', transcript.length, 'chars')
