@@ -115,10 +115,72 @@ serve(async (req) => {
      */
     {
       console.log('🎯 Stage 1: Extracting context from transcript')
+      console.log('Body keys:', Object.keys(body))
       
-      if (!body.transcript) {
-        console.error('No transcript provided')
-        return createErrorResponse('Transcript is required', 400)
+      // Handle ElevenLabs webhook structure
+      let transcript = '';
+      
+      if (body.conversationId && !body.transcript && !body.data) {
+        // Frontend request with conversationId - fetch from ElevenLabs
+        console.log('📞 Fetching conversation from ElevenLabs:', body.conversationId)
+        
+        try {
+          const elevenLabsApiKey = Deno.env.get('ELEVENLABS_API_KEY')
+          if (!elevenLabsApiKey) {
+            return createErrorResponse('ELEVENLABS_API_KEY not configured', 500)
+          }
+          
+          // Fetch conversation details from ElevenLabs
+          const conversationResponse = await fetch(
+            `https://api.elevenlabs.io/v1/convai/conversations/${body.conversationId}`,
+            {
+              headers: {
+                'xi-api-key': elevenLabsApiKey
+              }
+            }
+          )
+          
+          if (!conversationResponse.ok) {
+            console.error('Failed to fetch conversation:', conversationResponse.status)
+            return createErrorResponse('Failed to fetch conversation from ElevenLabs', 500)
+          }
+          
+          const conversationData = await conversationResponse.json()
+          console.log('Conversation data keys:', Object.keys(conversationData))
+          
+          // Extract transcript from conversation data
+          if (conversationData.transcript && Array.isArray(conversationData.transcript)) {
+            transcript = conversationData.transcript
+              .map((turn: any) => `${turn.role}: ${turn.message}`)
+              .join('\n');
+            console.log('✅ Extracted transcript from ElevenLabs conversation')
+          } else {
+            console.error('No transcript in conversation data')
+            return createErrorResponse('No transcript found in ElevenLabs conversation', 400)
+          }
+        } catch (error) {
+          console.error('Error fetching conversation:', error)
+          return createErrorResponse('Failed to fetch conversation from ElevenLabs', 500)
+        }
+      } else if (body.type === 'post_call_transcription' && body.data?.transcript) {
+        // Convert transcript array to a single string
+        transcript = body.data.transcript
+          .map((turn: any) => `${turn.role}: ${turn.message}`)
+          .join('\n');
+        console.log('✅ Extracted transcript from ElevenLabs webhook')
+      } else if (body.transcript) {
+        // Direct transcript for testing
+        transcript = body.transcript;
+      } else if (body.data?.transcript && Array.isArray(body.data.transcript)) {
+        // Alternate structure
+        transcript = body.data.transcript
+          .map((turn: any) => `${turn.role}: ${turn.message}`)
+          .join('\n');
+      } else {
+        console.error('No transcript found in request body')
+        console.error('Available fields:', Object.keys(body))
+        console.error('Body structure:', JSON.stringify(body, null, 2))
+        return createErrorResponse('Transcript is required. Provide conversationId or transcript data', 400)
       }
       
       const contextPrompt = `
@@ -154,7 +216,7 @@ serve(async (req) => {
       - locationPreference: "clustered" if not specified
       
       Transcript:
-      ${body.transcript}
+      ${transcript}
       
       RESPOND WITH ONLY THE JSON OBJECT, NO OTHER TEXT.`
       
