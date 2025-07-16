@@ -1,22 +1,19 @@
 /**
- * ElevenLabs Webhook Edge Function
+ * Photography Session Planning Edge Function
  * 
- * This edge function processes photography session planning requests through a multi-stage pipeline:
+ * Processes ElevenLabs conversation transcripts to generate complete photo shoot plans.
  * 
- * 1. Context Extraction - Analyzes conversation data to extract shoot requirements
- * 2. Location Generation - Suggests specific locations based on context and city
- * 3. Storyboard Creation - Generates detailed shot list with technical instructions
- * 4. Image Generation - Optionally creates visual storyboard illustrations
+ * Input: 
+ * - conversationId: Fetches transcript from ElevenLabs API
+ * - transcript: Direct transcript string (for testing)
  * 
- * Features:
- * - Processes all stages in sequence for complete photo session planning
- * - Handles both structured data_collection and transcript inputs
- * - Configurable image generation count
- * - CORS handling for browser-based clients
+ * Output:
+ * - context: Extracted shoot details (location, date, style, subjects, etc.)
+ * - locations: 4-5 specific photo spots with timing and tips
+ * - shots: Detailed shot list with composition and direction
+ * - images: Optional storyboard visualizations
  * 
- * Environment variables required:
- * - GEMINI_API_KEY: For Google Generative AI
- * - ELEVENLABS_API_KEY: For fetching conversation data (optional)
+ * Required env vars: GEMINI_API_KEY, ELEVENLABS_API_KEY
  */
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
@@ -31,247 +28,145 @@ import {
 } from "../_shared/helpers.ts"
 import type { PhotoShootContext, Location, Shot } from "../_shared/types.ts"
 
-
-// Types are now imported from shared location
-
-
-/**
- * Main webhook handler function that processes photography session planning requests.
- * This function orchestrates a multi-stage pipeline:
- * 1. Context extraction from conversation data
- * 2. Location generation based on context
- * 3. Storyboard/shot list creation
- * 4. Optional storyboard image generation
- * 
- * The function supports processing individual stages or the full pipeline.
- * It includes comprehensive error handling with fallbacks at each stage.
- * 
- * @param req - The incoming HTTP request
- * @returns Response with processed photography planning data or error
- */
 serve(async (req) => {
-  // Handle CORS preflight requests - required for browser-based clients
+  // Handle CORS
   const corsResponse = handleCors(req);
   if (corsResponse) return corsResponse;
 
-  let body: any = {};
-  
   try {
-    // Try to parse request body - validates incoming JSON structure
-    try {
-      const contentLength = req.headers.get('content-length');
-      const contentType = req.headers.get('content-type');
-      
-      console.log('Request headers:', {
-        'content-type': contentType,
-        'content-length': contentLength
-      });
-      
-      if (contentLength && parseInt(contentLength) > 0) {
-        // If Content-Type is missing (iOS Safari PWA issue), read as text and parse manually
-        if (!contentType || !contentType.includes('application/json')) {
-          console.log('Missing or invalid Content-Type, attempting manual JSON parse');
-          const textBody = await req.text();
-          try {
-            body = JSON.parse(textBody);
-          } catch (jsonError) {
-            console.error('Manual JSON parse failed:', jsonError);
-            console.error('Body text:', textBody);
-            return createErrorResponse('Invalid JSON in request body', 400);
-          }
-        } else {
-          // Standard JSON parsing when Content-Type is present
-          body = await req.json();
-        }
-      } else if (contentLength === '0' || !contentLength) {
-        console.log('No body content to parse');
-        body = {};
-      }
-    } catch (parseError) {
-      console.error('Failed to parse request body:', parseError);
-      console.error('Headers:', Object.fromEntries(req.headers.entries()));
-      
-      // Early return with 400 error for malformed JSON
-      return createErrorResponse('Invalid JSON in request body', 400);
-    }
-    
+    // Parse request body
+    const body = await req.json();
     console.log('📦 Received request:', JSON.stringify(body, null, 2))
     
-    // Validate required environment variable
+    // Initialize AI
     const geminiApiKey = validateEnvVar('GEMINI_API_KEY')
-
-    // Initialize AI models for text and image generation
     const genAI = new GoogleGenerativeAI(geminiApiKey)
     const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" })
     
-    // Result object accumulates data across pipeline
     let result: any = {}
     
-    /**
-     * STAGE 1: Extract Photography Context from Transcript
-     * 
-     * This stage extracts all data collection fields from the transcript
-     * using AI to parse conversational data into structured format.
-     */
-    {
-      console.log('🎯 Stage 1: Extracting context from transcript')
-      console.log('Body keys:', Object.keys(body))
+    // STAGE 1: Get transcript from ElevenLabs or request body
+    let transcript = '';
+    
+    if (body.conversationId) {
+      // Fetch from ElevenLabs
+      console.log('📞 Fetching conversation from ElevenLabs:', body.conversationId)
       
-      // Handle ElevenLabs webhook structure
-      let transcript = '';
+      const elevenLabsApiKey = Deno.env.get('ELEVENLABS_API_KEY')
+      if (!elevenLabsApiKey) {
+        return createErrorResponse('ELEVENLABS_API_KEY not configured', 500)
+      }
       
-      if (body.conversationId && !body.transcript && !body.data) {
-        // Frontend request with conversationId - fetch from ElevenLabs
-        console.log('📞 Fetching conversation from ElevenLabs:', body.conversationId)
-        
-        try {
-          const elevenLabsApiKey = Deno.env.get('ELEVENLABS_API_KEY')
-          if (!elevenLabsApiKey) {
-            return createErrorResponse('ELEVENLABS_API_KEY not configured', 500)
+      const conversationResponse = await fetch(
+        `https://api.elevenlabs.io/v1/convai/conversations/${body.conversationId}`,
+        {
+          headers: {
+            'xi-api-key': elevenLabsApiKey
           }
-          
-          // Fetch conversation details from ElevenLabs
-          const conversationResponse = await fetch(
-            `https://api.elevenlabs.io/v1/convai/conversations/${body.conversationId}`,
-            {
-              headers: {
-                'xi-api-key': elevenLabsApiKey
-              }
-            }
-          )
-          
-          if (!conversationResponse.ok) {
-            console.error('Failed to fetch conversation:', conversationResponse.status)
-            return createErrorResponse('Failed to fetch conversation from ElevenLabs', 500)
-          }
-          
-          const conversationData = await conversationResponse.json()
-          console.log('Conversation data keys:', Object.keys(conversationData))
-          
-          // Extract transcript from conversation data
-          if (conversationData.transcript && Array.isArray(conversationData.transcript)) {
-            transcript = conversationData.transcript
-              .map((turn: any) => `${turn.role}: ${turn.message}`)
-              .join('\n');
-            console.log('✅ Extracted transcript from ElevenLabs conversation')
-          } else {
-            console.error('No transcript in conversation data')
-            return createErrorResponse('No transcript found in ElevenLabs conversation', 400)
-          }
-        } catch (error) {
-          console.error('Error fetching conversation:', error)
-          return createErrorResponse('Failed to fetch conversation from ElevenLabs', 500)
         }
-      } else if (body.type === 'post_call_transcription' && body.data?.transcript) {
-        // Convert transcript array to a single string
-        transcript = body.data.transcript
-          .map((turn: any) => `${turn.role}: ${turn.message}`)
-          .join('\n');
-        console.log('✅ Extracted transcript from ElevenLabs webhook')
-      } else if (body.transcript) {
-        // Direct transcript for testing
-        transcript = body.transcript;
-      } else if (body.data?.transcript && Array.isArray(body.data.transcript)) {
-        // Alternate structure
-        transcript = body.data.transcript
+      )
+      
+      if (!conversationResponse.ok) {
+        console.error('Failed to fetch conversation:', conversationResponse.status)
+        return createErrorResponse('Failed to fetch conversation from ElevenLabs', 500)
+      }
+      
+      const conversationData = await conversationResponse.json()
+      
+      if (conversationData.transcript && Array.isArray(conversationData.transcript)) {
+        transcript = conversationData.transcript
           .map((turn: any) => `${turn.role}: ${turn.message}`)
           .join('\n');
       } else {
-        console.error('No transcript found in request body')
-        console.error('Available fields:', Object.keys(body))
-        console.error('Body structure:', JSON.stringify(body, null, 2))
-        return createErrorResponse('Transcript is required. Provide conversationId or transcript data', 400)
+        return createErrorResponse('No transcript found in ElevenLabs conversation', 400)
       }
-      
-      const contextPrompt = `
-      Extract photography shoot details from this conversation transcript.
-      
-      Return ONLY a JSON object with ALL these exact fields:
-      {
-        "location": "city or venue name where shoot will take place",
-        "date": "shoot date in YYYY-MM-DD format (or 'flexible' if not mentioned)",
-        "startTime": "start time in HH:MM format (or 'flexible' if not mentioned)",
-        "duration": "total duration like '2 hours' or '90 minutes'",
-        "shootType": "type like wedding, portrait, engagement, event, product, etc",
-        "mood": ["2-3 mood descriptors like romantic, candid, dramatic, etc"],
-        "primarySubjects": "main subjects with names/relationship/count",
-        "secondarySubjects": "other subjects like pets, family (or empty string if none)",
-        "locationPreference": "clustered (close together) or spread out",
-        "mustHaveShots": "specific requested shots (or empty string if none)",
-        "specialRequirements": "special needs, permits, props (or empty string if none)",
-        "experience": "beginner, intermediate, or professional",
-        "timeOfDay": "preferred lighting time based on startTime or 'flexible'",
-        "subject": "combined description of all subjects",
-        "equipment": [],
-        "specialRequests": "combined mustHaveShots and specialRequirements"
-      }
-      
-      Use reasonable defaults:
-      - location: "local area" if not mentioned
-      - date/startTime: "flexible" if not specified
-      - duration: "2 hours" if not mentioned
-      - shootType: infer from context or use "portrait"
-      - mood: infer 2-3 descriptors from conversation tone
-      - experience: "intermediate" if not mentioned
-      - locationPreference: "clustered" if not specified
-      
-      Transcript:
-      ${transcript}
-      
-      RESPOND WITH ONLY THE JSON OBJECT, NO OTHER TEXT.`
-      
-      const contextResult = await model.generateContent(contextPrompt)
-      const contextText = contextResult.response.text()
-      
-      try {
-        const extractedData = JSON.parse(contextText.replace(/```json|```/g, '').trim())
-        
-        // Build context combining extracted fields
-        result.context = {
-          shootType: extractedData.shootType,
-          mood: extractedData.mood,
-          timeOfDay: extractedData.timeOfDay,
-          subject: extractedData.subject,
-          duration: extractedData.duration,
-          equipment: extractedData.equipment,
-          experience: extractedData.experience,
-          specialRequests: extractedData.specialRequests,
-          location: extractedData.location,
-          date: extractedData.date,
-          startTime: extractedData.startTime,
-          locationPreference: extractedData.locationPreference
-        }
-        
-        console.log('✅ Extracted context from transcript:', result.context)
-      } catch (error) {
-        console.error('Context parsing error:', error)
-        return createErrorResponse('Failed to extract context from transcript', 400)
-      }
+    } else if (body.transcript) {
+      // Direct transcript for testing
+      transcript = body.transcript;
+    } else {
+      return createErrorResponse('Either conversationId or transcript is required', 400)
     }
     
-    /**
-     * STAGE 2: Generate Location Suggestions
-     * 
-     * This stage creates specific photography location recommendations based
-     * on the extracted context. It dynamically generates locations for any city
-     * or venue, following the location_scoutv2.txt prompt structure.
-     * 
-     * The stage requires either result.context (from Stage 1) or body.context
-     * (provided directly) to proceed.
-     */
+    // Extract all 12 data collection fields from conversational transcript
+    console.log('🎯 Extracting context from transcript')
+    
+    const contextPrompt = `
+    Extract photography shoot details from this conversation transcript.
+    
+    Return ONLY a JSON object with ALL these exact fields:
+    {
+      "location": "city or venue name where shoot will take place",
+      "date": "shoot date in YYYY-MM-DD format (or 'flexible' if not mentioned)",
+      "startTime": "start time in HH:MM format (or 'flexible' if not mentioned)",
+      "duration": "total duration like '2 hours' or '90 minutes'",
+      "shootType": "type like wedding, portrait, engagement, event, product, etc",
+      "mood": ["2-3 mood descriptors like romantic, candid, dramatic, etc"],
+      "primarySubjects": "main subjects with names/relationship/count",
+      "secondarySubjects": "other subjects like pets, family (or empty string if none)",
+      "locationPreference": "clustered (close together) or spread out",
+      "mustHaveShots": "specific requested shots (or empty string if none)",
+      "specialRequirements": "special needs, permits, props (or empty string if none)",
+      "experience": "beginner, intermediate, or professional",
+      "timeOfDay": "preferred lighting time based on startTime or 'flexible'",
+      "subject": "combined description of all subjects",
+      "equipment": [],
+      "specialRequests": "combined mustHaveShots and specialRequirements"
+    }
+    
+    Use reasonable defaults:
+    - location: "local area" if not mentioned
+    - date/startTime: "flexible" if not specified
+    - duration: "2 hours" if not mentioned
+    - shootType: infer from context or use "portrait"
+    - mood: infer 2-3 descriptors from conversation tone
+    - experience: "intermediate" if not mentioned
+    - locationPreference: "clustered" if not specified
+    
+    Transcript:
+    ${transcript}
+    
+    RESPOND WITH ONLY THE JSON OBJECT, NO OTHER TEXT.`
+    
+    const contextResult = await model.generateContent(contextPrompt)
+    const contextText = contextResult.response.text()
+    
+    try {
+      const extractedData = JSON.parse(contextText.replace(/```json|```/g, '').trim())
+      
+      // Build context combining extracted fields
+      result.context = {
+        shootType: extractedData.shootType,
+        mood: extractedData.mood,
+        timeOfDay: extractedData.timeOfDay,
+        subject: extractedData.subject,
+        duration: extractedData.duration,
+        equipment: extractedData.equipment,
+        experience: extractedData.experience,
+        specialRequests: extractedData.specialRequests,
+        location: extractedData.location,
+        date: extractedData.date,
+        startTime: extractedData.startTime,
+        locationPreference: extractedData.locationPreference
+      }
+      
+      console.log('✅ Extracted context:', result.context)
+    } catch (error) {
+      console.error('Context parsing error:', error)
+      return createErrorResponse('Failed to extract context from transcript', 400)
+    }
+    
+    // STAGE 2: Generate 4-5 specific photo locations based on context
     if (result.context) {
-      console.log('📍 Stage 2: Generating locations')
+      console.log('📍 Generating locations')
       
       const context = result.context
       const location = context.location || 'the local area'
       const locationPreference = context.locationPreference || 'clustered'
-      // Check if preference is clustered-style (could be "clustered", "close together", "walkable", etc.)
       const isClusteredMode = locationPreference.toLowerCase().includes('cluster') || 
                              locationPreference.toLowerCase().includes('close') ||
                              locationPreference.toLowerCase().includes('walk') ||
                              locationPreference === 'clustered'
       
-      // Build the location scout prompt - simplified to return our standard format
       const locationPrompt = `You are an expert location scout for photography. Find unique, beautiful, and practical photo spots.
 
 Location: ${location}
@@ -307,7 +202,6 @@ RESPOND WITH ONLY THE JSON ARRAY, NO OTHER TEXT.`
       const locationText = locationResult.response.text()
       
       try {
-        // Parse AI-generated locations, handling potential markdown formatting
         result.locations = parseJsonResponse(locationText)
         console.log(`✅ Generated ${result.locations.length} locations`)
       } catch (error) {
@@ -316,20 +210,12 @@ RESPOND WITH ONLY THE JSON ARRAY, NO OTHER TEXT.`
       }
     }
     
-    /**
-     * STAGE 3: Create Storyboard and Shot List
-     * 
-     * This stage generates a detailed shot list with specific instructions for
-     * each photograph. It uses the storyboardv2.txt prompt structure to create
-     * professional-level shot planning with composition, lighting, and direction.
-     * 
-     * Requires both context and locations from previous stages or request body.
-     */
+    // STAGE 3: Create detailed shot list with composition and direction
     if (result.locations && result.context) {
-      console.log('🎬 Stage 3: Generating storyboards')
+      console.log('🎬 Generating storyboards')
       
       const context = result.context
-      const locations = result.locations || body.locations
+      const locations = result.locations
       
       const storyboardPrompt = `You are an expert photographer and creative director. Create a detailed shot list for this photography session.
 
@@ -368,7 +254,6 @@ RESPOND WITH ONLY THE JSON ARRAY, NO OTHER TEXT.`
       const storyboardText = storyboardResult.response.text()
       
       try {
-        // Parse the storyboard directly in our simplified format
         result.shots = parseJsonResponse(storyboardText)
         console.log(`✅ Generated ${result.shots.length} detailed shots`)
       } catch (error) {
@@ -376,28 +261,17 @@ RESPOND WITH ONLY THE JSON ARRAY, NO OTHER TEXT.`
         return createErrorResponse('Failed to generate storyboard', 500)
       }
       
-      /**
-       * STAGE 4: Generate Storyboard Visualization Images (Optional)
-       * 
-       * This stage creates visual storyboard illustrations for key shots using
-       * Google's Imagen AI. Limited to 3 images for performance reasons.
-       * Images are generated only if explicitly requested via generateImages flag.
-       * 
-       * Each image is generated with a 16:9 aspect ratio suitable for storyboards
-       * and includes clear composition and mood indicators.
-       */
+      // STAGE 4: Generate storyboard visualizations (max 3 for performance)
       if (body.generateImages && result.shots) {
-        console.log('🎨 Stage 4: Generating storyboard images')
+        console.log('🎨 Generating storyboard images')
         
         const imageAI = new GoogleGenAI({ apiKey: geminiApiKey })
-        // Limit to 3 images maximum for performance and cost considerations
         const maxImages = Math.min(3, result.shots.length)
         
         for (let i = 0; i < maxImages; i++) {
           const shot = result.shots[i]
           
           try {
-            // Create enhanced prompt for professional storyboard visualization
             const imagePrompt = `Professional photography storyboard illustration: ${shot.imagePrompt}. 
             Style: Clean sketch/illustration style, ${context.mood.join(', ')} mood.
             Show camera angle and composition clearly.`
@@ -408,31 +282,22 @@ RESPOND WITH ONLY THE JSON ARRAY, NO OTHER TEXT.`
               config: {
                 numberOfImages: 1,
                 outputMimeType: 'image/jpeg',
-                aspectRatio: '16:9', // Optimal for storyboard presentation
+                aspectRatio: '16:9',
               },
             })
             
             if (response?.generatedImages?.[0]?.image?.imageBytes) {
-              // Attach base64 encoded image directly to shot object
               shot.storyboardImage = `data:image/jpeg;base64,${response.generatedImages[0].image.imageBytes}`
               console.log(`✅ Generated image for shot ${i + 1}`)
             }
           } catch (error) {
             console.error(`Image generation error for shot ${i + 1}:`, error)
-            // Continue with other images if one fails
           }
         }
       }
     }
     
-    /**
-     * Build and return the final response structure.
-     * The response includes:
-     * - success: boolean indicating overall success
-     * - conversationId: original ID or 'direct-input' for testing
-     * - timestamp: ISO timestamp of response
-     * - context, locations, and shots from the pipeline
-     */
+    // Return complete photo shoot plan with all generated data
     const response = {
       success: true,
       conversationId: body.conversationId || 'direct-input',
@@ -440,7 +305,6 @@ RESPOND WITH ONLY THE JSON ARRAY, NO OTHER TEXT.`
       ...result
     }
     
-    // Log response for debugging, replacing base64 images with placeholder
     console.log('📤 Sending response (without images):', {
       ...response,
       shots: response.shots?.map((s: Shot & {storyboardImage?: string}) => ({ ...s, storyboardImage: s.storyboardImage ? '[BASE64_IMAGE]' : undefined }))
@@ -449,11 +313,6 @@ RESPOND WITH ONLY THE JSON ARRAY, NO OTHER TEXT.`
     return createSuccessResponse(response)
     
   } catch (error) {
-    /**
-     * Global error handler for the entire request processing pipeline.
-     * Catches any unhandled errors and returns a structured error response
-     * with debugging information including the stage where failure occurred.
-     */
     console.error('Request processing error:', error);
     return createErrorResponse(
       error.message || 'An unexpected error occurred',
@@ -464,4 +323,3 @@ RESPOND WITH ONLY THE JSON ARRAY, NO OTHER TEXT.`
     )
   }
 })
-
