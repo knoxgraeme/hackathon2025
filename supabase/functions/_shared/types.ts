@@ -2,14 +2,21 @@
 // This file acts as a bridge since edge functions can't directly import from /app
 
 export interface PhotoShootContext {
-  shootType: 'portrait' | 'landscape' | 'product' | 'event' | 'street' | 'fashion';
-  mood: string[];
-  timeOfDay: string;
+  shootType: string; // Open-ended: portrait, landscape, wedding, lifestyle, branding, etc.
+  mood: string[]; // Open-ended: romantic, moody, vibrant, minimal, cinematic, etc.
+  timeOfDay: string; // Open-ended: golden hour, blue hour, midday, overcast, etc.
   subject: string;
   duration: string;
   equipment?: string[];
-  experience: 'beginner' | 'intermediate' | 'professional';
+  experience: string; // Open-ended: beginner, intermediate, professional, expert, etc.
   specialRequests?: string;
+  location?: string;
+  date?: string;
+  startTime?: string;
+  locationPreference?: string; // Open-ended: clustered, itinerary, or custom preferences
+  mustHaveShots?: string;
+  primarySubjects?: string;
+  secondarySubjects?: string;
 }
 
 export interface Location {
@@ -31,4 +38,9 @@ export interface Shot {
   technicalNotes: string;
   equipment: string[];
   storyboardImage?: string;
+  title?: string;
+  idealLighting?: string;
+  framingComposition?: string;
+  blockingEnvironment?: string;
+  communicationCues?: string;
 }

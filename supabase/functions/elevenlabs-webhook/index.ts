@@ -31,133 +31,9 @@ import {
 } from "../_shared/helpers.ts"
 import type { PhotoShootContext, Location, Shot } from "../_shared/types.ts"
 
-/**
- * Centralized AI prompts for consistent output formatting.
- * These prompts are carefully crafted to ensure AI responses are valid JSON
- * that can be parsed reliably. The prompts emphasize returning ONLY JSON
- * without any additional text or markdown formatting.
- */
-const PROMPTS = {
-  CONTEXT_EXTRACTION: `Extract photography shoot details from this conversation data.
-
-Return ONLY a JSON object with these exact fields:
-{
-  "shootType": "portrait" | "landscape" | "product" | "event" | "street" | "fashion",
-  "mood": ["array of 2-3 mood descriptors"],
-  "timeOfDay": "golden hour" | "blue hour" | "midday" | "overcast" | "night" | "flexible",
-  "subject": "description of what/who is being photographed",
-  "duration": "estimated shoot duration",
-  "equipment": ["optional: mentioned camera gear"],
-  "experience": "beginner" | "intermediate" | "professional",
-  "specialRequests": "any specific requirements mentioned"
-}
-
-If information is not mentioned, make reasonable assumptions based on context.
-
-Conversation data:
-{CONVERSATION_DATA}
-
-RESPOND WITH ONLY THE JSON OBJECT, NO OTHER TEXT.`,
-
-  LOCATION_GENERATION: `You are a professional location scout in Vancouver, BC. Based on this photography context:
-{CONTEXT}
-
-Suggest 4-5 specific locations in Vancouver area. Include lesser-known spots.
-Base suggestions on these areas but be more specific: {BASE_LOCATIONS}
-
-Return ONLY a JSON array with these exact fields for each location:
-{
-  "name": "Specific location name",
-  "address": "Approximate address or area",
-  "description": "50-word visual description focusing on {MOOD} mood",
-  "bestTime": "Optimal shooting time for this location",
-  "lightingNotes": "Natural light conditions and tips",
-  "accessibility": "Parking, transit, walking required",
-  "permits": "Any permit requirements or restrictions",
-  "alternatives": ["2 nearby backup locations"]
-}
-
-Focus on locations that match the mood: {MOOD}
-Consider {TIME_OF_DAY} lighting preferences.
-
-RESPOND WITH ONLY THE JSON ARRAY, NO OTHER TEXT.`,
-
-  STORYBOARD_GENERATION: `You are a photography director creating a shot list. Based on this context:
-{CONTEXT}
-
-And these locations:
-{LOCATIONS}
-
-Create 6-8 diverse shots across the locations. Mix wide, medium, and close-up shots.
-
-Return ONLY a JSON array with these exact fields for each shot:
-{
-  "locationIndex": 0-based index matching the locations array,
-  "shotNumber": sequential number starting at 1,
-  "imagePrompt": "30-word artistic description for storyboard visualization",
-  "poseInstruction": "Clear direction for subject positioning and expression",
-  "technicalNotes": "Camera settings, lens choice, composition tips",
-  "equipment": ["Required gear for this shot"]
-}
-
-Style: {MOOD}
-Subject: {SUBJECT}
-
-RESPOND WITH ONLY THE JSON ARRAY, NO OTHER TEXT.`,
-
-  IMAGE_GENERATION: `Professional photography storyboard illustration: {IMAGE_PROMPT}. 
-Style: Clean sketch/illustration style, {MOOD} mood.
-Show camera angle and composition clearly.`
-}
 
 // Types are now imported from shared location
 
-// Helper functions
-
-/**
- * Handles errors that occur during any processing stage by logging the error
- * and returning a sensible default value. This ensures the pipeline continues
- * even if one stage fails.
- * 
- * @param stage - Name of the processing stage where error occurred
- * @param error - The error object or message
- * @param getDefault - Function that returns a fallback default value
- * @returns The default value from getDefault function
- */
-function handleStageError(stage: string, error: any, getDefault: () => any): any {
-  console.error(`${stage} error:`, error.message || error)
-  return getDefault()
-}
-
-/**
- * Curated database of Vancouver photography locations organized by shoot type.
- * These serve as seed data for the AI to expand upon and as fallback options
- * when location generation fails. Each array contains general areas that the
- * AI will transform into specific, detailed location recommendations.
- */
-const VANCOUVER_LOCATIONS = {
-  portrait: [
-    "Gastown (Water Street & Steam Clock area)",
-    "Queen Elizabeth Park Quarry Gardens", 
-    "Granville Island Public Market",
-    "Dr. Sun Yat-Sen Classical Chinese Garden",
-    "Stanley Park Seawall"
-  ],
-  landscape: [
-    "Cypress Mountain Lookout",
-    "Lighthouse Park, West Vancouver",
-    "Iona Beach Regional Park",
-    "Spanish Banks Beach",
-    "Burnaby Mountain Park"
-  ],
-  street: [
-    "Main Street (Mount Pleasant)",
-    "Commercial Drive",
-    "Chinatown",
-    "Robson Street",
-    "Yaletown"
-  ]
-}
 
 /**
  * Main webhook handler function that processes photography session planning requests.
@@ -205,74 +81,77 @@ serve(async (req) => {
     let result: any = {}
     
     /**
-     * STAGE 1: Extract Photography Context from Conversation
+     * STAGE 1: Extract Photography Context from data_collection or Conversation
      * 
-     * This stage analyzes conversation data to extract structured photography
-     * session details. It supports three input modes:
-     * 1. conversationId - Fetches from ElevenLabs API
-     * 2. transcript - Direct transcript provided in request
-     * 3. mockContext - Pre-defined context for testing
+     * This stage processes photography session details from:
+     * 1. data_collection - Pre-structured fields from ElevenLabs agent
+     * 2. transcript - Direct transcript for AI extraction (fallback)
      * 
-     * The stage includes automatic fallback to mock data if API fetch fails.
+     * When data_collection is present, no AI extraction is needed.
      */
     if (stage === 'context' || stage === 'full') {
-      console.log('🎯 Stage 1: Extracting context')
+      console.log('🎯 Stage 1: Processing context')
       
-      let conversationData = ''
-      
-      if (body.conversationId) {
-        // Attempt to fetch conversation from ElevenLabs API
-        const elevenLabsApiKey = Deno.env.get('ELEVENLABS_API_KEY')
+      // Check for pre-structured data_collection from ElevenLabs
+      if (body.data_collection) {
+        console.log('📊 Using structured data_collection')
+        const dc = body.data_collection
         
-        if (elevenLabsApiKey) {
-          try {
-            const response = await fetch(
-              `https://api.elevenlabs.io/v1/convai/conversations/${body.conversationId}`,
-              { headers: { 'xi-api-key': elevenLabsApiKey } }
-            )
-            
-            if (response.ok) {
-              conversationData = await response.text()
-            }
-          } catch (error) {
-            console.error('ElevenLabs fetch error:', error)
-            // Continue processing - will fall back to mock data
-          }
+        // Parse primarySubjects field (format: "names, relationship, count")
+        let subjectInfo = dc.primarySubjects || ''
+        const subjectParts = subjectInfo.split(',').map((s: string) => s.trim())
+        
+        // Parse mood from comma-separated string to array
+        const moodArray = dc.mood ? dc.mood.split(',').map((m: string) => m.trim()) : ['natural', 'candid']
+        
+        // Build context from data_collection
+        result.context = {
+          shootType: dc.shootType || 'portrait',
+          mood: moodArray,
+          timeOfDay: 'flexible', // Let the LLM determine this based on startTime and context
+          subject: `${dc.primarySubjects}${dc.secondarySubjects ? ', ' + dc.secondarySubjects : ''}`,
+          duration: dc.duration || '2 hours',
+          equipment: [], // Not collected in current agent
+          experience: dc.experience || 'intermediate',
+          specialRequests: dc.specialRequirements || dc.mustHaveShots || '',
+          // Additional fields from data_collection
+          location: dc.location,
+          date: dc.date,
+          startTime: dc.startTime,
+          locationPreference: dc.locationPreference || 'clustered',
+          mustHaveShots: dc.mustHaveShots,
+          primarySubjects: dc.primarySubjects,
+          secondarySubjects: dc.secondarySubjects
         }
         
-        // Fallback to mock data if API fetch failed or no API key
-        if (!conversationData) {
-          conversationData = getMockConversation(body.conversationId)
-        }
+        console.log('✅ Processed data_collection context:', result.context)
+        
       } else if (body.transcript) {
-        // Direct transcript provided - bypass API fetch
-        conversationData = body.transcript
-      } else if (body.mockContext) {
-        // Testing mode - use predefined context
-        result.context = getMockContext(body.mockContext)
-      }
-      
-      // Process conversation data through AI to extract structured context
-      if (conversationData && !result.context) {
+        // Fallback: Extract from transcript using AI
+        console.log('📝 Extracting context from transcript')
+        
         const contextPrompt = `
-        Extract photography shoot details from this conversation data.
+        Extract photography shoot details from this conversation transcript.
         
         Return ONLY a JSON object with these exact fields:
         {
-          "shootType": "portrait" | "landscape" | "product" | "event" | "street" | "fashion",
-          "mood": ["array of 2-3 mood descriptors"],
-          "timeOfDay": "golden hour" | "blue hour" | "midday" | "overcast" | "night" | "flexible",
+          "shootType": "type of photography (e.g., portrait, wedding, lifestyle, branding, etc.)",
+          "mood": ["array of 2-3 mood/style descriptors"],
+          "timeOfDay": "preferred lighting time or 'flexible'",
           "subject": "description of what/who is being photographed",
           "duration": "estimated shoot duration",
           "equipment": ["optional: mentioned camera gear"],
-          "experience": "beginner" | "intermediate" | "professional",
-          "specialRequests": "any specific requirements mentioned"
+          "experience": "photographer's skill level",
+          "specialRequests": "any specific requirements mentioned",
+          "location": "city or venue mentioned",
+          "locationPreference": "how locations should be arranged (clustered, spread out, etc.)"
         }
         
-        If information is not mentioned, make reasonable assumptions based on context.
+        Be creative and specific with shootType and mood based on the conversation context.
+        If information is not mentioned, make reasonable assumptions.
         
-        Conversation data:
-        ${conversationData}
+        Transcript:
+        ${body.transcript}
         
         RESPOND WITH ONLY THE JSON OBJECT, NO OTHER TEXT.`
         
@@ -280,14 +159,15 @@ serve(async (req) => {
         const contextText = contextResult.response.text()
         
         try {
-          // Parse AI response, stripping any markdown code blocks
           result.context = JSON.parse(contextText.replace(/```json|```/g, '').trim())
-          console.log('✅ Extracted context:', result.context)
+          console.log('✅ Extracted context from transcript:', result.context)
         } catch (error) {
           console.error('Context parsing error:', error)
-          // Fallback to default portrait context if parsing fails
-          result.context = getMockContext('portrait')
+          return createErrorResponse('Failed to extract context from transcript', 400)
         }
+      } else {
+        console.error('No data_collection or transcript provided')
+        return createErrorResponse('Either data_collection or transcript is required', 400)
       }
     }
     
@@ -295,9 +175,8 @@ serve(async (req) => {
      * STAGE 2: Generate Location Suggestions
      * 
      * This stage creates specific photography location recommendations based
-     * on the extracted context. It uses Vancouver's location database as a
-     * starting point and generates detailed, actionable location information
-     * including timing, lighting, accessibility, and permit requirements.
+     * on the extracted context. It dynamically generates locations for any city
+     * or venue, following the location_scoutv2.txt prompt structure.
      * 
      * The stage requires either result.context (from Stage 1) or body.context
      * (provided directly) to proceed.
@@ -306,44 +185,118 @@ serve(async (req) => {
       console.log('📍 Stage 2: Generating locations')
       
       const context = result.context || body.context
-      // Select base locations based on shoot type, with portrait as default
-      const baseLocations = VANCOUVER_LOCATIONS[context.shootType] || VANCOUVER_LOCATIONS.portrait
+      const location = context.location || 'the local area'
+      const locationPreference = context.locationPreference || 'clustered'
+      // Check if preference is clustered-style (could be "clustered", "close together", "walkable", etc.)
+      const isClusteredMode = locationPreference.toLowerCase().includes('cluster') || 
+                             locationPreference.toLowerCase().includes('close') ||
+                             locationPreference.toLowerCase().includes('walk') ||
+                             locationPreference === 'clustered'
       
-      const locationPrompt = `
-      You are a professional location scout in Vancouver, BC. Based on this photography context:
-      ${JSON.stringify(context, null, 2)}
-      
-      Suggest 4-5 specific locations in Vancouver area. Include lesser-known spots.
-      Base suggestions on these areas but be more specific: ${baseLocations.join(', ')}
-      
-      Return ONLY a JSON array with these exact fields for each location:
-      {
-        "name": "Specific location name",
-        "address": "Approximate address or area",
-        "description": "50-word visual description focusing on ${context.mood.join(', ')} mood",
-        "bestTime": "Optimal shooting time for this location",
-        "lightingNotes": "Natural light conditions and tips",
-        "accessibility": "Parking, transit, walking required",
-        "permits": "Any permit requirements or restrictions",
-        "alternatives": ["2 nearby backup locations"]
-      }
-      
-      Focus on locations that match the mood: ${context.mood.join(', ')}
-      Consider ${context.timeOfDay} lighting preferences.
-      
-      RESPOND WITH ONLY THE JSON ARRAY, NO OTHER TEXT.`
+      // Build the location scout prompt based on location_scoutv2.txt
+      const locationPrompt = `You are an **expert location scout** and professional photographer's assistant agent with a keen eye for finding unique, beautiful, and logistically sound photo spots.
+
+Your task is to identify specific and interesting locations for a photoshoot in this location: ${location}
+
+This is for a ${context.shootType} photo shoot and the desired aesthetic is ${context.mood.join(', ')}.  
+The user/customer is looking for up to 5 distinct photo opportunities on ${context.date || 'the scheduled date'} starting at ${context.startTime || 'flexible time'} for a total of ${context.duration}.
+
+The location style preference is: **${locationPreference}**
+
+${isClusteredMode ? `**Clustered Model Instructions:**
+Multiple, distinct photo spots within a very small, walkable area (e.g., within the same park, on the same city block, or even inside and around a single building). The goal is to maximize variety with minimal travel.
+
+Return ONLY a JSON object with this structure:
+{
+  "primaryLocation": "Name of the main location (e.g., 'The Grand Museum of Art')",
+  "highLevelGoals": "Brief description of mood, subjects, and shoot type",
+  "accessibilityNote": "If applicable",
+  "permitRequirement": "If applicable",
+  "spots": [
+    {
+      "name": "Spot name (e.g., 'The Main Entrance')",
+      "description": "Detailed description of key visual elements",
+      "whyItWorks": "Explain mood, lighting, and compositional opportunities",
+      "timeAndLighting": "Ideal time for light and avoiding crowds"
+    }
+  ]
+}` : `**Itinerary Model Instructions:**
+Spots may be spread out but create a logical and efficient plan for a single day of shooting. The plan should be a step-by-step guide.
+
+Return ONLY a JSON object with this structure:
+{
+  "itineraryTitle": "A Day of ${context.shootType} Photography in ${location}",
+  "highLevelGoals": "Brief description of mood, subjects, and shoot type",
+  "stops": [
+    {
+      "locationName": "Stop name",
+      "travelNotes": "How to get to this stop",
+      "accessibilityNote": "If applicable",
+      "permitRequirement": "If applicable",
+      "shotName": "Creative short description of the shot",
+      "description": "Detailed description of the spot and visual elements",
+      "timeAndLighting": "Specific time range (e.g., '8:00 AM - 9:30 AM') and why",
+      "potentialShots": "Specific shot ideas for this location"
+    }
+  ]
+}`}
+
+**Additional Context:**
+- Primary subjects: ${context.primarySubjects || context.subject}
+- Secondary subjects: ${context.secondarySubjects || 'None'}
+- Must-have shots: ${context.mustHaveShots || 'None specified'}
+- Special requirements: ${context.specialRequests || 'None'}
+- Experience level: ${context.experience}
+
+**General Instructions:**
+- Prioritize "hidden gems" and unique angles over generic tourist shots
+- Suggestions must be actionable and detailed enough for a photographer to confidently execute the plan
+- Based on the start time of ${context.startTime || 'flexible'}, intelligently determine the optimal lighting conditions (golden hour, blue hour, midday, etc.)
+- Consider how the light will change throughout the ${context.duration} shoot
+
+RESPOND WITH ONLY THE JSON OBJECT, NO OTHER TEXT.`
       
       const locationResult = await model.generateContent(locationPrompt)
       const locationText = locationResult.response.text()
       
       try {
         // Parse AI-generated locations, handling potential markdown formatting
-        result.locations = JSON.parse(locationText.replace(/```json|```/g, '').trim())
+        const parsedResult = JSON.parse(locationText.replace(/```json|```/g, '').trim())
+        
+        // Convert the location scout format to our standard format
+        if (isClusteredMode && parsedResult.spots) {
+          // Convert clustered model to standard location array
+          result.locations = parsedResult.spots.map((spot: {name: string, description: string, timeAndLighting: string, whyItWorks: string}, index: number) => ({
+            name: `${parsedResult.primaryLocation} - ${spot.name}`,
+            address: parsedResult.primaryLocation,
+            description: spot.description,
+            bestTime: spot.timeAndLighting,
+            lightingNotes: spot.whyItWorks,
+            accessibility: parsedResult.accessibilityNote || 'See main location',
+            permits: parsedResult.permitRequirement || 'Check with venue',
+            alternatives: index === 0 ? parsedResult.spots.slice(1, 3).map((s: {name: string}) => s.name) : []
+          }))
+        } else if (!isClusteredMode && parsedResult.stops) {
+          // Convert itinerary model to standard location array
+          result.locations = parsedResult.stops.map((stop: {locationName: string, travelNotes: string, description: string, timeAndLighting: string, potentialShots: string, accessibilityNote?: string, permitRequirement?: string}) => ({
+            name: stop.locationName,
+            address: stop.travelNotes,
+            description: stop.description,
+            bestTime: stop.timeAndLighting,
+            lightingNotes: stop.potentialShots,
+            accessibility: stop.accessibilityNote || 'Standard access',
+            permits: stop.permitRequirement || 'No special permits required',
+            alternatives: []
+          }))
+        } else {
+          // If AI returned standard format, use as-is
+          result.locations = parsedResult
+        }
+        
         console.log(`✅ Generated ${result.locations.length} locations`)
       } catch (error) {
         console.error('Location parsing error:', error)
-        // Fallback to curated default locations if AI generation fails
-        result.locations = getDefaultLocations(context)
+        return createErrorResponse('Failed to generate locations', 500)
       }
     }
     
@@ -351,9 +304,8 @@ serve(async (req) => {
      * STAGE 3: Create Storyboard and Shot List
      * 
      * This stage generates a detailed shot list with specific instructions for
-     * each photograph. It creates 6-8 diverse shots distributed across the
-     * selected locations, including technical details, pose instructions, and
-     * equipment requirements.
+     * each photograph. It uses the storyboardv2.txt prompt structure to create
+     * professional-level shot planning with composition, lighting, and direction.
      * 
      * Requires both context and locations from previous stages or request body.
      */
@@ -365,41 +317,96 @@ serve(async (req) => {
       const context = result.context || body.context
       const locations = result.locations || body.locations
       
-      const storyboardPrompt = `
-      You are a photography director creating a shot list. Based on this context:
-      ${JSON.stringify(context, null, 2)}
+      // Build shot opportunities list from locations
+      const shotOpportunities = locations.map((loc: Location) => ({
+        location: loc.name,
+        timeOfDay: loc.bestTime,
+        primarySubjects: context.primarySubjects || context.subject,
+        secondarySubjects: context.secondarySubjects || '',
+        shotDescription: `${context.shootType} shot at ${loc.name}`
+      }))
       
-      And these locations:
-      ${JSON.stringify(locations.map(l => l.name), null, 2)}
-      
-      Create 6-8 diverse shots across the locations. Mix wide, medium, and close-up shots.
-      
-      Return ONLY a JSON array with these exact fields for each shot:
-      {
-        "locationIndex": 0-based index matching the locations array,
-        "shotNumber": sequential number starting at 1,
-        "imagePrompt": "30-word artistic description for storyboard visualization",
-        "poseInstruction": "Clear direction for subject positioning and expression",
-        "technicalNotes": "Camera settings, lens choice, composition tips",
-        "equipment": ["Required gear for this shot"]
-      }
-      
-      Style: ${context.mood.join(', ')}
-      Subject: ${context.subject}
-      
-      RESPOND WITH ONLY THE JSON ARRAY, NO OTHER TEXT.`
+      const storyboardPrompt = `You are an expert wedding, portrait, and engagement photographer and creative director with 20 years of experience. You have a master's degree in fine art photography and a deep understanding of classical art, cinema, and storytelling. Your specialty is creating emotionally resonant, timeless, and dynamic images by meticulously planning every frame. You are not just a photographer; you are a master communicator and director on set, skilled at making subjects feel comfortable and drawing out genuine emotion.
+
+Your Task:
+You will function as an AI Storyboard Assistant. Your primary goal is to analyze the following photo opportunities and propose a detailed storyboard sketch.
+
+Photo Opportunities:
+${JSON.stringify(shotOpportunities, null, 2)}
+
+Additional Context:
+- Shoot Type: ${context.shootType}
+- Mood/Style: ${context.mood.join(', ')}
+- Duration: ${context.duration}
+- Date: ${context.date || 'TBD'}
+- Special Requirements: ${context.specialRequests || 'None'}
+- Must-Have Shots: ${context.mustHaveShots || 'None specified'}
+
+Generate a storyboard with ${Math.min(8, locations.length * 2)} shots distributed across the locations.
+
+Return ONLY a JSON array where each shot has these exact fields:
+{
+  "locationIndex": 0-based index matching the locations array,
+  "shotNumber": sequential number starting at 1,
+  "title": "Clear, descriptive title for the shot",
+  "idealLighting": "Specific lighting guidance for the time of day and location",
+  "framingComposition": "Detailed shot type and compositional elements",
+  "bodyPositionsPoses": "Clear description of how all subjects should be positioned",
+  "blockingEnvironment": "Placement and movement of subjects in the environment",
+  "communicationCues": "Exact words the photographer can use to direct subjects",
+  "imagePrompt": "30-word artistic description for storyboard visualization",
+  "technicalNotes": "Camera settings, lens choice, specific techniques",
+  "equipment": ["Required gear for this shot"]
+}
+
+IMPORTANT:
+- Balance shots across all locations
+- Mix wide, medium, and close-up shots
+- Consider the number and type of subjects (${context.primarySubjects}${context.secondarySubjects ? ' and ' + context.secondarySubjects : ''})
+- Make communication cues specific to the subject types
+- Include variety in poses and compositions
+
+RESPOND WITH ONLY THE JSON ARRAY, NO OTHER TEXT.`
       
       const storyboardResult = await model.generateContent(storyboardPrompt)
       const storyboardText = storyboardResult.response.text()
       
       try {
-        // Use shared helper to parse JSON response with markdown handling
-        result.shots = parseJsonResponse(storyboardText)
-        console.log(`✅ Generated ${result.shots.length} shots`)
+        // Parse and simplify the enhanced storyboard format
+        const enhancedShots = parseJsonResponse(storyboardText)
+        
+        // Map to our standard shot format while preserving the rich details
+        result.shots = enhancedShots.map((shot: {
+          locationIndex: number,
+          shotNumber: number,
+          imagePrompt: string,
+          bodyPositionsPoses: string,
+          technicalNotes: string,
+          equipment: string[],
+          title: string,
+          idealLighting: string,
+          framingComposition: string,
+          blockingEnvironment: string,
+          communicationCues: string
+        }) => ({
+          locationIndex: shot.locationIndex,
+          shotNumber: shot.shotNumber,
+          imagePrompt: shot.imagePrompt,
+          poseInstruction: shot.bodyPositionsPoses,
+          technicalNotes: shot.technicalNotes,
+          equipment: shot.equipment,
+          // Store additional rich details for frontend use
+          title: shot.title,
+          idealLighting: shot.idealLighting,
+          framingComposition: shot.framingComposition,
+          blockingEnvironment: shot.blockingEnvironment,
+          communicationCues: shot.communicationCues
+        }))
+        
+        console.log(`✅ Generated ${result.shots.length} detailed shots`)
       } catch (error) {
         console.error('Storyboard parsing error:', error)
-        // Fallback to basic shot list if AI generation fails
-        result.shots = getDefaultShots(locations.length)
+        return createErrorResponse('Failed to generate storyboard', 500)
       }
       
       /**
@@ -471,7 +478,7 @@ serve(async (req) => {
     // Log response for debugging, replacing base64 images with placeholder
     console.log('📤 Sending response (without images):', {
       ...response,
-      shots: response.shots?.map(s => ({ ...s, storyboardImage: s.storyboardImage ? '[BASE64_IMAGE]' : undefined }))
+      shots: response.shots?.map((s: Shot & {storyboardImage?: string}) => ({ ...s, storyboardImage: s.storyboardImage ? '[BASE64_IMAGE]' : undefined }))
     })
     
     return createSuccessResponse(response)
@@ -494,131 +501,3 @@ serve(async (req) => {
   }
 })
 
-// Helper functions
-
-/**
- * Provides mock conversation data for testing when ElevenLabs API is unavailable.
- * Contains realistic photography planning conversations for different shoot types.
- * 
- * @param id - The conversation ID to retrieve mock data for
- * @returns Mock conversation transcript string
- */
-function getMockConversation(id: string): string {
-  const mocks = {
-    "test-portrait": `User: I want to do a portrait shoot in Vancouver.
-    Agent: What kind of mood are you going for?
-    User: Something moody and dramatic, maybe during golden hour.
-    Agent: Great! Are you photographing a model or someone specific?
-    User: Yes, a local musician for their album cover.`,
-    
-    "test-landscape": `User: Looking for epic landscape spots around Vancouver.
-    Agent: Are you interested in mountains, ocean, or forests?
-    User: Definitely mountains, especially for sunrise shots.
-    Agent: How far are you willing to travel from Vancouver?
-    User: Up to 2 hours is fine if the location is worth it.`,
-    
-    "test-street": `User: I want to capture Vancouver's urban vibe.
-    Agent: Any particular neighborhoods in mind?
-    User: I love the diversity of Commercial Drive and Main Street.
-    Agent: What time of day works best for you?
-    User: Evening, when the neon signs light up.`
-  }
-  
-  // Return matching mock or default to portrait conversation
-  return mocks[id] || mocks["test-portrait"]
-}
-
-/**
- * Provides mock photography context for testing and fallback scenarios.
- * Contains pre-defined contexts for common shoot types with realistic details.
- * 
- * @param type - The shoot type to get mock context for
- * @returns Complete PhotoShootContext object with sensible defaults
- */
-function getMockContext(type: string): PhotoShootContext {
-  const contexts = {
-    portrait: {
-      shootType: 'portrait' as const,
-      mood: ['dramatic', 'moody', 'cinematic'],
-      timeOfDay: 'golden hour',
-      subject: 'Local musician for album cover',
-      duration: '2-3 hours',
-      equipment: ['85mm prime', 'reflector'],
-      experience: 'intermediate' as const,
-      specialRequests: 'Urban backdrop preferred'
-    },
-    landscape: {
-      shootType: 'landscape' as const,
-      mood: ['epic', 'serene', 'majestic'],
-      timeOfDay: 'blue hour',
-      subject: 'Mountain vistas and alpine lakes',
-      duration: '4-5 hours',
-      equipment: ['wide angle lens', 'tripod', 'ND filters'],
-      experience: 'professional' as const,
-      specialRequests: 'Accessible by car, minimal hiking'
-    }
-  }
-  
-  // Return matching context or default to portrait
-  return contexts[type] || contexts.portrait
-}
-
-/**
- * Provides default location suggestions when AI generation fails.
- * Returns curated Vancouver locations with complete details for immediate use.
- * 
- * @param context - The photography context (unused but available for future enhancement)
- * @returns Array of 2 detailed location objects as fallback
- */
-function getDefaultLocations(context: PhotoShootContext): Location[] {
-  return [
-    {
-      name: "Gastown - Water Street",
-      address: "Water Street & Cambie Street, Vancouver",
-      description: "Historic cobblestone streets with vintage lampposts and brick buildings. Perfect for moody urban portraits with character.",
-      bestTime: "Golden hour or blue hour for lamp lighting",
-      lightingNotes: "Street lamps provide warm practical lighting. Buildings create interesting shadows.",
-      accessibility: "Street parking available, close to Waterfront Station",
-      permits: "No permits for small shoots, avoid blocking pedestrians",
-      alternatives: ["Blood Alley", "Maple Tree Square"]
-    },
-    {
-      name: "Queen Elizabeth Park - Quarry Gardens",
-      address: "4600 Cambie St, Vancouver",
-      description: "Sunken garden with waterfalls, perfect for dramatic portraits with lush greenery backdrop.",
-      bestTime: "Morning for soft light, avoid harsh midday sun",
-      lightingNotes: "Diffused light in the quarry, watch for harsh contrasts",
-      accessibility: "Free parking, some stairs to garden level",
-      permits: "Free for photography, wedding permits separate",
-      alternatives: ["Rose Garden", "Seasons in the Park viewpoint"]
-    }
-  ]
-}
-
-/**
- * Provides default shot list when AI generation fails.
- * Returns minimal shot list with two versatile shots that work in most scenarios.
- * 
- * @param locationCount - Number of available locations (unused but available for future enhancement)
- * @returns Array of 2 basic shot configurations as fallback
- */
-function getDefaultShots(locationCount: number): Shot[] {
-  return [
-    {
-      locationIndex: 0,
-      shotNumber: 1,
-      imagePrompt: "Wide establishing shot showing subject small in dramatic urban environment",
-      poseInstruction: "Stand naturally, looking away from camera towards the street",
-      technicalNotes: "24-35mm, f/5.6, include environment, rule of thirds",
-      equipment: ["Wide angle lens", "Tripod optional"]
-    },
-    {
-      locationIndex: 0,
-      shotNumber: 2,
-      imagePrompt: "Medium shot with subject against textured brick wall, moody lighting",
-      poseInstruction: "Lean against wall, one hand in pocket, confident expression",
-      technicalNotes: "50-85mm, f/2.8, shallow DOF, focus on eyes",
-      equipment: ["Portrait lens", "Reflector"]
-    }
-  ]
-}
