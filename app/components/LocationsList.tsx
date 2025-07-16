@@ -3,7 +3,6 @@
 
 import { EdgeLocation } from '../types/photo-session';
 import { useState } from 'react';
-import { Button } from './Button';
 
 interface LocationsListProps {
   locations: EdgeLocation[];
@@ -135,21 +134,6 @@ export function LocationsList({ locations }: LocationsListProps) {
         ))}
       </div>
 
-      {/* Action Buttons */}
-      <div className="mt-8 flex flex-col sm:flex-row gap-4 justify-center">
-        <Button 
-          variant="secondary"
-          icon={<span>🗺️</span>}
-        >
-          View All on Map
-        </Button>
-        <Button 
-          variant="secondary"
-          icon={<span>📱</span>}
-        >
-          Save to Phone
-        </Button>
-      </div>
     </div>
   );
 }

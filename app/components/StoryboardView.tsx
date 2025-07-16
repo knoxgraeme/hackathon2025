@@ -4,7 +4,6 @@
 import { EdgeShot, EdgeLocation } from '../types/photo-session';
 import { useState } from 'react';
 import Image from 'next/image';
-import { Button } from './Button';
 import { BottomSheet } from './BottomSheet';
 
 // Create a minimal interface for locations used in the storyboard
@@ -99,27 +98,6 @@ export function StoryboardView({ shots, locations }: StoryboardViewProps) {
         location={selectedLocation}
       />
 
-      {/* Mobile-Friendly Action Buttons */}
-      <div className="mt-12 flex flex-col sm:flex-row gap-4 justify-center">
-        <Button 
-          variant="secondary"
-          icon={<span>💾</span>}
-        >
-          Save Storyboard
-        </Button>
-        <Button 
-          variant="secondary"
-          icon={<span>📤</span>}
-        >
-          Share Plan
-        </Button>
-        <Button 
-          variant="secondary"
-          icon={<span>🖨️</span>}
-        >
-          Print Cards
-        </Button>
-      </div>
     </div>
   );
 }

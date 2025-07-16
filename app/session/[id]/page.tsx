@@ -205,47 +205,6 @@ export default function SessionPage() {
               </div>
             )}
 
-            {/* Actions */}
-            <div className="flex flex-col sm:flex-row gap-4 justify-center pt-8 animate-slide-up" style={{ animationDelay: '0.3s' }}>
-              <button 
-                className="voice-button px-8 py-4 rounded-xl font-medium flex items-center justify-center gap-2"
-                onClick={() => {
-                  const shareData = btoa(JSON.stringify(currentSession));
-                  navigator.clipboard.writeText(`${window.location.origin}/share?data=${shareData}`);
-                  alert('Share link copied to clipboard!');
-                }}
-              >
-                <span>📤</span>
-                <span>Share Plan</span>
-              </button>
-              <button 
-                className="glass-card px-8 py-4 rounded-xl font-medium hover:bg-white/20 transition-all flex items-center justify-center gap-2"
-                onClick={() => {
-                  // Save current session to localStorage for easy access
-                  const savedSessions = JSON.parse(localStorage.getItem('savedSessions') || '[]');
-                  if (!savedSessions.includes(sessionId)) {
-                    savedSessions.push(sessionId);
-                    localStorage.setItem('savedSessions', JSON.stringify(savedSessions));
-                    alert('Session saved to favorites!');
-                  } else {
-                    alert('Session already saved!');
-                  }
-                }}
-              >
-                <span>⭐</span>
-                <span>Save Session</span>
-              </button>
-              <button 
-                className="glass-card px-8 py-4 rounded-xl font-medium hover:bg-white/20 transition-all flex items-center justify-center gap-2"
-                onClick={() => {
-                  const id = createNewSession();
-                  router.push(`/session/${id}`);
-                }}
-              >
-                <span>✨</span>
-                <span>New Session</span>
-              </button>
-            </div>
           </div>
         )}
       </div>

@@ -5,7 +5,6 @@ import Link from 'next/link';
 import { useSession } from './providers/SessionProvider';
 import { Button } from './components/Button';
 import { PullToRefresh } from './components/PullToRefresh';
-import { FloatingActionButton } from './components/FloatingActionButton';
 
 export default function Home() {
   const router = useRouter();
@@ -228,7 +227,6 @@ export default function Home() {
           </div>
         )}
       </div>
-      <FloatingActionButton />
     </main>
     </PullToRefresh>
   );
