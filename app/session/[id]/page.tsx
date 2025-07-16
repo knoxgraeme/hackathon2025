@@ -130,12 +130,6 @@ export default function SessionPage() {
           <div className="glass-card p-8 rounded-2xl animate-slide-up">
             {currentSession.status === 'initial' && (
               <div className="text-center mb-8">
-                <h2 className="text-2xl sm:text-3xl font-bold mb-4 text-primary">
-                  Ready to start planning your shoot?
-                </h2>
-                <p className="text-secondary text-lg max-w-2xl mx-auto">
-                  Have a conversation with our AI assistant to describe your vision
-                </p>
               </div>
             )}
             <ConversationFlow onComplete={handleConversationComplete} sessionId={sessionId} />

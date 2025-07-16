@@ -203,30 +203,6 @@ export default function Home() {
           </div>
         )}
 
-        {/* Features Section */}
-        <div className="mt-16 grid sm:grid-cols-3 gap-6 text-center">
-          <div className="glass-card p-6 animate-slide-up" style={{ animationDelay: '0.4s' }}>
-            <div className="text-3xl mb-3">🎤</div>
-            <h3 className="font-semibold mb-2 text-primary">Voice Planning</h3>
-            <p className="text-sm text-secondary">
-              Describe your vision naturally through conversation
-            </p>
-          </div>
-          <div className="glass-card p-6 animate-slide-up" style={{ animationDelay: '0.5s' }}>
-            <div className="text-3xl mb-3">📍</div>
-            <h3 className="font-semibold mb-2 text-primary">Smart Locations</h3>
-            <p className="text-sm text-secondary">
-              Get curated Vancouver spots perfect for your shoot
-            </p>
-          </div>
-          <div className="glass-card p-6 animate-slide-up" style={{ animationDelay: '0.6s' }}>
-            <div className="text-3xl mb-3">🎬</div>
-            <h3 className="font-semibold mb-2 text-primary">Storyboarding</h3>
-            <p className="text-sm text-secondary">
-              Visual shot plans with pose directions and tips
-            </p>
-          </div>
-        </div>
 
         {/* Dev Tools (remove for production) */}
         {process.env.NODE_ENV === 'development' && (
