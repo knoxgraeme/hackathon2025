@@ -3,232 +3,52 @@
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useSession } from './providers/SessionProvider';
-import { Button } from './components/Button';
-import { PullToRefresh } from './components/PullToRefresh';
 
 export default function Home() {
   const router = useRouter();
-  const { sessions, createNewSession } = useSession();
-
-  const handleRefresh = async () => {
-    // In a real app, this would fetch fresh data
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    window.location.reload();
-  };
+  const { createNewSession } = useSession();
 
   const handleCreateSession = () => {
     const id = createNewSession();
     router.push(`/session/${id}`);
   };
 
-  const sessionsList = Object.values(sessions).sort((a, b) => 
-    new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-  );
-
-  const savedSessionIds = typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('savedSessions') || '[]') : [];
-  const savedSessions = sessionsList.filter(session => savedSessionIds.includes(session.id));
-
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case 'initial': return '📋';
-      case 'conversation': return '🎤';
-      case 'processing': return '⚙️';
-      case 'complete': return '✅';
-      default: return '📋';
-    }
-  };
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'initial': return 'bg-white/10';
-      case 'conversation': return 'bg-yellow-500/20';
-      case 'processing': return 'bg-blue-500/20';
-      case 'complete': return 'bg-green-500/20';
-      default: return 'bg-white/10';
-    }
-  };
-
   return (
-    <PullToRefresh onRefresh={handleRefresh}>
-      <main className="min-h-screen text-white">
-      {/* Gradient background */}
-      <div className="fixed inset-0 bg-black">
-        <div className="absolute inset-0 bg-gradient-to-br from-blue-900/20 via-purple-900/20 to-pink-900/20" />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
-      </div>
-      
-      <div className="relative z-10 max-w-5xl mx-auto p-4 sm:p-8">
-        {/* Header */}
-        <div className="text-center mb-12 animate-fade-in">
-          <h1 className="text-4xl sm:text-5xl font-bold mb-4 bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
-            AI Photography Assistant
+    <div className="min-h-screen bg-white flex flex-col">
+      {/* Main Content */}
+      <div className="flex-1 flex flex-col items-center justify-center px-4">
+        <div className="max-w-[290px] text-center">
+          <h1 className="text-[33px] leading-[36px] text-[#343434] font-normal">
+            Create your new photo session with <span className="font-semibold">PixieDirector</span>.
           </h1>
-          <p className="text-xl text-secondary">
-            Plan your perfect photoshoot with AI-powered location scouting and storyboarding
-          </p>
         </div>
-
-        {/* New Session Button */}
-        <div className="mb-8 text-center animate-slide-up">
-          <Button
-            onClick={handleCreateSession}
-            size="lg"
-            icon={<span className="text-2xl">✨</span>}
-          >
-            Start New Photo Session
-          </Button>
-        </div>
-
-        {/* Saved Sessions */}
-        {savedSessions.length > 0 && (
-          <div className="animate-fade-in mb-12">
-            <h2 className="text-2xl font-bold mb-6 text-primary flex items-center gap-2">
-              <span>⭐</span>
-              <span>Saved Sessions</span>
-            </h2>
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {savedSessions.map((session, index) => (
-                <Link
-                  key={session.id}
-                  href={`/session/${session.id}`}
-                  className="block animate-slide-up"
-                  style={{ animationDelay: `${index * 0.1}s` }}
-                >
-                  <div className="glass-card p-6 hover:scale-105 transition-all duration-300 hover:bg-white/15 relative">
-                    {/* Saved indicator */}
-                    <div className="absolute top-2 right-2 text-yellow-400">
-                      <span className="text-lg">⭐</span>
-                    </div>
-                    
-                    {/* Status Badge */}
-                    <div className="flex items-center justify-between mb-4">
-                      <span className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-sm backdrop-blur-md ${getStatusColor(session.status)}`}>
-                        <span>{getStatusIcon(session.status)}</span>
-                        <span className="capitalize">{session.status}</span>
-                      </span>
-                      <span className="text-sm text-tertiary">
-                        {new Date(session.createdAt).toLocaleDateString()}
-                      </span>
-                    </div>
-
-                    {/* Session Title */}
-                    <h3 className="font-semibold text-lg mb-2 text-primary">
-                      {session.title || 'Untitled Session'}
-                    </h3>
-
-                    {/* Session Details */}
-                    {session.context && (
-                      <div className="text-sm text-secondary space-y-1">
-                        <p>📸 {session.context.shootType}</p>
-                        <p>🎨 {session.context.mood?.join(', ')}</p>
-                        <p>📍 {session.locations?.length || 0} locations</p>
-                      </div>
-                    )}
-                  </div>
-                </Link>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Sessions List */}
-        {sessionsList.length > 0 ? (
-          <div className="animate-fade-in">
-            <h2 className="text-2xl font-bold mb-6 text-primary">Your Sessions</h2>
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {sessionsList.map((session, index) => (
-                <Link
-                  key={session.id}
-                  href={`/session/${session.id}`}
-                  className="block animate-slide-up"
-                  style={{ animationDelay: `${index * 0.1}s` }}
-                >
-                  <div className="glass-card p-6 hover:scale-105 transition-all duration-300 hover:bg-white/15">
-                    {/* Status Badge */}
-                    <div className="flex items-center justify-between mb-4">
-                      <span className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-sm backdrop-blur-md ${getStatusColor(session.status)}`}>
-                        <span>{getStatusIcon(session.status)}</span>
-                        <span className="capitalize">{session.status}</span>
-                      </span>
-                      <span className="text-sm text-tertiary">
-                        {new Date(session.createdAt).toLocaleDateString()}
-                      </span>
-                    </div>
-
-                    {/* Session Title */}
-                    <h3 className="font-semibold text-lg mb-2 text-primary">
-                      {session.title || 'Untitled Session'}
-                    </h3>
-
-                    {/* Session Details */}
-                    {session.context && (
-                      <div className="text-sm text-secondary space-y-1">
-                        <p>📸 {session.context.shootType}</p>
-                        <p>🎨 {session.context.mood?.join(', ')}</p>
-                        <p>📍 {session.locations?.length || 0} locations</p>
-                      </div>
-                    )}
-
-                    {session.status === 'initial' && (
-                      <p className="text-sm text-tertiary italic mt-3">
-                        Tap to start planning
-                      </p>
-                    )}
-
-                    {session.status === 'processing' && (
-                      <p className="text-sm text-yellow-400 italic mt-3">
-                        Processing your vision...
-                      </p>
-                    )}
-                  </div>
-                </Link>
-              ))}
-            </div>
-          </div>
-        ) : (
-          /* Empty State */
-          <div className="text-center py-16 animate-fade-in">
-            <div className="text-6xl mb-4">📸</div>
-            <h2 className="text-2xl font-semibold mb-2 text-primary">No sessions yet</h2>
-                          <p className="text-secondary mb-8">
-                Start your first photo planning session to get personalized location<br />
-                recommendations and storyboard suggestions
-              </p>
-              <Button
-                onClick={handleCreateSession}
-              >
-                Create Your First Session
-              </Button>
-          </div>
-        )}
-
-
-        {/* Dev Tools (remove for production) */}
-        {process.env.NODE_ENV === 'development' && (
-          <div className="mt-16 p-4 glass-card-dark rounded-lg">
-            <h3 className="font-bold mb-3 text-primary">Dev Tools</h3>
-            <div className="flex gap-2">
-              <Link 
-                href="/test-imagen" 
-                className="text-sm px-3 py-1 glass-card hover:bg-white/20 rounded transition-all"
-              >
-                Test Page
-              </Link>
-              <button
-                onClick={() => {
-                  localStorage.removeItem('photoSessions');
-                  window.location.reload();
-                }}
-                className="text-sm px-3 py-1 bg-red-500/30 hover:bg-red-500/50 backdrop-blur-md rounded transition-all"
-              >
-                Clear All Sessions
-              </button>
-            </div>
-          </div>
-        )}
       </div>
-    </main>
-    </PullToRefresh>
+
+      {/* Bottom Section with Button */}
+      <div className="px-4 pb-12">
+        <button
+          onClick={handleCreateSession}
+          className="w-full bg-black/[0.08] rounded py-[13px] px-8 flex items-center justify-center gap-3"
+        >
+          <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
+            <path d="M11 5V17M5 11H17" stroke="black" strokeWidth="2" strokeLinecap="round"/>
+          </svg>
+          <span className="text-[17px] font-semibold text-black">New Session</span>
+        </button>
+      </div>
+
+      {/* Dev Tools (remove for production) */}
+      {process.env.NODE_ENV === 'development' && (
+        <div className="absolute bottom-20 right-4 bg-gray-100 p-2 rounded shadow">
+          <Link 
+            href="/test-imagen" 
+            className="text-xs px-2 py-1 bg-gray-200 hover:bg-gray-300 rounded"
+          >
+            Test Page
+          </Link>
+        </div>
+      )}
+    </div>
   );
 }
 
