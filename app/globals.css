@@ -123,16 +123,43 @@
     color: var(--text-tertiary);
   }
   
-  /* Mobile safe areas */
+  /* Mobile safe areas with fallbacks */
+  .safe-top {
+    padding-top: env(safe-area-inset-top, 20px);
+  }
+  
+  .safe-bottom {
+    padding-bottom: env(safe-area-inset-bottom, 0);
+  }
+  
+  .safe-left {
+    padding-left: env(safe-area-inset-left, 0);
+  }
+  
+  .safe-right {
+    padding-right: env(safe-area-inset-right, 0);
+  }
+  
   .mobile-safe {
-    padding-bottom: env(safe-area-inset-bottom);
-    padding-left: env(safe-area-inset-left);
-    padding-right: env(safe-area-inset-right);
+    padding-top: env(safe-area-inset-top, 20px);
+    padding-bottom: env(safe-area-inset-bottom, 0);
+    padding-left: env(safe-area-inset-left, 0);
+    padding-right: env(safe-area-inset-right, 0);
   }
   
   /* Bottom safe area for navigation */
   .pb-safe {
     padding-bottom: env(safe-area-inset-bottom, 0);
+  }
+  
+  /* Fixed header with safe area */
+  .header-safe {
+    padding-top: env(safe-area-inset-top, 20px);
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 40;
   }
   
   /* Smooth transitions */
