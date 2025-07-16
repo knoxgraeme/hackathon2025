@@ -1,9 +1,68 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { GoogleGenerativeAI } from "https://esm.sh/@google/generative-ai@0.21.0"
+import { GoogleGenAI } from "https://esm.sh/@google/genai@latest"
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+}
+
+// Types for structured data
+interface PhotoShootContext {
+  shootType: 'portrait' | 'landscape' | 'product' | 'event' | 'street' | 'fashion'
+  mood: string[]
+  timeOfDay: string
+  subject: string
+  duration: string
+  equipment?: string[]
+  experience: 'beginner' | 'intermediate' | 'professional'
+  specialRequests?: string
+}
+
+interface Location {
+  name: string
+  address?: string
+  description: string
+  bestTime: string
+  lightingNotes: string
+  accessibility: string
+  permits: string
+  alternatives: string[]
+}
+
+interface Shot {
+  locationIndex: number
+  shotNumber: number
+  imagePrompt: string
+  poseInstruction: string
+  technicalNotes: string
+  equipment: string[]
+  storyboardImage?: string
+}
+
+// Vancouver location database for fallbacks
+const VANCOUVER_LOCATIONS = {
+  portrait: [
+    "Gastown (Water Street & Steam Clock area)",
+    "Queen Elizabeth Park Quarry Gardens", 
+    "Granville Island Public Market",
+    "Dr. Sun Yat-Sen Classical Chinese Garden",
+    "Stanley Park Seawall"
+  ],
+  landscape: [
+    "Cypress Mountain Lookout",
+    "Lighthouse Park, West Vancouver",
+    "Iona Beach Regional Park",
+    "Spanish Banks Beach",
+    "Burnaby Mountain Park"
+  ],
+  street: [
+    "Main Street (Mount Pleasant)",
+    "Commercial Drive",
+    "Chinatown",
+    "Robson Street",
+    "Yaletown"
+  ]
 }
 
 serve(async (req) => {
@@ -13,146 +72,230 @@ serve(async (req) => {
 
   try {
     const body = await req.json()
-    console.log('📦 Received body:', JSON.stringify(body, null, 2))
+    console.log('📦 Received request:', JSON.stringify(body, null, 2))
     
-    let transcript: string = body.transcript || body.text || body.message || ''
-    
-    // Test mode: fetch transcript by conversationId
-    if (body.conversationId && (!transcript || transcript === '')) {
-      console.log('🔍 Fetching transcript for conversation:', body.conversationId)
-      console.log('Current transcript value:', transcript, 'Type:', typeof transcript)
-      
-      const elevenLabsApiKey = Deno.env.get('ELEVENLABS_API_KEY')
-      if (!elevenLabsApiKey) {
-        console.warn('⚠️ ELEVENLABS_API_KEY not set, using mock data')
-        // Fallback to mock transcripts
-        const mockTranscripts: Record<string, string> = {
-          "test-1": "I had an amazing experience at the beach today. The sunset was incredible with orange and pink clouds reflecting on the calm water.",
-          "test-2": "Let's discuss the architecture of modern cities. I'm fascinated by how skyscrapers pierce through the fog on misty mornings.",
-          "test-3": "The forest was so peaceful today. Birds chirping, sunlight filtering through the leaves, and a gentle breeze rustling the branches."
-        }
-        transcript = mockTranscripts[body.conversationId]
-        if (!transcript) {
-          throw new Error(`No mock transcript for: ${body.conversationId}. Available: ${Object.keys(mockTranscripts).join(', ')}`)
-        }
-      } else {
-        // Fetch real conversation from ElevenLabs
-        try {
-          const conversationUrl = `https://api.elevenlabs.io/v1/convai/conversations/${body.conversationId}`
-          console.log('🌐 Fetching from:', conversationUrl)
-          
-          const response = await fetch(conversationUrl, {
-            headers: {
-              'xi-api-key': elevenLabsApiKey
-            }
-          })
-          
-          if (!response.ok) {
-            throw new Error(`ElevenLabs API error: ${response.status} ${response.statusText}`)
-          }
-          
-          const data = await response.json()
-          
-          // Log just the first message to see structure
-          if (data.messages && data.messages.length > 0) {
-            console.log('📊 First message structure:', JSON.stringify(data.messages[0], null, 2))
-          }
-          
-          // Extract transcript from the conversation data
-          // Based on the response structure, messages is an array of conversation turns
-          if (data.messages && Array.isArray(data.messages)) {
-            console.log(`🔍 Processing ${data.messages.length} messages...`)
-            const extractedMessages = data.messages
-              .filter((m: any) => {
-                // Check if message exists and is a string
-                const hasMessage = m.message && typeof m.message === 'string' && m.message.trim() !== ''
-                if (hasMessage) {
-                  console.log(`✓ Found message from ${m.role}: ${m.message.substring(0, 50)}...`)
-                }
-                return hasMessage
-              })
-              .map((m: any) => `${m.role}: ${m.message}`)
-              .join('\n\n')
-            
-            transcript = extractedMessages
-            console.log(`📝 Extracted messages into string of length: ${extractedMessages.length} chars`)
-            console.log(`📝 Type of transcript after extraction: ${typeof transcript}`)
-          } else {
-            transcript = data.transcript || data.text || data.conversation?.transcript
-          }
-          
-          if (!transcript || (typeof transcript === 'string' && transcript.trim() === '')) {
-            console.log('❓ No valid transcript found')
-            console.log('Available keys in response:', Object.keys(data))
-            throw new Error('Unable to extract transcript from ElevenLabs response')
-          }
-        } catch (error) {
-          console.error('❌ Error fetching from ElevenLabs:', error)
-          throw new Error(`Failed to fetch conversation: ${error.message}`)
-        }
-      }
-      
-      // Ensure transcript is always a string at this point
-      if (typeof transcript !== 'string') {
-        console.error('❌ Transcript is not a string, type:', typeof transcript)
-        transcript = JSON.stringify(transcript)
-      }
-      
-      console.log('📝 Using transcript (length):', transcript.length, 'chars')
-    }
-    
-    if (!transcript || typeof transcript !== 'string') {
-      throw new Error('No valid transcript found. Provide either "transcript" field or "conversationId" for testing.')
-    }
-
     const geminiApiKey = Deno.env.get('GEMINI_API_KEY')
     if (!geminiApiKey) {
       throw new Error('GEMINI_API_KEY not set')
     }
 
     const genAI = new GoogleGenerativeAI(geminiApiKey)
-
-    // Step 1: Generate creative text from transcript
-    console.log('🤖 Generating creative text...')
-    const textModel = genAI.getGenerativeModel({ model: "gemini-1.5-flash" })
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" })
     
-    // Ensure transcript is a string
-    const transcriptText = typeof transcript === 'string' ? transcript : JSON.stringify(transcript)
-    console.log('📄 Transcript preview:', transcriptText.substring(0, 200) + '...')
+    // Determine processing stage
+    const stage = body.stage || 'full'
+    let result: any = {}
     
-    const textPrompt = `Based on this conversation transcript, create a creative and vivid image description that captures the essence and mood of the conversation. Be specific about visual elements, colors, lighting, and composition. Keep it under 100 words.
-
-Transcript: ${transcriptText}`
-
-    const textResult = await textModel.generateContent(textPrompt)
-    const imagePrompt = textResult.response.text()
-    console.log('✨ Generated image prompt:', imagePrompt)
-
-    // Step 2: Generate image from the creative text
-    console.log('🎨 Generating image...')
-    const imageModel = genAI.getGenerativeModel({ model: "gemini-2.0-flash-exp" })
-    
-    const imageResult = await imageModel.generateContent([
-      {
-        text: `Create an artistic image based on this description: ${imagePrompt}`
+    // Stage 1: Extract context from conversation
+    if (stage === 'context' || stage === 'full') {
+      console.log('🎯 Stage 1: Extracting context')
+      
+      let conversationData = ''
+      
+      if (body.conversationId) {
+        // Fetch from ElevenLabs
+        const elevenLabsApiKey = Deno.env.get('ELEVENLABS_API_KEY')
+        
+        if (elevenLabsApiKey) {
+          try {
+            const response = await fetch(
+              `https://api.elevenlabs.io/v1/convai/conversations/${body.conversationId}`,
+              { headers: { 'xi-api-key': elevenLabsApiKey } }
+            )
+            
+            if (response.ok) {
+              conversationData = await response.text()
+            }
+          } catch (error) {
+            console.error('ElevenLabs fetch error:', error)
+          }
+        }
+        
+        // Fallback to mock data if needed
+        if (!conversationData) {
+          conversationData = getMockConversation(body.conversationId)
+        }
+      } else if (body.transcript) {
+        conversationData = body.transcript
+      } else if (body.mockContext) {
+        // Direct context for testing
+        result.context = getMockContext(body.mockContext)
       }
-    ])
-
-    // Note: Gemini doesn't directly return images, it returns text
-    // For actual image generation, you'd need to use a different service
-    const imageDescription = imageResult.response.text()
-    console.log('🖼️ Image generation response:', imageDescription)
-
+      
+      if (conversationData && !result.context) {
+        const contextPrompt = `
+        Extract photography shoot details from this conversation data.
+        
+        Return ONLY a JSON object with these exact fields:
+        {
+          "shootType": "portrait" | "landscape" | "product" | "event" | "street" | "fashion",
+          "mood": ["array of 2-3 mood descriptors"],
+          "timeOfDay": "golden hour" | "blue hour" | "midday" | "overcast" | "night" | "flexible",
+          "subject": "description of what/who is being photographed",
+          "duration": "estimated shoot duration",
+          "equipment": ["optional: mentioned camera gear"],
+          "experience": "beginner" | "intermediate" | "professional",
+          "specialRequests": "any specific requirements mentioned"
+        }
+        
+        If information is not mentioned, make reasonable assumptions based on context.
+        
+        Conversation data:
+        ${conversationData}
+        
+        RESPOND WITH ONLY THE JSON OBJECT, NO OTHER TEXT.`
+        
+        const contextResult = await model.generateContent(contextPrompt)
+        const contextText = contextResult.response.text()
+        
+        try {
+          result.context = JSON.parse(contextText.replace(/```json|```/g, '').trim())
+          console.log('✅ Extracted context:', result.context)
+        } catch (error) {
+          console.error('Context parsing error:', error)
+          result.context = getMockContext('portrait')
+        }
+      }
+    }
+    
+    // Stage 2: Generate location suggestions
+    if ((stage === 'locations' || stage === 'full') && (result.context || body.context)) {
+      console.log('📍 Stage 2: Generating locations')
+      
+      const context = result.context || body.context
+      const baseLocations = VANCOUVER_LOCATIONS[context.shootType] || VANCOUVER_LOCATIONS.portrait
+      
+      const locationPrompt = `
+      You are a professional location scout in Vancouver, BC. Based on this photography context:
+      ${JSON.stringify(context, null, 2)}
+      
+      Suggest 4-5 specific locations in Vancouver area. Include lesser-known spots.
+      Base suggestions on these areas but be more specific: ${baseLocations.join(', ')}
+      
+      Return ONLY a JSON array with these exact fields for each location:
+      {
+        "name": "Specific location name",
+        "address": "Approximate address or area",
+        "description": "50-word visual description focusing on ${context.mood.join(', ')} mood",
+        "bestTime": "Optimal shooting time for this location",
+        "lightingNotes": "Natural light conditions and tips",
+        "accessibility": "Parking, transit, walking required",
+        "permits": "Any permit requirements or restrictions",
+        "alternatives": ["2 nearby backup locations"]
+      }
+      
+      Focus on locations that match the mood: ${context.mood.join(', ')}
+      Consider ${context.timeOfDay} lighting preferences.
+      
+      RESPOND WITH ONLY THE JSON ARRAY, NO OTHER TEXT.`
+      
+      const locationResult = await model.generateContent(locationPrompt)
+      const locationText = locationResult.response.text()
+      
+      try {
+        result.locations = JSON.parse(locationText.replace(/```json|```/g, '').trim())
+        console.log(`✅ Generated ${result.locations.length} locations`)
+      } catch (error) {
+        console.error('Location parsing error:', error)
+        result.locations = getDefaultLocations(context)
+      }
+    }
+    
+    // Stage 3: Generate storyboards and shots
+    if ((stage === 'storyboard' || stage === 'full') && 
+        (result.locations || body.locations) && 
+        (result.context || body.context)) {
+      console.log('🎬 Stage 3: Generating storyboards')
+      
+      const context = result.context || body.context
+      const locations = result.locations || body.locations
+      
+      const storyboardPrompt = `
+      You are a photography director creating a shot list. Based on this context:
+      ${JSON.stringify(context, null, 2)}
+      
+      And these locations:
+      ${JSON.stringify(locations.map(l => l.name), null, 2)}
+      
+      Create 6-8 diverse shots across the locations. Mix wide, medium, and close-up shots.
+      
+      Return ONLY a JSON array with these exact fields for each shot:
+      {
+        "locationIndex": 0-based index matching the locations array,
+        "shotNumber": sequential number starting at 1,
+        "imagePrompt": "30-word artistic description for storyboard visualization",
+        "poseInstruction": "Clear direction for subject positioning and expression",
+        "technicalNotes": "Camera settings, lens choice, composition tips",
+        "equipment": ["Required gear for this shot"]
+      }
+      
+      Style: ${context.mood.join(', ')}
+      Subject: ${context.subject}
+      
+      RESPOND WITH ONLY THE JSON ARRAY, NO OTHER TEXT.`
+      
+      const storyboardResult = await model.generateContent(storyboardPrompt)
+      const storyboardText = storyboardResult.response.text()
+      
+      try {
+        result.shots = JSON.parse(storyboardText.replace(/```json|```/g, '').trim())
+        console.log(`✅ Generated ${result.shots.length} shots`)
+      } catch (error) {
+        console.error('Storyboard parsing error:', error)
+        result.shots = getDefaultShots(locations.length)
+      }
+      
+      // Stage 4: Generate storyboard images (optional, only for 2-3 key shots)
+      if (body.generateImages && result.shots) {
+        console.log('🎨 Stage 4: Generating storyboard images')
+        
+        const imageAI = new GoogleGenAI({ apiKey: geminiApiKey })
+        const maxImages = Math.min(3, result.shots.length) // Limit for hackathon
+        
+        for (let i = 0; i < maxImages; i++) {
+          const shot = result.shots[i]
+          
+          try {
+            // Enhanced prompt for storyboarding
+            const imagePrompt = `Professional photography storyboard illustration: ${shot.imagePrompt}. 
+            Style: Clean sketch/illustration style, ${context.mood.join(', ')} mood.
+            Show camera angle and composition clearly.`
+            
+            const response = await imageAI.models.generateImages({
+              model: 'models/imagen-3.0-generate-002',
+              prompt: imagePrompt,
+              config: {
+                numberOfImages: 1,
+                outputMimeType: 'image/jpeg',
+                aspectRatio: '16:9', // Better for storyboards
+              },
+            })
+            
+            if (response?.generatedImages?.[0]?.image?.imageBytes) {
+              shot.storyboardImage = `data:image/jpeg;base64,${response.generatedImages[0].image.imageBytes}`
+              console.log(`✅ Generated image for shot ${i + 1}`)
+            }
+          } catch (error) {
+            console.error(`Image generation error for shot ${i + 1}:`, error)
+          }
+        }
+      }
+    }
+    
+    // Build final response
     const response = {
       success: true,
-      originalTranscript: transcript,
-      generatedImagePrompt: imagePrompt,
-      imageGenerationNote: "Note: Gemini provides text responses. For actual image generation, integrate with DALL-E, Stable Diffusion, or Imagen API.",
-      timestamp: new Date().toISOString()
+      conversationId: body.conversationId || 'direct-input',
+      stage: stage,
+      timestamp: new Date().toISOString(),
+      ...result
     }
-
-    console.log('✅ Complete response:', JSON.stringify(response, null, 2))
-
+    
+    console.log('📤 Sending response (without images):', {
+      ...response,
+      shots: response.shots?.map(s => ({ ...s, storyboardImage: s.storyboardImage ? '[BASE64_IMAGE]' : undefined }))
+    })
+    
     return new Response(
       JSON.stringify(response),
       {
@@ -160,10 +303,15 @@ Transcript: ${transcriptText}`
         status: 200,
       },
     )
+    
   } catch (error) {
     console.error('❌ Error:', error)
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ 
+        error: error.message,
+        stage: body.stage || 'unknown',
+        timestamp: new Date().toISOString()
+      }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 400,
@@ -171,3 +319,101 @@ Transcript: ${transcriptText}`
     )
   }
 })
+
+// Helper functions
+function getMockConversation(id: string): string {
+  const mocks = {
+    "test-portrait": `User: I want to do a portrait shoot in Vancouver.
+    Agent: What kind of mood are you going for?
+    User: Something moody and dramatic, maybe during golden hour.
+    Agent: Great! Are you photographing a model or someone specific?
+    User: Yes, a local musician for their album cover.`,
+    
+    "test-landscape": `User: Looking for epic landscape spots around Vancouver.
+    Agent: Are you interested in mountains, ocean, or forests?
+    User: Definitely mountains, especially for sunrise shots.
+    Agent: How far are you willing to travel from Vancouver?
+    User: Up to 2 hours is fine if the location is worth it.`,
+    
+    "test-street": `User: I want to capture Vancouver's urban vibe.
+    Agent: Any particular neighborhoods in mind?
+    User: I love the diversity of Commercial Drive and Main Street.
+    Agent: What time of day works best for you?
+    User: Evening, when the neon signs light up.`
+  }
+  
+  return mocks[id] || mocks["test-portrait"]
+}
+
+function getMockContext(type: string): PhotoShootContext {
+  const contexts = {
+    portrait: {
+      shootType: 'portrait' as const,
+      mood: ['dramatic', 'moody', 'cinematic'],
+      timeOfDay: 'golden hour',
+      subject: 'Local musician for album cover',
+      duration: '2-3 hours',
+      equipment: ['85mm prime', 'reflector'],
+      experience: 'intermediate' as const,
+      specialRequests: 'Urban backdrop preferred'
+    },
+    landscape: {
+      shootType: 'landscape' as const,
+      mood: ['epic', 'serene', 'majestic'],
+      timeOfDay: 'blue hour',
+      subject: 'Mountain vistas and alpine lakes',
+      duration: '4-5 hours',
+      equipment: ['wide angle lens', 'tripod', 'ND filters'],
+      experience: 'professional' as const,
+      specialRequests: 'Accessible by car, minimal hiking'
+    }
+  }
+  
+  return contexts[type] || contexts.portrait
+}
+
+function getDefaultLocations(context: PhotoShootContext): Location[] {
+  return [
+    {
+      name: "Gastown - Water Street",
+      address: "Water Street & Cambie Street, Vancouver",
+      description: "Historic cobblestone streets with vintage lampposts and brick buildings. Perfect for moody urban portraits with character.",
+      bestTime: "Golden hour or blue hour for lamp lighting",
+      lightingNotes: "Street lamps provide warm practical lighting. Buildings create interesting shadows.",
+      accessibility: "Street parking available, close to Waterfront Station",
+      permits: "No permits for small shoots, avoid blocking pedestrians",
+      alternatives: ["Blood Alley", "Maple Tree Square"]
+    },
+    {
+      name: "Queen Elizabeth Park - Quarry Gardens",
+      address: "4600 Cambie St, Vancouver",
+      description: "Sunken garden with waterfalls, perfect for dramatic portraits with lush greenery backdrop.",
+      bestTime: "Morning for soft light, avoid harsh midday sun",
+      lightingNotes: "Diffused light in the quarry, watch for harsh contrasts",
+      accessibility: "Free parking, some stairs to garden level",
+      permits: "Free for photography, wedding permits separate",
+      alternatives: ["Rose Garden", "Seasons in the Park viewpoint"]
+    }
+  ]
+}
+
+function getDefaultShots(locationCount: number): Shot[] {
+  return [
+    {
+      locationIndex: 0,
+      shotNumber: 1,
+      imagePrompt: "Wide establishing shot showing subject small in dramatic urban environment",
+      poseInstruction: "Stand naturally, looking away from camera towards the street",
+      technicalNotes: "24-35mm, f/5.6, include environment, rule of thirds",
+      equipment: ["Wide angle lens", "Tripod optional"]
+    },
+    {
+      locationIndex: 0,
+      shotNumber: 2,
+      imagePrompt: "Medium shot with subject against textured brick wall, moody lighting",
+      poseInstruction: "Lean against wall, one hand in pocket, confident expression",
+      technicalNotes: "50-85mm, f/2.8, shallow DOF, focus on eyes",
+      equipment: ["Portrait lens", "Reflector"]
+    }
+  ]
+}
