@@ -1,36 +1,164 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 📸 AI Photography Assistant Director
 
-## Getting Started
+An innovative hackathon project that revolutionizes photography shoot planning through AI-powered voice conversations, intelligent location scouting, and automated storyboard generation.
 
-First, run the development server:
+## ✨ Key Features
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+- **🎙️ Voice-Based Planning** - Natural conversations with an AI assistant using ElevenLabs for voice synthesis
+- **📍 Location Scouting** - Vancouver-specific location recommendations with detailed shoot information
+- **🎨 AI Storyboards** - Automatically generated visual storyboards with Google Imagen 3
+- **📋 Shot Lists** - Comprehensive shot planning with mood, lighting, and composition details
+- **💾 Session Management** - Persistent session storage for ongoing projects
+- **🔄 Real-time Updates** - Live updates as you plan your photography sessions
+
+## 🛠️ Technology Stack
+
+- **Frontend Framework**: Next.js 15.4.1 with App Router
+- **Language**: TypeScript 5 with strict mode
+- **Styling**: Tailwind CSS v4 (new architecture)
+- **AI Voice**: ElevenLabs API
+- **AI Vision**: Google Gemini & Imagen 3
+- **Backend**: Supabase Edge Functions
+- **State Management**: React 19.1.0 hooks
+- **Storage**: Local Storage for session persistence
+
+## 📋 Prerequisites
+
+Before you begin, ensure you have the following installed:
+- Node.js 18.x or later
+- npm 9.x or later
+- Git
+
+You'll also need API keys for:
+- ElevenLabs (for voice synthesis)
+- Google AI Studio (for Gemini and Imagen 3)
+- Supabase (for edge functions)
+
+## 🚀 Quick Start Guide
+
+1. **Clone the repository**
+   ```bash
+   git clone <repository-url>
+   cd hackathon2025
+   ```
+
+2. **Install dependencies**
+   ```bash
+   npm install
+   ```
+
+3. **Set up environment variables**
+   Create a `.env.local` file in the root directory:
+   ```bash
+   cp .env.example .env.local
+   ```
+
+4. **Configure your API keys**
+   Edit `.env.local` with your credentials (see Environment Variables section)
+
+5. **Run the development server**
+   ```bash
+   npm run dev
+   ```
+
+6. **Open your browser**
+   Navigate to [http://localhost:3000](http://localhost:3000)
+
+7. **Start planning your shoot!**
+   Click "Start Planning" and begin your voice conversation
+
+## 🔐 Environment Variables
+
+| Variable | Description | Required |
+|----------|-------------|----------|
+| `NEXT_PUBLIC_SUPABASE_URL` | Your Supabase project URL | Yes |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase anonymous key | Yes |
+| `ELEVENLABS_API_KEY` | ElevenLabs API key for voice synthesis | Yes |
+| `GOOGLE_AI_API_KEY` | Google AI Studio API key | Yes |
+| `NEXT_PUBLIC_WEBHOOK_URL` | Webhook URL for Edge Functions | Yes |
+
+## 📁 Project Structure
+
+```
+hackathon2025/
+├── app/                      # Next.js App Router
+│   ├── layout.tsx           # Root layout with fonts
+│   ├── page.tsx             # Home page
+│   ├── globals.css          # Global styles with Tailwind
+│   ├── test/                # Test pages for development
+│   └── config/              # Configuration files
+│       └── design-tokens.ts # Design system tokens
+├── src/
+│   ├── components/          # React components
+│   │   ├── PhotoPlanning/   # Planning UI components
+│   │   └── ui/              # Reusable UI components
+│   ├── types/               # TypeScript type definitions
+│   └── lib/                 # Utility functions
+├── supabase/
+│   └── functions/           # Edge Functions
+│       ├── elevenlabs-webhook/
+│       └── shared/          # Shared Edge Function code
+├── public/                  # Static assets
+└── package.json            # Project dependencies
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## 🏗️ Architecture
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```
+┌─────────────────┐     ┌──────────────────┐     ┌─────────────────┐
+│                 │     │                  │     │                 │
+│   Next.js App   │────▶│ Supabase Edge    │────▶│  ElevenLabs    │
+│   (Frontend)    │     │   Functions      │     │     API        │
+│                 │     │                  │     │                 │
+└────────┬────────┘     └────────┬─────────┘     └─────────────────┘
+         │                       │
+         │                       │
+         ▼                       ▼
+┌─────────────────┐     ┌──────────────────┐
+│                 │     │                  │
+│  Local Storage  │     │   Google AI      │
+│   (Sessions)    │     │ (Gemini/Imagen)  │
+│                 │     │                  │
+└─────────────────┘     └──────────────────┘
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Data Flow:
+1. User speaks → ElevenLabs processes voice
+2. AI generates location/shot recommendations
+3. Google Imagen creates storyboard visuals
+4. Results stored in session for persistence
+```
 
-## Learn More
+## 🤝 Contributing
 
-To learn more about Next.js, take a look at the following resources:
+We welcome contributions to improve the Photography Assistant Director! Here's how you can help:
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+1. **Fork the repository**
+2. **Create a feature branch**
+   ```bash
+   git checkout -b feature/amazing-feature
+   ```
+3. **Commit your changes**
+   ```bash
+   git commit -m 'Add some amazing feature'
+   ```
+4. **Push to the branch**
+   ```bash
+   git push origin feature/amazing-feature
+   ```
+5. **Open a Pull Request**
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+### Development Guidelines
+- Follow the existing code style
+- Write TypeScript with strict mode compliance
+- Use Tailwind CSS utilities for styling
+- Add appropriate type definitions
+- Test your changes thoroughly
+- Update documentation as needed
 
-## Deploy on Vercel
+## 📄 License
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+---
+
+Built with ❤️ for the 2025 Hackathon
