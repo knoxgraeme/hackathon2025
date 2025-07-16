@@ -66,7 +66,7 @@ export function BottomSheet({ isOpen, onClose, shot, location }: BottomSheetProp
       sheet.removeEventListener('touchmove', handleTouchMove);
       sheet.removeEventListener('touchend', handleTouchEnd);
     };
-  }, []);
+  }, [handleTouchEnd]);
 
   if (!isOpen || !shot || !location) return null;
 
