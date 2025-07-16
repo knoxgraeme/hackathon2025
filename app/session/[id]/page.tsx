@@ -88,10 +88,10 @@ export default function SessionPage() {
           <h1 className="text-2xl font-bold mb-4">Session not found</h1>
           <p className="text-secondary mb-6">This session doesn&apos;t exist or has been removed.</p>
           <button 
-            onClick={() => router.push('/')}
+            onClick={() => router.back()}
             className="voice-button px-6 py-3 rounded-xl font-medium"
           >
-            Back to Sessions
+            Back
           </button>
         </div>
       </div>
@@ -110,11 +110,11 @@ export default function SessionPage() {
         {/* Header */}
         <div className="mb-8 animate-fade-in">
           <button 
-            onClick={() => router.push('/')}
-            className="text-secondary hover:text-primary mb-4 flex items-center gap-2 transition-colors"
+            onClick={() => router.back()}
+            className="text-secondary hover:text-primary mb-4 flex items-center gap-2 transition-colors hover:scale-105 active:scale-95"
           >
             <span className="text-xl">←</span>
-            <span>Back to Sessions</span>
+            <span>Back</span>
           </button>
           <h1 className="text-3xl sm:text-4xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
             {currentSession.title}
@@ -223,6 +223,23 @@ export default function SessionPage() {
               >
                 <span>📤</span>
                 <span>Share Plan</span>
+              </button>
+              <button 
+                className="glass-card px-8 py-4 rounded-xl font-medium hover:bg-white/20 transition-all flex items-center justify-center gap-2"
+                onClick={() => {
+                  // Save current session to localStorage for easy access
+                  const savedSessions = JSON.parse(localStorage.getItem('savedSessions') || '[]');
+                  if (!savedSessions.includes(sessionId)) {
+                    savedSessions.push(sessionId);
+                    localStorage.setItem('savedSessions', JSON.stringify(savedSessions));
+                    alert('Session saved to favorites!');
+                  } else {
+                    alert('Session already saved!');
+                  }
+                }}
+              >
+                <span>⭐</span>
+                <span>Save Session</span>
               </button>
               <button 
                 className="glass-card px-8 py-4 rounded-xl font-medium hover:bg-white/20 transition-all flex items-center justify-center gap-2"

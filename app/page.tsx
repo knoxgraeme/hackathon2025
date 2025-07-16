@@ -26,6 +26,9 @@ export default function Home() {
     new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
   );
 
+  const savedSessionIds = typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('savedSessions') || '[]') : [];
+  const savedSessions = sessionsList.filter(session => savedSessionIds.includes(session.id));
+
   const getStatusIcon = (status: string) => {
     switch (status) {
       case 'initial': return '📋';
@@ -76,6 +79,58 @@ export default function Home() {
             Start New Photo Session
           </Button>
         </div>
+
+        {/* Saved Sessions */}
+        {savedSessions.length > 0 && (
+          <div className="animate-fade-in mb-12">
+            <h2 className="text-2xl font-bold mb-6 text-primary flex items-center gap-2">
+              <span>⭐</span>
+              <span>Saved Sessions</span>
+            </h2>
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {savedSessions.map((session, index) => (
+                <Link
+                  key={session.id}
+                  href={`/session/${session.id}`}
+                  className="block animate-slide-up"
+                  style={{ animationDelay: `${index * 0.1}s` }}
+                >
+                  <div className="glass-card p-6 hover:scale-105 transition-all duration-300 hover:bg-white/15 relative">
+                    {/* Saved indicator */}
+                    <div className="absolute top-2 right-2 text-yellow-400">
+                      <span className="text-lg">⭐</span>
+                    </div>
+                    
+                    {/* Status Badge */}
+                    <div className="flex items-center justify-between mb-4">
+                      <span className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-sm backdrop-blur-md ${getStatusColor(session.status)}`}>
+                        <span>{getStatusIcon(session.status)}</span>
+                        <span className="capitalize">{session.status}</span>
+                      </span>
+                      <span className="text-sm text-tertiary">
+                        {new Date(session.createdAt).toLocaleDateString()}
+                      </span>
+                    </div>
+
+                    {/* Session Title */}
+                    <h3 className="font-semibold text-lg mb-2 text-primary">
+                      {session.title || 'Untitled Session'}
+                    </h3>
+
+                    {/* Session Details */}
+                    {session.context && (
+                      <div className="text-sm text-secondary space-y-1">
+                        <p>📸 {session.context.shootType}</p>
+                        <p>🎨 {session.context.mood?.join(', ')}</p>
+                        <p>📍 {session.locations?.length || 0} locations</p>
+                      </div>
+                    )}
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Sessions List */}
         {sessionsList.length > 0 ? (

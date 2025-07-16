@@ -1,7 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { SessionProvider } from "./providers/SessionProvider";
-import { BottomNavigation } from "./components/BottomNavigation";
 import { PWAInstallPrompt } from "./components/PWAInstallPrompt";
 import "./globals.css";
 
@@ -51,10 +50,9 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         <SessionProvider>
-          <div className="min-h-screen pb-16">
+          <div className="min-h-screen">
             {children}
           </div>
-          <BottomNavigation />
           <PWAInstallPrompt />
         </SessionProvider>
       </body>
