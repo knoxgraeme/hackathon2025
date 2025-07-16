@@ -6,6 +6,16 @@ import { useCallback, useState, useEffect, useRef } from 'react';
 import { useSession } from '../providers/SessionProvider';
 import { Button } from './Button';
 
+// Type for navigator.standalone (iOS specific)
+declare global {
+  interface Navigator {
+    standalone?: boolean;
+  }
+  interface Window {
+    webkitAudioContext?: typeof AudioContext;
+  }
+}
+
 /**
  * Props for the ConversationFlow component
  * @interface ConversationFlowProps
@@ -69,6 +79,11 @@ export default function ConversationFlow({ onComplete, sessionId }: Conversation
    */
   const conversationIdRef = useRef<string | null>(null);
   
+  /**
+   * Ref to store the wake lock to prevent screen sleep during recording
+   */
+  const wakeLockRef = useRef<WakeLockSentinel | null>(null);
+  
   const conversation = useConversation({
     /**
      * onConnect callback - Triggered when conversation successfully connects
@@ -96,6 +111,13 @@ export default function ConversationFlow({ onComplete, sessionId }: Conversation
     onDisconnect: () => {
       console.log('Disconnected');
       console.log('Stored conversation ID in ref:', conversationIdRef.current);
+      
+      // Release wake lock when conversation ends
+      if (wakeLockRef.current) {
+        wakeLockRef.current.release();
+        wakeLockRef.current = null;
+        console.log('Wake lock released');
+      }
       
       if (conversationIdRef.current) {
         // Success path: We have the conversation ID
@@ -150,8 +172,57 @@ export default function ConversationFlow({ onComplete, sessionId }: Conversation
   const startConversation = useCallback(async () => {
     try {
       setIsConnecting(true);
-      // Request microphone permissions - required for voice conversation
-      await navigator.mediaDevices.getUserMedia({ audio: true });
+      
+      // Detect if running as PWA
+      const isStandalone = window.matchMedia('(display-mode: standalone)').matches || 
+                          window.navigator.standalone === true; // iOS specific
+      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+      
+      console.log('Environment:', { isStandalone, isIOS, userAgent: navigator.userAgent });
+      
+      // Request wake lock to prevent screen sleep (iOS 18.4+ PWA support)
+      if ('wakeLock' in navigator) {
+        try {
+          wakeLockRef.current = await navigator.wakeLock.request('screen');
+          console.log('Wake lock acquired');
+        } catch (err) {
+          console.log('Wake lock failed:', err);
+        }
+      }
+      
+      // Request microphone with specific constraints for iOS PWA
+      const stream = await navigator.mediaDevices.getUserMedia({ 
+        audio: {
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true,
+          sampleRate: 44100
+        } 
+      });
+      
+      // Validate audio stream is actually working
+      const audioTracks = stream.getAudioTracks();
+      console.log('Audio tracks:', audioTracks.length, audioTracks[0]?.getSettings());
+      
+      if (audioTracks.length === 0 || !audioTracks[0].enabled) {
+        throw new Error('No audio track available or track is disabled');
+      }
+      
+      // Test audio levels to ensure mic is actually capturing
+      const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+      const analyser = audioContext.createAnalyser();
+      const microphone = audioContext.createMediaStreamSource(stream);
+      microphone.connect(analyser);
+      
+      // Quick audio level check
+      const dataArray = new Uint8Array(analyser.frequencyBinCount);
+      analyser.getByteFrequencyData(dataArray);
+      const avgLevel = dataArray.reduce((a, b) => a + b) / dataArray.length;
+      console.log('Initial audio level:', avgLevel);
+      
+      // Clean up test audio context
+      microphone.disconnect();
+      audioContext.close();
       
       console.log('Starting session...');
       // PRIMARY CAPTURE STRATEGY: Get conversation ID from startSession return value
@@ -173,7 +244,14 @@ export default function ConversationFlow({ onComplete, sessionId }: Conversation
     } catch (error) {
       console.error('Failed to start conversation:', error);
       setIsConnecting(false);
-      alert('Failed to start conversation. Please check your microphone permissions.');
+      
+      // More specific error messages for PWA issues
+      const isStandalone = window.matchMedia('(display-mode: standalone)').matches;
+      if (isStandalone && error instanceof DOMException && error.name === 'NotAllowedError') {
+        alert('Microphone access denied. Please go to Settings > Safari > Advanced > Website Data, find this app, and ensure microphone is enabled.');
+      } else {
+        alert('Failed to start conversation. Please check your microphone permissions.');
+      }
     }
   }, [conversation, sessionId, updateSession]);
 
