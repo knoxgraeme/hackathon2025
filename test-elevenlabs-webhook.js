@@ -26,6 +26,8 @@ const testPayload = {
     specialRequirements: "Dog-friendly locations preferred",
     experience: "intermediate"
   },
+  generateImages: true,  // Enable image generation
+  imageCount: 4,         // Request 4 images
   metadata: {
     userId: "test-user-123"
   }
@@ -90,12 +92,14 @@ async function testWebhook() {
     // Display shots
     if (result.shots) {
       console.log(`🎬 Generated ${result.shots.length} Shots:`);
-      result.shots.forEach((shot, i) => {
-        console.log(`\n  Shot ${shot.shotNumber}: ${shot.title || shot.imagePrompt}`);
+      result.shots.forEach((shot) => {
+        console.log(`\n  Shot ${shot.shotNumber}: ${shot.title}`);
         console.log(`     📍 Location: ${result.locations?.[shot.locationIndex]?.name || 'Location ' + shot.locationIndex}`);
-        console.log(`     🎯 ${shot.poseInstruction}`);
-        if (shot.communicationCues) {
-          console.log(`     💬 Direction: "${shot.communicationCues}"`);
+        console.log(`     🎯 ${shot.composition}`);
+        console.log(`     💬 Direction: "${shot.direction}"`);
+        console.log(`     📷 ${shot.technical}`);
+        if (shot.storyboardImage) {
+          console.log(`     🖼️ Storyboard image generated`);
         }
       });
     }
