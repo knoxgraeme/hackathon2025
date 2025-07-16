@@ -20,26 +20,26 @@ export function Button({
   children,
   ...props 
 }: ButtonProps) {
-  // Base styles
-  const baseStyles = 'font-medium rounded-xl transition-all duration-200 inline-flex items-center justify-center gap-2 focusable';
+  // Base styles with native-like touch feedback
+  const baseStyles = 'font-medium rounded-2xl transition-all duration-200 inline-flex items-center justify-center gap-2 focusable active:scale-95 select-none';
   
-  // Variant styles
+  // Variant styles with iOS-inspired design
   const variants = {
-    primary: 'gradient-voice gradient-voice-shadow text-white hover:scale-105',
-    secondary: 'glass-card hover:bg-white/20',
-    danger: 'end-call-button',
-    ghost: 'hover:bg-white/10'
+    primary: 'bg-blue-500 text-white shadow-lg active:bg-blue-600',
+    secondary: 'glass-card hover:bg-white/20 active:bg-white/30',
+    danger: 'bg-red-500 text-white shadow-lg active:bg-red-600',
+    ghost: 'hover:bg-white/10 active:bg-white/20'
   };
   
-  // Size styles
+  // Size styles with touch-friendly sizing
   const sizes = {
-    sm: 'px-4 py-2 text-sm',
-    md: 'px-6 py-3',
-    lg: 'px-8 py-4 text-lg'
+    sm: 'px-4 py-2.5 text-sm min-h-[40px]',
+    md: 'px-6 py-3.5 min-h-[48px]',
+    lg: 'px-8 py-4 text-lg min-h-[56px]'
   };
   
   // Disabled/loading states
-  const stateStyles = (disabled || loading) ? 'opacity-50 cursor-not-allowed' : 'hover:scale-105';
+  const stateStyles = (disabled || loading) ? 'opacity-50 cursor-not-allowed' : '';
   
   return (
     <button

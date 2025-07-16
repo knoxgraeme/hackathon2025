@@ -1,3 +1,24 @@
+/**
+ * ElevenLabs Webhook Edge Function
+ * 
+ * This edge function processes photography session planning requests through a multi-stage pipeline:
+ * 
+ * 1. Context Extraction - Analyzes conversation data to extract shoot requirements
+ * 2. Location Generation - Suggests specific Vancouver locations based on context
+ * 3. Storyboard Creation - Generates detailed shot list with technical instructions
+ * 4. Image Generation - Optionally creates visual storyboard illustrations
+ * 
+ * Features:
+ * - Supports individual stage processing or full pipeline execution
+ * - Automatic retry with fallback data if any stage fails
+ * - Mock data support for testing without ElevenLabs API
+ * - CORS handling for browser-based clients
+ * 
+ * Environment variables required:
+ * - GEMINI_API_KEY: For Google Generative AI
+ * - ELEVENLABS_API_KEY: For fetching conversation data (optional)
+ */
+
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { GoogleGenerativeAI } from "https://esm.sh/@google/generative-ai@0.21.0"
 import { GoogleGenAI } from "https://esm.sh/@google/genai@latest"
@@ -10,7 +31,12 @@ import {
 } from "../_shared/helpers.ts"
 import type { PhotoShootContext, Location, Shot } from "../_shared/types.ts"
 
-// Extracted prompts
+/**
+ * Centralized AI prompts for consistent output formatting.
+ * These prompts are carefully crafted to ensure AI responses are valid JSON
+ * that can be parsed reliably. The prompts emphasize returning ONLY JSON
+ * without any additional text or markdown formatting.
+ */
 const PROMPTS = {
   CONTEXT_EXTRACTION: `Extract photography shoot details from this conversation data.
 
@@ -88,12 +114,27 @@ Show camera angle and composition clearly.`
 
 // Helper functions
 
+/**
+ * Handles errors that occur during any processing stage by logging the error
+ * and returning a sensible default value. This ensures the pipeline continues
+ * even if one stage fails.
+ * 
+ * @param stage - Name of the processing stage where error occurred
+ * @param error - The error object or message
+ * @param getDefault - Function that returns a fallback default value
+ * @returns The default value from getDefault function
+ */
 function handleStageError(stage: string, error: any, getDefault: () => any): any {
   console.error(`${stage} error:`, error.message || error)
   return getDefault()
 }
 
-// Vancouver location database for fallbacks
+/**
+ * Curated database of Vancouver photography locations organized by shoot type.
+ * These serve as seed data for the AI to expand upon and as fallback options
+ * when location generation fails. Each array contains general areas that the
+ * AI will transform into specific, detailed location recommendations.
+ */
 const VANCOUVER_LOCATIONS = {
   portrait: [
     "Gastown (Water Street & Steam Clock area)",
@@ -118,41 +159,69 @@ const VANCOUVER_LOCATIONS = {
   ]
 }
 
+/**
+ * Main webhook handler function that processes photography session planning requests.
+ * This function orchestrates a multi-stage pipeline:
+ * 1. Context extraction from conversation data
+ * 2. Location generation based on context
+ * 3. Storyboard/shot list creation
+ * 4. Optional storyboard image generation
+ * 
+ * The function supports processing individual stages or the full pipeline.
+ * It includes comprehensive error handling with fallbacks at each stage.
+ * 
+ * @param req - The incoming HTTP request
+ * @returns Response with processed photography planning data or error
+ */
 serve(async (req) => {
-  // Handle CORS preflight
+  // Handle CORS preflight requests - required for browser-based clients
   const corsResponse = handleCors(req);
   if (corsResponse) return corsResponse;
 
   let body: any = {};
   
   try {
-    // Try to parse request body
+    // Try to parse request body - validates incoming JSON structure
     try {
       body = await req.json()
     } catch (parseError) {
       console.error('Failed to parse request body:', parseError);
+      // Early return with 400 error for malformed JSON
       return createErrorResponse('Invalid JSON in request body', 400);
     }
     
     console.log('📦 Received request:', JSON.stringify(body, null, 2))
     
+    // Validate required environment variable
     const geminiApiKey = validateEnvVar('GEMINI_API_KEY')
 
+    // Initialize AI models for text and image generation
     const genAI = new GoogleGenerativeAI(geminiApiKey)
     const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" })
     
-    // Determine processing stage
+    // Determine processing stage: 'context', 'locations', 'storyboard', or 'full'
     const stage = body.stage || 'full'
+    // Result object accumulates data across stages
     let result: any = {}
     
-    // Stage 1: Extract context from conversation
+    /**
+     * STAGE 1: Extract Photography Context from Conversation
+     * 
+     * This stage analyzes conversation data to extract structured photography
+     * session details. It supports three input modes:
+     * 1. conversationId - Fetches from ElevenLabs API
+     * 2. transcript - Direct transcript provided in request
+     * 3. mockContext - Pre-defined context for testing
+     * 
+     * The stage includes automatic fallback to mock data if API fetch fails.
+     */
     if (stage === 'context' || stage === 'full') {
       console.log('🎯 Stage 1: Extracting context')
       
       let conversationData = ''
       
       if (body.conversationId) {
-        // Fetch from ElevenLabs
+        // Attempt to fetch conversation from ElevenLabs API
         const elevenLabsApiKey = Deno.env.get('ELEVENLABS_API_KEY')
         
         if (elevenLabsApiKey) {
@@ -167,20 +236,23 @@ serve(async (req) => {
             }
           } catch (error) {
             console.error('ElevenLabs fetch error:', error)
+            // Continue processing - will fall back to mock data
           }
         }
         
-        // Fallback to mock data if needed
+        // Fallback to mock data if API fetch failed or no API key
         if (!conversationData) {
           conversationData = getMockConversation(body.conversationId)
         }
       } else if (body.transcript) {
+        // Direct transcript provided - bypass API fetch
         conversationData = body.transcript
       } else if (body.mockContext) {
-        // Direct context for testing
+        // Testing mode - use predefined context
         result.context = getMockContext(body.mockContext)
       }
       
+      // Process conversation data through AI to extract structured context
       if (conversationData && !result.context) {
         const contextPrompt = `
         Extract photography shoot details from this conversation data.
@@ -208,20 +280,33 @@ serve(async (req) => {
         const contextText = contextResult.response.text()
         
         try {
+          // Parse AI response, stripping any markdown code blocks
           result.context = JSON.parse(contextText.replace(/```json|```/g, '').trim())
           console.log('✅ Extracted context:', result.context)
         } catch (error) {
           console.error('Context parsing error:', error)
+          // Fallback to default portrait context if parsing fails
           result.context = getMockContext('portrait')
         }
       }
     }
     
-    // Stage 2: Generate location suggestions
+    /**
+     * STAGE 2: Generate Location Suggestions
+     * 
+     * This stage creates specific photography location recommendations based
+     * on the extracted context. It uses Vancouver's location database as a
+     * starting point and generates detailed, actionable location information
+     * including timing, lighting, accessibility, and permit requirements.
+     * 
+     * The stage requires either result.context (from Stage 1) or body.context
+     * (provided directly) to proceed.
+     */
     if ((stage === 'locations' || stage === 'full') && (result.context || body.context)) {
       console.log('📍 Stage 2: Generating locations')
       
       const context = result.context || body.context
+      // Select base locations based on shoot type, with portrait as default
       const baseLocations = VANCOUVER_LOCATIONS[context.shootType] || VANCOUVER_LOCATIONS.portrait
       
       const locationPrompt = `
@@ -252,15 +337,26 @@ serve(async (req) => {
       const locationText = locationResult.response.text()
       
       try {
+        // Parse AI-generated locations, handling potential markdown formatting
         result.locations = JSON.parse(locationText.replace(/```json|```/g, '').trim())
         console.log(`✅ Generated ${result.locations.length} locations`)
       } catch (error) {
         console.error('Location parsing error:', error)
+        // Fallback to curated default locations if AI generation fails
         result.locations = getDefaultLocations(context)
       }
     }
     
-    // Stage 3: Generate storyboards and shots
+    /**
+     * STAGE 3: Create Storyboard and Shot List
+     * 
+     * This stage generates a detailed shot list with specific instructions for
+     * each photograph. It creates 6-8 diverse shots distributed across the
+     * selected locations, including technical details, pose instructions, and
+     * equipment requirements.
+     * 
+     * Requires both context and locations from previous stages or request body.
+     */
     if ((stage === 'storyboard' || stage === 'full') && 
         (result.locations || body.locations) && 
         (result.context || body.context)) {
@@ -297,25 +393,37 @@ serve(async (req) => {
       const storyboardText = storyboardResult.response.text()
       
       try {
+        // Use shared helper to parse JSON response with markdown handling
         result.shots = parseJsonResponse(storyboardText)
         console.log(`✅ Generated ${result.shots.length} shots`)
       } catch (error) {
         console.error('Storyboard parsing error:', error)
+        // Fallback to basic shot list if AI generation fails
         result.shots = getDefaultShots(locations.length)
       }
       
-      // Stage 4: Generate storyboard images (optional, only for 2-3 key shots)
+      /**
+       * STAGE 4: Generate Storyboard Visualization Images (Optional)
+       * 
+       * This stage creates visual storyboard illustrations for key shots using
+       * Google's Imagen AI. Limited to 3 images for performance reasons.
+       * Images are generated only if explicitly requested via generateImages flag.
+       * 
+       * Each image is generated with a 16:9 aspect ratio suitable for storyboards
+       * and includes clear composition and mood indicators.
+       */
       if (body.generateImages && result.shots) {
         console.log('🎨 Stage 4: Generating storyboard images')
         
         const imageAI = new GoogleGenAI({ apiKey: geminiApiKey })
-        const maxImages = Math.min(3, result.shots.length) // Limit for hackathon
+        // Limit to 3 images maximum for performance and cost considerations
+        const maxImages = Math.min(3, result.shots.length)
         
         for (let i = 0; i < maxImages; i++) {
           const shot = result.shots[i]
           
           try {
-            // Enhanced prompt for storyboarding
+            // Create enhanced prompt for professional storyboard visualization
             const imagePrompt = `Professional photography storyboard illustration: ${shot.imagePrompt}. 
             Style: Clean sketch/illustration style, ${context.mood.join(', ')} mood.
             Show camera angle and composition clearly.`
@@ -326,22 +434,32 @@ serve(async (req) => {
               config: {
                 numberOfImages: 1,
                 outputMimeType: 'image/jpeg',
-                aspectRatio: '16:9', // Better for storyboards
+                aspectRatio: '16:9', // Optimal for storyboard presentation
               },
             })
             
             if (response?.generatedImages?.[0]?.image?.imageBytes) {
+              // Attach base64 encoded image directly to shot object
               shot.storyboardImage = `data:image/jpeg;base64,${response.generatedImages[0].image.imageBytes}`
               console.log(`✅ Generated image for shot ${i + 1}`)
             }
           } catch (error) {
             console.error(`Image generation error for shot ${i + 1}:`, error)
+            // Continue with other images if one fails
           }
         }
       }
     }
     
-    // Build final response
+    /**
+     * Build and return the final response structure.
+     * The response includes:
+     * - success: boolean indicating overall success
+     * - conversationId: original ID or 'direct-input' for testing
+     * - stage: which processing stage(s) were executed
+     * - timestamp: ISO timestamp of response
+     * - Additional fields based on stages executed (context, locations, shots)
+     */
     const response = {
       success: true,
       conversationId: body.conversationId || 'direct-input',
@@ -350,6 +468,7 @@ serve(async (req) => {
       ...result
     }
     
+    // Log response for debugging, replacing base64 images with placeholder
     console.log('📤 Sending response (without images):', {
       ...response,
       shots: response.shots?.map(s => ({ ...s, storyboardImage: s.storyboardImage ? '[BASE64_IMAGE]' : undefined }))
@@ -358,6 +477,11 @@ serve(async (req) => {
     return createSuccessResponse(response)
     
   } catch (error) {
+    /**
+     * Global error handler for the entire request processing pipeline.
+     * Catches any unhandled errors and returns a structured error response
+     * with debugging information including the stage where failure occurred.
+     */
     console.error('Request processing error:', error);
     return createErrorResponse(
       error.message || 'An unexpected error occurred',
@@ -371,6 +495,14 @@ serve(async (req) => {
 })
 
 // Helper functions
+
+/**
+ * Provides mock conversation data for testing when ElevenLabs API is unavailable.
+ * Contains realistic photography planning conversations for different shoot types.
+ * 
+ * @param id - The conversation ID to retrieve mock data for
+ * @returns Mock conversation transcript string
+ */
 function getMockConversation(id: string): string {
   const mocks = {
     "test-portrait": `User: I want to do a portrait shoot in Vancouver.
@@ -392,9 +524,17 @@ function getMockConversation(id: string): string {
     User: Evening, when the neon signs light up.`
   }
   
+  // Return matching mock or default to portrait conversation
   return mocks[id] || mocks["test-portrait"]
 }
 
+/**
+ * Provides mock photography context for testing and fallback scenarios.
+ * Contains pre-defined contexts for common shoot types with realistic details.
+ * 
+ * @param type - The shoot type to get mock context for
+ * @returns Complete PhotoShootContext object with sensible defaults
+ */
 function getMockContext(type: string): PhotoShootContext {
   const contexts = {
     portrait: {
@@ -419,9 +559,17 @@ function getMockContext(type: string): PhotoShootContext {
     }
   }
   
+  // Return matching context or default to portrait
   return contexts[type] || contexts.portrait
 }
 
+/**
+ * Provides default location suggestions when AI generation fails.
+ * Returns curated Vancouver locations with complete details for immediate use.
+ * 
+ * @param context - The photography context (unused but available for future enhancement)
+ * @returns Array of 2 detailed location objects as fallback
+ */
 function getDefaultLocations(context: PhotoShootContext): Location[] {
   return [
     {
@@ -447,6 +595,13 @@ function getDefaultLocations(context: PhotoShootContext): Location[] {
   ]
 }
 
+/**
+ * Provides default shot list when AI generation fails.
+ * Returns minimal shot list with two versatile shots that work in most scenarios.
+ * 
+ * @param locationCount - Number of available locations (unused but available for future enhancement)
+ * @returns Array of 2 basic shot configurations as fallback
+ */
 function getDefaultShots(locationCount: number): Shot[] {
   return [
     {

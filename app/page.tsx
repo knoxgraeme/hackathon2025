@@ -4,10 +4,18 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useSession } from './providers/SessionProvider';
 import { Button } from './components/Button';
+import { PullToRefresh } from './components/PullToRefresh';
+import { FloatingActionButton } from './components/FloatingActionButton';
 
 export default function Home() {
   const router = useRouter();
   const { sessions, createNewSession } = useSession();
+
+  const handleRefresh = async () => {
+    // In a real app, this would fetch fresh data
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    window.location.reload();
+  };
 
   const handleCreateSession = () => {
     const id = createNewSession();
@@ -39,7 +47,8 @@ export default function Home() {
   };
 
   return (
-    <main className="min-h-screen text-white">
+    <PullToRefresh onRefresh={handleRefresh}>
+      <main className="min-h-screen text-white">
       {/* Gradient background */}
       <div className="fixed inset-0 bg-black">
         <div className="absolute inset-0 bg-gradient-to-br from-blue-900/20 via-purple-900/20 to-pink-900/20" />
@@ -188,7 +197,9 @@ export default function Home() {
           </div>
         )}
       </div>
+      <FloatingActionButton />
     </main>
+    </PullToRefresh>
   );
 }
 
