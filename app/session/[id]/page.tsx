@@ -5,8 +5,8 @@ import { useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useSession } from '../../providers/SessionProvider';
 import ConversationFlow from '../../components/ConversationFlow';
-// Remove LocationsList import due to "is not a module" error
-// Remove StoryboardView import due to "Cannot find module" error
+import { LocationsList } from '../../components/LocationsList';
+import { StoryboardView } from '../../components/StoryboardView';
 import { LoadingPipeline } from '../../components/LoadingStates';
 
 export default function SessionPage() {
@@ -97,18 +97,18 @@ export default function SessionPage() {
         </div>
 
         {/* Status-based content */}
-        {currentSession.status === 'initial' && (
-          <div className="bg-gray-800 rounded-lg p-8 text-center">
-            <h2 className="text-2xl font-bold mb-4">Ready to start planning your shoot?</h2>
-            <p className="text-gray-300 mb-8">
-              Have a conversation with our AI assistant to describe your vision
-            </p>
-            <ConversationFlow onComplete={handleConversationComplete} />
+        {(currentSession.status === 'initial' || currentSession.status === 'conversation') && (
+          <div className={currentSession.status === 'initial' ? "bg-gray-800 rounded-lg p-8 text-center" : ""}>
+            {currentSession.status === 'initial' && (
+              <>
+                <h2 className="text-2xl font-bold mb-4">Ready to start planning your shoot?</h2>
+                <p className="text-gray-300 mb-8">
+                  Have a conversation with our AI assistant to describe your vision
+                </p>
+              </>
+            )}
+            <ConversationFlow onComplete={handleConversationComplete} sessionId={sessionId} />
           </div>
-        )}
-
-        {currentSession.status === 'conversation' && (
-          <ConversationFlow onComplete={handleConversationComplete} />
         )}
 
         {currentSession.status === 'processing' && isProcessing && (

@@ -2,29 +2,35 @@
 'use client';
 
 import { useConversation } from '@elevenlabs/react';
-import { useCallback, useState } from 'react';
+import { useCallback, useState, useEffect, useRef } from 'react';
 import { useSession } from '../providers/SessionProvider';
 
 interface ConversationFlowProps {
   onComplete: (conversationId: string) => void;
+  sessionId: string;
 }
 
-export default function ConversationFlow({ onComplete }: ConversationFlowProps) {
+export default function ConversationFlow({ onComplete, sessionId }: ConversationFlowProps) {
   const { updateSession } = useSession();
   const [conversationStarted, setConversationStarted] = useState(false);
+  const conversationIdRef = useRef<string | null>(null);
   
   const conversation = useConversation({
     onConnect: () => {
       console.log('Connected');
       setConversationStarted(true);
-      updateSession({ status: 'conversation' });
+      updateSession(sessionId, { status: 'conversation' });
     },
     onDisconnect: () => {
       console.log('Disconnected');
-      // Assuming you have access to conversation ID here
-      // You might need to track it when the conversation starts
-      const conversationId = 'conv-' + Date.now(); // Replace with actual ID
-      onComplete(conversationId);
+      console.log('Stored conversation ID in ref:', conversationIdRef.current);
+      
+      if (conversationIdRef.current) {
+        onComplete(conversationIdRef.current);
+      } else {
+        console.error('No conversation ID available');
+        alert('Failed to capture conversation. Please try again.');
+      }
     },
     onMessage: (message) => console.log('Message:', message),
     onError: (error) => console.error('Error:', error),
@@ -33,17 +39,65 @@ export default function ConversationFlow({ onComplete }: ConversationFlowProps) 
   const startConversation = useCallback(async () => {
     try {
       await navigator.mediaDevices.getUserMedia({ audio: true });
-      await conversation.startSession({
+      
+      console.log('Starting session...');
+      // Start the session - according to types, this returns Promise<string>
+      const conversationId = await conversation.startSession({
         agentId: 'agent_01k0616fckfdzrnt2g2fwq2r2h', // Your ElevenLabs agent ID
       });
+      
+      console.log('startSession returned:', conversationId);
+      console.log('Type of returned value:', typeof conversationId);
+      
+      if (conversationId) {
+        conversationIdRef.current = conversationId;
+        updateSession(sessionId, { conversationId });
+      } else {
+        console.warn('No conversation ID returned from startSession');
+      }
     } catch (error) {
       console.error('Failed to start conversation:', error);
+      alert('Failed to start conversation. Please check your microphone permissions.');
     }
-  }, [conversation]);
+  }, [conversation, sessionId, updateSession]);
 
   const stopConversation = useCallback(async () => {
+    // Before ending, try to get the conversation ID one more time
+    if (!conversationIdRef.current) {
+      const id = conversation.getId();
+      console.log('Last attempt to get conversation ID before ending:', id);
+      if (id) {
+        conversationIdRef.current = id;
+      }
+    }
     await conversation.endSession();
   }, [conversation]);
+
+  // Check for conversation ID periodically
+  useEffect(() => {
+    if (conversationStarted && !conversationIdRef.current) {
+      const checkId = () => {
+        const id = conversation.getId();
+        console.log('Checking for conversation ID:', id);
+        if (id) {
+          conversationIdRef.current = id;
+          updateSession(sessionId, { conversationId: id });
+        }
+      };
+      
+      // Check immediately
+      checkId();
+      
+      // Then check every 500ms for up to 5 seconds
+      const interval = setInterval(checkId, 500);
+      const timeout = setTimeout(() => clearInterval(interval), 5000);
+      
+      return () => {
+        clearInterval(interval);
+        clearTimeout(timeout);
+      };
+    }
+  }, [conversationStarted, conversation, sessionId, updateSession]);
 
   if (!conversationStarted) {
     return (

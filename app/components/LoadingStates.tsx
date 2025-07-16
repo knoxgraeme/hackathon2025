@@ -1,4 +1,8 @@
 // components/LoadingStates.tsx
+'use client';
+
+import { useState, useEffect } from 'react';
+
 export function LoadingPipeline() {
     const [stage, setStage] = useState(0);
     
