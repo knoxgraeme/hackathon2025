@@ -22,9 +22,9 @@ export function StoryboardView({ shots, locations }: StoryboardViewProps) {
   const selectedLocation = selectedShot && locations[selectedShot.locationIndex] ? 
     locations[selectedShot.locationIndex] as EdgeLocation : null;
 
-  // Extract shot title from pose instruction (first sentence or phrase)
+  // Extract shot title from composition (first sentence or phrase)
   const getShotTitle = (shot: EdgeShot) => {
-    const firstSentence = shot.poseInstruction.split(/[.!?]/)[0];
+    const firstSentence = shot.composition.split(/[.!?]/)[0];
     return firstSentence.length > 50 ? firstSentence.substring(0, 47) + '...' : firstSentence;
   };
 

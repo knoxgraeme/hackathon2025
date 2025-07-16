@@ -96,7 +96,6 @@ export default function PhotoAssistantTestPage() {
         success: false, 
         error: errorMessage,
         conversationId: '',
-        stage: stage,
         timestamp: new Date().toISOString()
       })
     } finally {
@@ -125,16 +124,6 @@ export default function PhotoAssistantTestPage() {
             <h2 className="text-xl font-bold mb-4">Test Mode</h2>
             
             <div className="space-y-3">
-              <label className="flex items-center">
-                <input
-                  type="radio"
-                  value="mock"
-                  checked={testMode === 'mock'}
-                  onChange={(e) => setTestMode(e.target.value as 'conversation' | 'transcript' | 'data_collection')}
-                  className="mr-2"
-                />
-                <span>Mock Data (Quick Testing)</span>
-              </label>
               
               <label className="flex items-center">
                 <input
@@ -161,8 +150,8 @@ export default function PhotoAssistantTestPage() {
               <label className="flex items-center">
                 <input
                   type="radio"
-                  value="custom"
-                  checked={testMode === 'custom'}
+                  value="data_collection"
+                  checked={testMode === 'data_collection'}
                   onChange={(e) => setTestMode(e.target.value as 'conversation' | 'transcript' | 'data_collection')}
                   className="mr-2"
                 />
