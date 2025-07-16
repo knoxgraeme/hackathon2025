@@ -1,0 +1,101 @@
+{
+  "agent_id": "agent_01k0616fckfdzrnt2g2fwq2r2h",
+  "data_extraction_properties": [
+    {
+      "name": "location",
+      "type": "string",
+      "description": "City or venue name where the shoot will take place",
+      "dynamic_variable": "location"
+    },
+    {
+      "name": "date",
+      "type": "string",
+      "description": "Shoot date in YYYY-MM-DD format",
+      "dynamic_variable": "date"
+    },
+    {
+      "name": "startTime",
+      "type": "string",
+      "description": "Start time in HH:MM format (24-hour)",
+      "dynamic_variable": "start_time"
+    },
+    {
+      "name": "duration",
+      "type": "string",
+      "description": "Total duration (e.g., '2 hours', '90 minutes')",
+      "dynamic_variable": "duration"
+    },
+    {
+      "name": "shootType",
+      "type": "string",
+      "description": "Type of shoot: wedding, portrait, engagement, event, product, or other",
+      "dynamic_variable": "shoot_type"
+    },
+    {
+      "name": "mood",
+      "type": "string",
+      "description": "2-3 mood descriptors separated by commas (e.g., 'romantic, candid')",
+      "dynamic_variable": "mood"
+    },
+    {
+      "name": "primarySubjectNames",
+      "type": "string",
+      "description": "Names of main subjects separated by commas",
+      "dynamic_variable": "primary_subject_names"
+    },
+    {
+      "name": "primarySubjectRelationship",
+      "type": "string",
+      "description": "Relationship of primary subjects: couple, family, individual, or group",
+      "dynamic_variable": "primary_subject_relationship"
+    },
+    {
+      "name": "primarySubjectCount",
+      "type": "integer",
+      "description": "Number of primary subjects",
+      "dynamic_variable": "primary_subject_count"
+    },
+    {
+      "name": "secondarySubjectsPresent",
+      "type": "boolean",
+      "description": "Whether there are secondary subjects (pets, family, etc.)",
+      "dynamic_variable": "secondary_subjects_present"
+    },
+    {
+      "name": "secondarySubjectsDetails",
+      "type": "string",
+      "description": "Details about secondary subjects if present",
+      "dynamic_variable": "secondary_subjects_details"
+    },
+    {
+      "name": "locationPreference",
+      "type": "string",
+      "description": "Location preference: clustered (close together) or itinerary (spread out)",
+      "dynamic_variable": "location_preference"
+    },
+    {
+      "name": "mustHaveShots",
+      "type": "string",
+      "description": "Specific requested shots separated by semicolons",
+      "dynamic_variable": "must_have_shots"
+    },
+    {
+      "name": "mobilityNeeds",
+      "type": "string",
+      "description": "Any accessibility or mobility requirements",
+      "dynamic_variable": "mobility_needs"
+    },
+    {
+      "name": "specialRequirements",
+      "type": "string",
+      "description": "Special requirements like permits, props, or equipment",
+      "dynamic_variable": "special_requirements"
+    },
+    {
+      "name": "experience",
+      "type": "string",
+      "description": "Photographer experience level: beginner, intermediate, or professional",
+      "dynamic_variable": "experience"
+    }
+  ]
+}

@@ -47,41 +47,70 @@ User Voice → ElevenLabs Agent → Webhook → AI Processing → Photo Session 
 
 3. **Configure System Prompt**
 
-The system prompt is crucial for guiding the AI's behavior. Here's the recommended prompt for photography planning:
+The system prompt is crucial for guiding the AI's behavior. Use the optimized prompt from `/prompts/elevenlabs_onboarding_optimized.txt`:
 
 ```
-You are a professional photography planning assistant specializing in Vancouver locations. Your role is to help photographers plan their photo shoots by understanding their vision and providing personalized recommendations.
+You are a professional photography coordinator conducting a quick planning call. Be concise, friendly, and efficient. Your goal is to gather essential shoot details in under 3 minutes.
 
-When conversing with users:
-1. Be warm, enthusiastic, and encouraging about their photography ideas
-2. Ask clarifying questions about:
-   - Type of photography (portrait, landscape, street, etc.)
-   - Desired mood and atmosphere
-   - Time of day preferences
-   - Subject details
-   - Experience level
-   - Any special requirements
+## Conversation Flow
 
-3. Listen for key details like:
-   - Lighting preferences (golden hour, blue hour, etc.)
-   - Specific locations or types of environments
-   - Equipment mentions
-   - Duration expectations
+### 1. Opening (5 seconds)
+"Hi! I'm here to quickly plan your photo shoot. Let's make this efficient - I just need a few key details."
 
-4. Keep conversations natural and flowing
-5. Summarize their requirements before ending the conversation
-6. Be encouraging and inspire creativity
+### 2. Core Information Gathering (2 minutes)
 
-Remember: You're helping them visualize and plan their perfect photo shoot in Vancouver.
+Ask these questions in order, but skip any the user already mentions:
+
+**Location & Timing**
+- "Where's the shoot happening?" (city/venue)
+- "What date and time?" 
+- "How long do you have?" (total duration)
+
+**Subjects & Style**
+- "Who are we photographing?" (names, relationship)
+- "What's the occasion?" (wedding, portrait, engagement, etc.)
+- "Any specific mood or style you're after?" (romantic, dramatic, fun, etc.)
+
+**Logistics**
+- "Do you prefer locations close together or spread out for variety?"
+- "Any must-have shots or specific ideas?"
+- "Any mobility considerations or special requirements?"
+
+### 3. Quick Confirmations (30 seconds)
+- Summarize what you heard
+- Ask: "Anything else I should know?"
+
+### 4. Closing (10 seconds)
+"Perfect! I've got everything I need. Your personalized shot list and location recommendations are being created now."
 ```
 
 4. **Agent Settings**
    - **Voice Selection**: Choose a friendly, professional voice
    - **Response Speed**: Set to "Normal" for natural conversation flow
    - **Language**: English
+   - **First Message**: "Hey there! I'm StoryboardAI, your photo shoot planner. I'll help you create an amazing shot list in just a few minutes. First up - where's this shoot happening?"
    - **Advanced Settings**: 
      - Enable interruption handling
      - Set appropriate silence detection (1.5-2 seconds)
+     
+5. **Configure Data Collection**
+
+The agent uses structured data collection with 12 fields:
+
+| Field | Type | Description |
+|-------|------|-------------|
+| location | string | City or venue name |
+| date | string | YYYY-MM-DD format |
+| startTime | string | HH:MM format (24-hour) |
+| duration | string | e.g., "2 hours" |
+| shootType | string | wedding/portrait/engagement/etc. |
+| mood | string | Comma-separated descriptors |
+| primarySubjects | string | "names, relationship, count" |
+| secondarySubjects | string | Pets, family members, etc. |
+| locationPreference | string | clustered/itinerary |
+| mustHaveShots | string | Semicolon-separated list |
+| specialRequirements | string | Mobility, permits, props, equipment |
+| experience | string | beginner/intermediate/professional |
 
 ### Obtaining the Agent ID
 
@@ -110,7 +139,7 @@ This ID is used in the frontend to connect to the specific agent.
 
 The webhook receives different payload types:
 
-#### Standard Conversation Payload
+#### Standard Conversation Payload with Data Collection
 ```json
 {
   "conversationId": "conv_abc123...",
@@ -118,6 +147,20 @@ The webhook receives different payload types:
   "timestamp": "2025-01-16T10:30:00Z",
   "duration": 45.2,
   "transcript": "User: I want to do a portrait shoot...",
+  "data_collection": {
+    "location": "San Francisco",
+    "date": "2024-01-27",
+    "startTime": "16:30",
+    "duration": "2 hours",
+    "shootType": "engagement",
+    "mood": "romantic, candid",
+    "primarySubjects": "Sarah and John, couple, 2",
+    "secondarySubjects": "golden retriever named Max",
+    "locationPreference": "itinerary",
+    "mustHaveShots": "Golden Gate Bridge; beach sunset",
+    "specialRequirements": "",
+    "experience": "intermediate"
+  },
   "metadata": {
     "userId": "optional-user-id"
   }
@@ -143,17 +186,24 @@ The webhook receives different payload types:
 
 The webhook implements a multi-stage processing pipeline:
 
-1. **Context Extraction**
+1. **Data Collection Processing** (NEW)
+   - Receives structured data from `data_collection` field
+   - No context extraction needed when data collection is present
+   - Parses consolidated fields (e.g., primarySubjects)
+
+2. **Context Extraction** (Fallback)
+   - Only used if `data_collection` is not present
    - Analyzes conversation/transcript
    - Extracts structured photography requirements
    - Returns `PhotoShootContext` object
 
-2. **Location Generation**
-   - Based on extracted context
-   - Suggests 4-5 specific Vancouver locations
+3. **Location Generation**
+   - Based on structured data or extracted context
+   - Uses dynamic location (not hardcoded to Vancouver)
+   - Suggests 4-5 specific locations
    - Includes timing, permits, accessibility info
 
-3. **Storyboard Creation**
+4. **Storyboard Creation**
    - Generates 6-8 detailed shots
    - Includes technical notes and pose instructions
    - Optionally generates visual previews
@@ -352,6 +402,20 @@ The conversation ID is critical for webhook processing but may not be immediatel
 - **Typical Case**: ID available within 1-2 seconds
 - **Worst Case**: ID captured during disconnect
 - **Failure Case**: Alert user and retry
+
+## Updating Agent Configuration
+
+To update the agent's data collection fields programmatically:
+
+```bash
+# Set your API key
+export ELEVEN_LABS_API_KEY=your_api_key_here
+
+# Run the update script
+node scripts/update_elevenlabs_agent.js
+```
+
+This script configures the 12 structured data collection fields. See `/scripts/elevenlabs_integration_summary.md` for implementation details.
 
 ## Testing the Integration
 
