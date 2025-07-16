@@ -31,3 +31,4 @@ CREATE TABLE sessions (
     -- Optional human-readable title
     title TEXT
 );
+
