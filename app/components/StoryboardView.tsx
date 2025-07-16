@@ -3,6 +3,7 @@
 
 import { EdgeShot, EdgeLocation } from '../types/photo-session';
 import { useState } from 'react';
+import Image from 'next/image';
 import { Button } from './Button';
 import { BottomSheet } from './BottomSheet';
 
@@ -53,10 +54,11 @@ export function StoryboardView({ shots, locations }: StoryboardViewProps) {
               <div className="aspect-[3/4] rounded-xl overflow-hidden bg-gradient-to-br from-blue-900/30 to-purple-900/30 relative">
                 {shot.storyboardImage ? (
                   <>
-                    <img 
+                    <Image 
                       src={shot.storyboardImage} 
                       alt={`Shot ${shot.shotNumber}`}
-                      className="w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-500"
+                      fill
+                      className="object-cover transform group-hover:scale-110 transition-transform duration-500"
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                   </>

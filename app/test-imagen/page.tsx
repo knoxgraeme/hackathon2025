@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { EdgePhotoShootContext, EdgeLocation, EdgeShot } from '../types/photo-session'
+import Image from 'next/image'
 import { API_CONFIG } from '../config/api'
 
 interface TestResult {
@@ -28,7 +29,7 @@ export default function PhotoAssistantTestPage() {
   const [generateImages, setGenerateImages] = useState(false)
   
   // Custom context for advanced testing
-  const [customContext, setCustomContext] = useState<Partial<PhotoShootContext>>({
+  const [customContext, setCustomContext] = useState<Partial<EdgePhotoShootContext>>({
     shootType: 'portrait',
     mood: ['dramatic', 'moody'],
     timeOfDay: 'golden hour',
@@ -41,7 +42,7 @@ export default function PhotoAssistantTestPage() {
     
     try {
       // Build request body based on test mode
-      let requestBody: any = { stage, generateImages }
+      const requestBody: Record<string, unknown> = { stage, generateImages }
       
       switch (testMode) {
         case 'conversation':
@@ -62,6 +63,10 @@ export default function PhotoAssistantTestPage() {
       
       console.log('Request:', requestBody)
       
+      if (!API_CONFIG.ELEVENLABS_WEBHOOK_URL) {
+        throw new Error('ELEVENLABS_WEBHOOK_URL is not configured')
+      }
+      
       const response = await fetch(API_CONFIG.ELEVENLABS_WEBHOOK_URL, {
         method: 'POST',
         headers: {
@@ -80,11 +85,12 @@ export default function PhotoAssistantTestPage() {
       if (data.success) {
         localStorage.setItem('lastPhotoShoot', JSON.stringify(data))
       }
-    } catch (error: any) {
+    } catch (error) {
       console.error('Error:', error)
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error'
       setResult({ 
         success: false, 
-        error: error.message,
+        error: errorMessage,
         conversationId: '',
         stage: stage,
         timestamp: new Date().toISOString()
@@ -120,7 +126,7 @@ export default function PhotoAssistantTestPage() {
                   type="radio"
                   value="mock"
                   checked={testMode === 'mock'}
-                  onChange={(e) => setTestMode(e.target.value as any)}
+                  onChange={(e) => setTestMode(e.target.value as 'conversation' | 'mock' | 'transcript' | 'custom')}
                   className="mr-2"
                 />
                 <span>Mock Data (Quick Testing)</span>
@@ -131,7 +137,7 @@ export default function PhotoAssistantTestPage() {
                   type="radio"
                   value="conversation"
                   checked={testMode === 'conversation'}
-                  onChange={(e) => setTestMode(e.target.value as any)}
+                  onChange={(e) => setTestMode(e.target.value as 'conversation' | 'mock' | 'transcript' | 'custom')}
                   className="mr-2"
                 />
                 <span>ElevenLabs Conversation ID</span>
@@ -142,7 +148,7 @@ export default function PhotoAssistantTestPage() {
                   type="radio"
                   value="transcript"
                   checked={testMode === 'transcript'}
-                  onChange={(e) => setTestMode(e.target.value as any)}
+                  onChange={(e) => setTestMode(e.target.value as 'conversation' | 'mock' | 'transcript' | 'custom')}
                   className="mr-2"
                 />
                 <span>Direct Transcript</span>
@@ -153,7 +159,7 @@ export default function PhotoAssistantTestPage() {
                   type="radio"
                   value="custom"
                   checked={testMode === 'custom'}
-                  onChange={(e) => setTestMode(e.target.value as any)}
+                  onChange={(e) => setTestMode(e.target.value as 'conversation' | 'mock' | 'transcript' | 'custom')}
                   className="mr-2"
                 />
                 <span>Custom Context</span>
@@ -165,7 +171,7 @@ export default function PhotoAssistantTestPage() {
               {testMode === 'mock' && (
                 <select
                   value={mockType}
-                  onChange={(e) => setMockType(e.target.value as any)}
+                  onChange={(e) => setMockType(e.target.value as 'portrait' | 'landscape' | 'street')}
                   className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-md"
                 >
                   <option value="portrait">Portrait Shoot</option>
@@ -223,7 +229,7 @@ export default function PhotoAssistantTestPage() {
                 <label className="block text-sm font-medium mb-2">Processing Stage:</label>
                 <select
                   value={stage}
-                  onChange={(e) => setStage(e.target.value as any)}
+                  onChange={(e) => setStage(e.target.value as 'full' | 'context' | 'locations' | 'storyboard')}
                   className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-md"
                 >
                   <option value="full">Full Pipeline</option>
@@ -338,11 +344,14 @@ export default function PhotoAssistantTestPage() {
                       </div>
                       
                       {shot.storyboardImage && (
-                        <img 
-                          src={shot.storyboardImage} 
-                          alt={`Storyboard for shot ${shot.shotNumber}`}
-                          className="w-full h-48 object-cover rounded mb-3"
-                        />
+                        <div className="relative w-full h-48 mb-3">
+                          <Image 
+                            src={shot.storyboardImage} 
+                            alt={`Storyboard for shot ${shot.shotNumber}`}
+                            fill
+                            className="object-cover rounded"
+                          />
+                        </div>
                       )}
                       
                       <p className="text-sm mb-2"><span className="font-semibold">Scene:</span> {shot.imagePrompt}</p>

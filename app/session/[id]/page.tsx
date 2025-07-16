@@ -30,6 +30,11 @@ export default function SessionPage() {
       // Call edge function
       console.log('Webhook URL:', API_CONFIG.ELEVENLABS_WEBHOOK_URL);
       console.log('Has Auth Key:', !!API_CONFIG.SUPABASE_ANON_KEY);
+      
+      if (!API_CONFIG.ELEVENLABS_WEBHOOK_URL) {
+        throw new Error('ELEVENLABS_WEBHOOK_URL is not configured');
+      }
+      
       const response = await fetch(API_CONFIG.ELEVENLABS_WEBHOOK_URL, {
         method: 'POST',
         headers: { 

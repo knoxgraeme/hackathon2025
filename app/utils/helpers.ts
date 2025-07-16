@@ -4,7 +4,7 @@
  * Safely parse JSON response from AI models
  * Handles markdown code blocks and other formatting issues
  */
-export function parseJsonResponse<T = any>(text: string): T {
+export function parseJsonResponse<T = unknown>(text: string): T {
   try {
     // Remove markdown code blocks and trim
     const cleanedText = text
@@ -26,7 +26,7 @@ export function parseJsonResponse<T = any>(text: string): T {
 export function createErrorResponse(
   message: string, 
   status: number = 500,
-  details?: any
+  details?: unknown
 ): Response {
   console.error(`Error [${status}]:`, message, details);
   
@@ -45,7 +45,7 @@ export function createErrorResponse(
 /**
  * Standard success response format for edge functions
  */
-export function createSuccessResponse<T = any>(
+export function createSuccessResponse<T = unknown>(
   data: T,
   headers?: HeadersInit
 ): Response {
@@ -64,13 +64,14 @@ export function createSuccessResponse<T = any>(
 /**
  * Extract conversation ID from various formats
  */
-export function extractConversationId(input: string | { conversationId?: string } | any): string | null {
+export function extractConversationId(input: string | { conversationId?: string } | unknown): string | null {
   if (typeof input === 'string') {
     return input;
   }
   
   if (input && typeof input === 'object' && 'conversationId' in input) {
-    return input.conversationId || null;
+    const obj = input as { conversationId?: string };
+    return obj.conversationId || null;
   }
   
   return null;
@@ -117,7 +118,7 @@ export function validateEnvVar(name: string): string {
 /**
  * Safe console logging with environment check
  */
-export function debugLog(...args: any[]) {
+export function debugLog(...args: unknown[]) {
   if (process.env.NODE_ENV === 'development' || process.env.DEBUG === 'true') {
     console.log('[DEBUG]', ...args);
   }

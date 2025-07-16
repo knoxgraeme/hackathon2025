@@ -16,14 +16,23 @@ interface Session {
   title?: string;
 }
 
-const SessionContext = createContext<{
+interface SessionContextType {
   sessions: Record<string, Session>;
   currentSession: Session | null;
   getSession: (id: string) => Session | null;
   updateSession: (id: string, updates: Partial<Session>) => void;
   createNewSession: () => string;
   deleteSession: (id: string) => void;
-}>({} as any);
+}
+
+const SessionContext = createContext<SessionContextType>({
+  sessions: {},
+  currentSession: null,
+  getSession: () => null,
+  updateSession: () => {},
+  createNewSession: () => '',
+  deleteSession: () => {}
+});
 
 export function SessionProvider({ children }: { children: React.ReactNode }) {
   const [sessions, setSessions] = useState<Record<string, Session>>({});
@@ -52,7 +61,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
   }, [sessions]);
 
   const createNewSession = () => {
-    const id = `session-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    const id = `session-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`;
     const newSession: Session = {
       id,
       status: 'initial',

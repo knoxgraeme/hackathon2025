@@ -1,6 +1,7 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useCallback } from 'react';
+import Image from 'next/image';
 import { EdgeShot, EdgeLocation } from '../types/photo-session';
 
 interface BottomSheetProps {
@@ -42,7 +43,7 @@ export function BottomSheet({ isOpen, onClose, shot, location }: BottomSheetProp
     }
   };
 
-  const handleTouchEnd = () => {
+  const handleTouchEnd = useCallback(() => {
     if (!isDragging.current || !sheetRef.current) return;
     isDragging.current = false;
     const deltaY = currentY.current - startY.current;
@@ -51,7 +52,7 @@ export function BottomSheet({ isOpen, onClose, shot, location }: BottomSheetProp
     } else {
       sheetRef.current.style.transform = 'translateY(0)';
     }
-  };
+  }, [onClose]);
 
   useEffect(() => {
     const sheet = sheetRef.current;
@@ -115,11 +116,12 @@ export function BottomSheet({ isOpen, onClose, shot, location }: BottomSheetProp
 
           {/* Storyboard Image */}
           {shot.storyboardImage && (
-            <div className="mb-6 aspect-video rounded-xl overflow-hidden">
-              <img 
+            <div className="mb-6 aspect-video rounded-xl overflow-hidden relative">
+              <Image 
                 src={shot.storyboardImage} 
                 alt={`Storyboard for shot ${shot.shotNumber}`}
-                className="w-full h-full object-cover"
+                fill
+                className="object-cover"
               />
             </div>
           )}
