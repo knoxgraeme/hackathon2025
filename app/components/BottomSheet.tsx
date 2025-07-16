@@ -134,7 +134,7 @@ export function BottomSheet({ isOpen, onClose, shot, location }: BottomSheetProp
                 <span className="text-2xl">🎭</span>
                 <div className="flex-1">
                   <h4 className="text-sm text-white/70 mb-1 font-medium uppercase tracking-wider">Pose Direction</h4>
-                  <p className="text-white/90">{shot.poseInstruction}</p>
+                  <p className="text-white/90">{shot.composition}</p>
                 </div>
               </div>
             </div>
@@ -145,7 +145,7 @@ export function BottomSheet({ isOpen, onClose, shot, location }: BottomSheetProp
                 <span className="text-2xl">⚙️</span>
                 <div className="flex-1">
                   <h4 className="text-sm text-white/70 mb-1 font-medium uppercase tracking-wider">Technical Setup</h4>
-                  <p className="text-white/90">{shot.technicalNotes}</p>
+                  <p className="text-white/90">{shot.technical}</p>
                 </div>
               </div>
             </div>

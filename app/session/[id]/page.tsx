@@ -14,7 +14,7 @@ export default function SessionPage() {
   const params = useParams();
   const router = useRouter();
   const sessionId = params.id as string;
-  const { currentSession, updateSession, createNewSession } = useSession();
+  const { currentSession, updateSession } = useSession();
   const [isProcessing, setIsProcessing] = useState(false);
 
   // Handle conversation completion

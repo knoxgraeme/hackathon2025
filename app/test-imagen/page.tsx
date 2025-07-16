@@ -8,7 +8,6 @@ import { API_CONFIG } from '../config/api'
 interface TestResult {
   success: boolean
   conversationId: string
-  stage: string
   timestamp: string
   context?: EdgePhotoShootContext
   locations?: EdgeLocation[]
@@ -21,19 +20,26 @@ export default function PhotoAssistantTestPage() {
   const [result, setResult] = useState<TestResult | null>(null)
   
   // Test inputs
-  const [testMode, setTestMode] = useState<'conversation' | 'mock' | 'transcript' | 'custom'>('mock')
+  const [testMode, setTestMode] = useState<'conversation' | 'transcript' | 'data_collection'>('data_collection')
   const [conversationId, setConversationId] = useState('conv_01k07v5tdeebfamvqctge5z8k2')
-  const [mockType, setMockType] = useState<'portrait' | 'landscape' | 'street'>('portrait')
   const [transcript, setTranscript] = useState('')
-  const [stage, setStage] = useState<'full' | 'context' | 'locations' | 'storyboard'>('full')
   const [generateImages, setGenerateImages] = useState(false)
+  const [imageCount, setImageCount] = useState(3)
   
-  // Custom context for advanced testing
-  const [customContext, setCustomContext] = useState<Partial<EdgePhotoShootContext>>({
+  // Data collection for testing
+  const [dataCollection, setDataCollection] = useState({
+    location: 'San Francisco',
+    date: new Date().toISOString().split('T')[0],
+    startTime: '16:00',
+    duration: '2 hours',
     shootType: 'portrait',
-    mood: ['dramatic', 'moody'],
-    timeOfDay: 'golden hour',
-    subject: 'Local musician',
+    mood: 'natural, candid',
+    primarySubjects: 'Professional headshots for Jane, 1',
+    secondarySubjects: '',
+    locationPreference: 'clustered',
+    mustHaveShots: 'headshot with city skyline; environmental portrait',
+    specialRequirements: 'Need quick session during lunch break',
+    experience: 'intermediate'
   })
 
   const runTest = async () => {
@@ -42,22 +48,20 @@ export default function PhotoAssistantTestPage() {
     
     try {
       // Build request body based on test mode
-      const requestBody: Record<string, unknown> = { stage, generateImages }
+      const requestBody: Record<string, unknown> = { generateImages }
+      if (generateImages) {
+        requestBody.imageCount = imageCount
+      }
       
       switch (testMode) {
         case 'conversation':
           requestBody.conversationId = conversationId
           break
-        case 'mock':
-          requestBody.mockContext = mockType
-          break
         case 'transcript':
           requestBody.transcript = transcript
           break
-        case 'custom':
-          if (stage !== 'context' && stage !== 'full') {
-            requestBody.context = customContext
-          }
+        case 'data_collection':
+          requestBody.data_collection = dataCollection
           break
       }
       
@@ -92,7 +96,6 @@ export default function PhotoAssistantTestPage() {
         success: false, 
         error: errorMessage,
         conversationId: '',
-        stage: stage,
         timestamp: new Date().toISOString()
       })
     } finally {
@@ -121,23 +124,13 @@ export default function PhotoAssistantTestPage() {
             <h2 className="text-xl font-bold mb-4">Test Mode</h2>
             
             <div className="space-y-3">
-              <label className="flex items-center">
-                <input
-                  type="radio"
-                  value="mock"
-                  checked={testMode === 'mock'}
-                  onChange={(e) => setTestMode(e.target.value as 'conversation' | 'mock' | 'transcript' | 'custom')}
-                  className="mr-2"
-                />
-                <span>Mock Data (Quick Testing)</span>
-              </label>
               
               <label className="flex items-center">
                 <input
                   type="radio"
                   value="conversation"
                   checked={testMode === 'conversation'}
-                  onChange={(e) => setTestMode(e.target.value as 'conversation' | 'mock' | 'transcript' | 'custom')}
+                  onChange={(e) => setTestMode(e.target.value as 'conversation' | 'transcript' | 'data_collection')}
                   className="mr-2"
                 />
                 <span>ElevenLabs Conversation ID</span>
@@ -148,7 +141,7 @@ export default function PhotoAssistantTestPage() {
                   type="radio"
                   value="transcript"
                   checked={testMode === 'transcript'}
-                  onChange={(e) => setTestMode(e.target.value as 'conversation' | 'mock' | 'transcript' | 'custom')}
+                  onChange={(e) => setTestMode(e.target.value as 'conversation' | 'transcript' | 'data_collection')}
                   className="mr-2"
                 />
                 <span>Direct Transcript</span>
@@ -157,9 +150,9 @@ export default function PhotoAssistantTestPage() {
               <label className="flex items-center">
                 <input
                   type="radio"
-                  value="custom"
-                  checked={testMode === 'custom'}
-                  onChange={(e) => setTestMode(e.target.value as 'conversation' | 'mock' | 'transcript' | 'custom')}
+                  value="data_collection"
+                  checked={testMode === 'data_collection'}
+                  onChange={(e) => setTestMode(e.target.value as 'conversation' | 'transcript' | 'data_collection')}
                   className="mr-2"
                 />
                 <span>Custom Context</span>
@@ -168,16 +161,44 @@ export default function PhotoAssistantTestPage() {
             
             {/* Mode-specific inputs */}
             <div className="mt-4">
-              {testMode === 'mock' && (
-                <select
-                  value={mockType}
-                  onChange={(e) => setMockType(e.target.value as 'portrait' | 'landscape' | 'street')}
-                  className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-md"
-                >
-                  <option value="portrait">Portrait Shoot</option>
-                  <option value="landscape">Landscape Shoot</option>
-                  <option value="street">Street Photography</option>
-                </select>
+              {testMode === 'data_collection' && (
+                <div className="space-y-2">
+                  <input
+                    type="text"
+                    placeholder="Location (e.g., San Francisco)"
+                    value={dataCollection.location}
+                    onChange={(e) => setDataCollection({...dataCollection, location: e.target.value})}
+                    className="w-full px-3 py-1 bg-gray-700 border border-gray-600 rounded text-sm"
+                  />
+                  <div className="grid grid-cols-2 gap-2">
+                    <input
+                      type="date"
+                      value={dataCollection.date}
+                      onChange={(e) => setDataCollection({...dataCollection, date: e.target.value})}
+                      className="px-3 py-1 bg-gray-700 border border-gray-600 rounded text-sm"
+                    />
+                    <input
+                      type="time"
+                      value={dataCollection.startTime}
+                      onChange={(e) => setDataCollection({...dataCollection, startTime: e.target.value})}
+                      className="px-3 py-1 bg-gray-700 border border-gray-600 rounded text-sm"
+                    />
+                  </div>
+                  <input
+                    type="text"
+                    placeholder="Shoot type (e.g., engagement, portrait)"
+                    value={dataCollection.shootType}
+                    onChange={(e) => setDataCollection({...dataCollection, shootType: e.target.value})}
+                    className="w-full px-3 py-1 bg-gray-700 border border-gray-600 rounded text-sm"
+                  />
+                  <input
+                    type="text"
+                    placeholder="Primary subjects"
+                    value={dataCollection.primarySubjects}
+                    onChange={(e) => setDataCollection({...dataCollection, primarySubjects: e.target.value})}
+                    className="w-full px-3 py-1 bg-gray-700 border border-gray-600 rounded text-sm"
+                  />
+                </div>
               )}
               
               {testMode === 'conversation' && (
@@ -199,24 +220,6 @@ export default function PhotoAssistantTestPage() {
                 />
               )}
               
-              {testMode === 'custom' && stage !== 'context' && stage !== 'full' && (
-                <div className="space-y-2 text-sm">
-                  <input
-                    type="text"
-                    placeholder="Subject"
-                    value={customContext.subject}
-                    onChange={(e) => setCustomContext({...customContext, subject: e.target.value})}
-                    className="w-full px-3 py-1 bg-gray-700 border border-gray-600 rounded"
-                  />
-                  <input
-                    type="text"
-                    placeholder="Mood (comma separated)"
-                    value={customContext.mood?.join(', ')}
-                    onChange={(e) => setCustomContext({...customContext, mood: e.target.value.split(',').map(m => m.trim())})}
-                    className="w-full px-3 py-1 bg-gray-700 border border-gray-600 rounded"
-                  />
-                </div>
-              )}
             </div>
           </div>
           
@@ -225,20 +228,6 @@ export default function PhotoAssistantTestPage() {
             <h2 className="text-xl font-bold mb-4">Processing Options</h2>
             
             <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium mb-2">Processing Stage:</label>
-                <select
-                  value={stage}
-                  onChange={(e) => setStage(e.target.value as 'full' | 'context' | 'locations' | 'storyboard')}
-                  className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-md"
-                >
-                  <option value="full">Full Pipeline</option>
-                  <option value="context">Context Only</option>
-                  <option value="locations">Locations Only</option>
-                  <option value="storyboard">Storyboard Only</option>
-                </select>
-              </div>
-              
               <label className="flex items-center">
                 <input
                   type="checkbox"
@@ -248,6 +237,20 @@ export default function PhotoAssistantTestPage() {
                 />
                 <span>Generate Storyboard Images (Imagen 3)</span>
               </label>
+              
+              {generateImages && (
+                <div>
+                  <label className="block text-sm font-medium mb-2">Number of Images:</label>
+                  <input
+                    type="number"
+                    min="1"
+                    max="8"
+                    value={imageCount}
+                    onChange={(e) => setImageCount(parseInt(e.target.value) || 3)}
+                    className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-md"
+                  />
+                </div>
+              )}
               
               <button
                 onClick={runTest}
@@ -268,7 +271,7 @@ export default function PhotoAssistantTestPage() {
               <div className="flex justify-between items-center">
                 <div>
                   <h3 className="font-bold">Status: {result.success ? 'Success' : 'Error'}</h3>
-                  <p className="text-sm opacity-75">Stage: {result.stage} | {new Date(result.timestamp).toLocaleTimeString()}</p>
+                  <p className="text-sm opacity-75">{new Date(result.timestamp).toLocaleTimeString()}</p>
                 </div>
                 {result.success && (
                   <button
@@ -354,9 +357,11 @@ export default function PhotoAssistantTestPage() {
                         </div>
                       )}
                       
+                      <p className="text-sm mb-2"><span className="font-semibold">Title:</span> {shot.title}</p>
                       <p className="text-sm mb-2"><span className="font-semibold">Scene:</span> {shot.imagePrompt}</p>
-                      <p className="text-sm mb-2"><span className="font-semibold">Direction:</span> {shot.poseInstruction}</p>
-                      <p className="text-sm mb-2"><span className="font-semibold">Technical:</span> {shot.technicalNotes}</p>
+                      <p className="text-sm mb-2"><span className="font-semibold">Composition:</span> {shot.composition}</p>
+                      <p className="text-sm mb-2"><span className="font-semibold">Direction:</span> {shot.direction}</p>
+                      <p className="text-sm mb-2"><span className="font-semibold">Technical:</span> {shot.technical}</p>
                       <p className="text-sm"><span className="font-semibold">Gear:</span> {shot.equipment.join(', ')}</p>
                     </div>
                   ))}
@@ -379,28 +384,45 @@ export default function PhotoAssistantTestPage() {
           <h3 className="font-bold mb-3">Quick Tests:</h3>
           <div className="flex flex-wrap gap-2">
             <button
-              onClick={() => { setTestMode('mock'); setMockType('portrait'); setStage('full'); runTest(); }}
+              onClick={() => { 
+                setTestMode('data_collection'); 
+                setDataCollection({...dataCollection, shootType: 'portrait', location: 'New York'});
+                runTest(); 
+              }}
               className="px-3 py-1 bg-gray-700 hover:bg-gray-600 rounded text-sm"
             >
-              Portrait Full
+              Portrait NYC
             </button>
             <button
-              onClick={() => { setTestMode('mock'); setMockType('landscape'); setStage('locations'); runTest(); }}
+              onClick={() => { 
+                setTestMode('data_collection'); 
+                setDataCollection({...dataCollection, shootType: 'engagement', location: 'San Francisco', locationPreference: 'itinerary'});
+                runTest(); 
+              }}
               className="px-3 py-1 bg-gray-700 hover:bg-gray-600 rounded text-sm"
             >
-              Landscape Locations
+              Engagement SF
             </button>
             <button
-              onClick={() => { setTestMode('mock'); setMockType('street'); setStage('storyboard'); runTest(); }}
+              onClick={() => { 
+                setTestMode('transcript'); 
+                setTranscript('I want to do a sunrise landscape shoot in Yosemite focusing on Half Dome and El Capitan');
+                runTest(); 
+              }}
               className="px-3 py-1 bg-gray-700 hover:bg-gray-600 rounded text-sm"
             >
-              Street Storyboard
+              Landscape Transcript
             </button>
             <button
-              onClick={() => { setTestMode('conversation'); setStage('full'); setGenerateImages(true); runTest(); }}
+              onClick={() => { 
+                setTestMode('data_collection'); 
+                setGenerateImages(true); 
+                setImageCount(4);
+                runTest(); 
+              }}
               className="px-3 py-1 bg-gray-700 hover:bg-gray-600 rounded text-sm"
             >
-              Real Conv + Images
+              Full + 4 Images
             </button>
           </div>
         </div>

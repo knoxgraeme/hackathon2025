@@ -12,14 +12,18 @@ export interface PhotoShootContext {
 
 // Edge function context (used in elevenlabs-webhook)
 export interface EdgePhotoShootContext {
-  shootType: 'portrait' | 'landscape' | 'product' | 'event' | 'street' | 'fashion';
-  mood: string[];
-  timeOfDay: string;
-  subject: string;
+  shootType: string; // Open-ended: portrait, landscape, wedding, lifestyle, branding, etc.
+  mood: string[]; // Open-ended: romantic, moody, vibrant, minimal, cinematic, etc.
+  timeOfDay: string; // Open-ended: golden hour, blue hour, midday, overcast, etc.
+  subject: string; // Combined primary and secondary subjects
   duration: string;
   equipment?: string[];
-  experience: 'beginner' | 'intermediate' | 'professional';
-  specialRequests?: string;
+  experience: string; // Open-ended: beginner, intermediate, professional, expert, etc.
+  specialRequests?: string; // Combined special requirements and must-have shots
+  location?: string;
+  date?: string;
+  startTime?: string;
+  locationPreference?: string; // Open-ended: clustered, itinerary, or custom preferences
 }
 
 // Frontend location type
@@ -64,13 +68,15 @@ export interface Shot {
 export interface EdgeShot {
   locationIndex: number;
   shotNumber: number;
+  title: string;
   imagePrompt: string;
-  poseInstruction: string;
-  technicalNotes: string;
+  composition: string; // Combined framing, poses, and environment
+  direction: string; // Communication cues for the photographer
+  technical: string; // Camera settings, lens choice, lighting
   equipment: string[];
   storyboardImage?: string;
 }
 
 export type PhotoSessionStage = PhotoShootContext['stage'];
-export type ShootType = EdgePhotoShootContext['shootType'];
-export type ExperienceLevel = EdgePhotoShootContext['experience'];
+export type ShootType = string; // Now open-ended
+export type ExperienceLevel = string; // Now open-ended

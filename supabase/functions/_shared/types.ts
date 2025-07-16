@@ -5,18 +5,15 @@ export interface PhotoShootContext {
   shootType: string; // Open-ended: portrait, landscape, wedding, lifestyle, branding, etc.
   mood: string[]; // Open-ended: romantic, moody, vibrant, minimal, cinematic, etc.
   timeOfDay: string; // Open-ended: golden hour, blue hour, midday, overcast, etc.
-  subject: string;
+  subject: string; // Combined primary and secondary subjects
   duration: string;
   equipment?: string[];
   experience: string; // Open-ended: beginner, intermediate, professional, expert, etc.
-  specialRequests?: string;
+  specialRequests?: string; // Combined special requirements and must-have shots
   location?: string;
   date?: string;
   startTime?: string;
   locationPreference?: string; // Open-ended: clustered, itinerary, or custom preferences
-  mustHaveShots?: string;
-  primarySubjects?: string;
-  secondarySubjects?: string;
 }
 
 export interface Location {
@@ -33,14 +30,11 @@ export interface Location {
 export interface Shot {
   locationIndex: number;
   shotNumber: number;
+  title: string;
   imagePrompt: string;
-  poseInstruction: string;
-  technicalNotes: string;
+  composition: string; // Combined framing, poses, and environment
+  direction: string; // Communication cues for the photographer
+  technical: string; // Camera settings, lens choice, lighting
   equipment: string[];
   storyboardImage?: string;
-  title?: string;
-  idealLighting?: string;
-  framingComposition?: string;
-  blockingEnvironment?: string;
-  communicationCues?: string;
 }
