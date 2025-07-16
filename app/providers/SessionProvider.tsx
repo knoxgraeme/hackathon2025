@@ -3,7 +3,13 @@
 
 import { createContext, useContext, useState, useEffect } from 'react';
 import { usePathname } from 'next/navigation';
+import { createClient } from '@supabase/supabase-js';
 import { EdgePhotoShootContext, EdgeLocation, EdgeShot } from '../types/photo-session';
+
+// Initialize Supabase client (will be null if env vars not set)
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+const supabase = supabaseUrl && supabaseAnonKey ? createClient(supabaseUrl, supabaseAnonKey) : null;
 
 /**
  * Represents a photo shoot session with its complete lifecycle state.
@@ -118,6 +124,40 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
   }, [sessions]);
 
   /**
+   * Save session to Supabase database
+   * Falls back gracefully if Supabase is not available or fails
+   */
+  const saveToSupabase = async (session: Session) => {
+    if (!supabase) {
+      console.log('Supabase client not available, skipping database save');
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('sessions')
+        .upsert({
+          id: session.id,
+          status: session.status,
+          conversation_id: session.conversationId,
+          context: session.context,
+          locations: session.locations,
+          shots: session.shots,
+          created_at: session.createdAt,
+          title: session.title
+        });
+
+      if (error) {
+        console.error('Error saving session to Supabase:', error);
+      } else {
+        console.log('Session saved to Supabase:', session.id);
+      }
+    } catch (error) {
+      console.error('Failed to save session to Supabase:', error);
+    }
+  };
+
+  /**
    * Creates a new photo shoot session with initial state.
    * 
    * Session ID generation:
@@ -136,7 +176,14 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
       title: `Session ${new Date().toLocaleDateString()}`
     };
     
+    // Save to localStorage immediately for responsive UI
     setSessions(prev => ({ ...prev, [id]: newSession }));
+    
+    // Save to Supabase for persistence (async, non-blocking)
+
+    console.log('saving to supabase', newSession)
+    saveToSupabase(newSession);
+    
     return id;
   };
 
@@ -158,9 +205,17 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
         console.error(`Session ${id} not found`);
         return prev;
       }
+      
+      // Create the updated session object
+      const updatedSession = { ...prev[id], ...updates };
+      
+      // Save to Supabase for persistence (async, non-blocking)
+      console.log('updating session in supabase', updatedSession);
+      saveToSupabase(updatedSession);
+      
       return {
         ...prev,
-        [id]: { ...prev[id], ...updates }
+        [id]: updatedSession
       };
     });
   };
