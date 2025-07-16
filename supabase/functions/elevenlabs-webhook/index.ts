@@ -59,9 +59,38 @@ serve(async (req) => {
   try {
     // Try to parse request body - validates incoming JSON structure
     try {
-      body = await req.json()
+      const contentLength = req.headers.get('content-length');
+      const contentType = req.headers.get('content-type');
+      
+      console.log('Request headers:', {
+        'content-type': contentType,
+        'content-length': contentLength
+      });
+      
+      if (contentLength && parseInt(contentLength) > 0) {
+        // If Content-Type is missing (iOS Safari PWA issue), read as text and parse manually
+        if (!contentType || !contentType.includes('application/json')) {
+          console.log('Missing or invalid Content-Type, attempting manual JSON parse');
+          const textBody = await req.text();
+          try {
+            body = JSON.parse(textBody);
+          } catch (jsonError) {
+            console.error('Manual JSON parse failed:', jsonError);
+            console.error('Body text:', textBody);
+            return createErrorResponse('Invalid JSON in request body', 400);
+          }
+        } else {
+          // Standard JSON parsing when Content-Type is present
+          body = await req.json();
+        }
+      } else if (contentLength === '0' || !contentLength) {
+        console.log('No body content to parse');
+        body = {};
+      }
     } catch (parseError) {
       console.error('Failed to parse request body:', parseError);
+      console.error('Headers:', Object.fromEntries(req.headers.entries()));
+      
       // Early return with 400 error for malformed JSON
       return createErrorResponse('Invalid JSON in request body', 400);
     }
@@ -106,7 +135,7 @@ serve(async (req) => {
         
         // Build context from data_collection
         result.context = {
-          shootType: dc.shootType || 'portrait',
+          shootType: dc.shootType || 'wedding',
           mood: moodArray,
           timeOfDay: 'flexible', // Let the LLM determine this based on startTime and context
           subject: `${dc.primarySubjects}${dc.secondarySubjects ? ', ' + dc.secondarySubjects : ''}`,
