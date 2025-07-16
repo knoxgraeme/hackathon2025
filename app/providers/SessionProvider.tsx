@@ -3,46 +3,15 @@
 
 import { createContext, useContext, useState, useEffect } from 'react';
 import { usePathname } from 'next/navigation';
-
-interface PhotoShootContext {
-  shootType: 'portrait' | 'landscape' | 'product' | 'event' | 'street' | 'fashion';
-  mood: string[];
-  timeOfDay: string;
-  subject: string;
-  duration: string;
-  equipment?: string[];
-  experience: 'beginner' | 'intermediate' | 'professional';
-  specialRequests?: string;
-}
-
-interface Location {
-  name: string;
-  address?: string;
-  description: string;
-  bestTime: string;
-  lightingNotes: string;
-  accessibility: string;
-  permits: string;
-  alternatives: string[];
-}
-
-interface Shot {
-  locationIndex: number;
-  shotNumber: number;
-  imagePrompt: string;
-  poseInstruction: string;
-  technicalNotes: string;
-  equipment: string[];
-  storyboardImage?: string;
-}
+import { EdgePhotoShootContext, EdgeLocation, EdgeShot } from '../types/photo-session';
 
 interface Session {
   id: string;
   status: 'initial' | 'conversation' | 'processing' | 'complete';
   conversationId?: string;
-  context?: PhotoShootContext;
-  locations?: Location[];
-  shots?: Shot[];
+  context?: EdgePhotoShootContext;
+  locations?: EdgeLocation[];
+  shots?: EdgeShot[];
   createdAt: string;
   title?: string;
 }

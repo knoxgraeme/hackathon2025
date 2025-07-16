@@ -1,19 +1,10 @@
 // components/LocationsList.tsx
 'use client';
 
-interface Location {
-  name: string;
-  address?: string;
-  description: string;
-  bestTime: string;
-  lightingNotes: string;
-  accessibility: string;
-  permits: string;
-  alternatives: string[];
-}
+import { EdgeLocation } from '../types/photo-session';
 
 interface LocationsListProps {
-  locations: Location[];
+  locations: EdgeLocation[];
 }
 
 export function LocationsList({ locations }: LocationsListProps) {

@@ -1,43 +1,96 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { GoogleGenerativeAI } from "https://esm.sh/@google/generative-ai@0.21.0"
 import { GoogleGenAI } from "https://esm.sh/@google/genai@latest"
+import { 
+  parseJsonResponse, 
+  createErrorResponse, 
+  createSuccessResponse, 
+  handleCors,
+  validateEnvVar 
+} from "../_shared/helpers.ts"
+import type { PhotoShootContext, Location, Shot } from "../_shared/types.ts"
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+// Extracted prompts
+const PROMPTS = {
+  CONTEXT_EXTRACTION: `Extract photography shoot details from this conversation data.
+
+Return ONLY a JSON object with these exact fields:
+{
+  "shootType": "portrait" | "landscape" | "product" | "event" | "street" | "fashion",
+  "mood": ["array of 2-3 mood descriptors"],
+  "timeOfDay": "golden hour" | "blue hour" | "midday" | "overcast" | "night" | "flexible",
+  "subject": "description of what/who is being photographed",
+  "duration": "estimated shoot duration",
+  "equipment": ["optional: mentioned camera gear"],
+  "experience": "beginner" | "intermediate" | "professional",
+  "specialRequests": "any specific requirements mentioned"
 }
 
-// Types for structured data
-interface PhotoShootContext {
-  shootType: 'portrait' | 'landscape' | 'product' | 'event' | 'street' | 'fashion'
-  mood: string[]
-  timeOfDay: string
-  subject: string
-  duration: string
-  equipment?: string[]
-  experience: 'beginner' | 'intermediate' | 'professional'
-  specialRequests?: string
+If information is not mentioned, make reasonable assumptions based on context.
+
+Conversation data:
+{CONVERSATION_DATA}
+
+RESPOND WITH ONLY THE JSON OBJECT, NO OTHER TEXT.`,
+
+  LOCATION_GENERATION: `You are a professional location scout in Vancouver, BC. Based on this photography context:
+{CONTEXT}
+
+Suggest 4-5 specific locations in Vancouver area. Include lesser-known spots.
+Base suggestions on these areas but be more specific: {BASE_LOCATIONS}
+
+Return ONLY a JSON array with these exact fields for each location:
+{
+  "name": "Specific location name",
+  "address": "Approximate address or area",
+  "description": "50-word visual description focusing on {MOOD} mood",
+  "bestTime": "Optimal shooting time for this location",
+  "lightingNotes": "Natural light conditions and tips",
+  "accessibility": "Parking, transit, walking required",
+  "permits": "Any permit requirements or restrictions",
+  "alternatives": ["2 nearby backup locations"]
 }
 
-interface Location {
-  name: string
-  address?: string
-  description: string
-  bestTime: string
-  lightingNotes: string
-  accessibility: string
-  permits: string
-  alternatives: string[]
+Focus on locations that match the mood: {MOOD}
+Consider {TIME_OF_DAY} lighting preferences.
+
+RESPOND WITH ONLY THE JSON ARRAY, NO OTHER TEXT.`,
+
+  STORYBOARD_GENERATION: `You are a photography director creating a shot list. Based on this context:
+{CONTEXT}
+
+And these locations:
+{LOCATIONS}
+
+Create 6-8 diverse shots across the locations. Mix wide, medium, and close-up shots.
+
+Return ONLY a JSON array with these exact fields for each shot:
+{
+  "locationIndex": 0-based index matching the locations array,
+  "shotNumber": sequential number starting at 1,
+  "imagePrompt": "30-word artistic description for storyboard visualization",
+  "poseInstruction": "Clear direction for subject positioning and expression",
+  "technicalNotes": "Camera settings, lens choice, composition tips",
+  "equipment": ["Required gear for this shot"]
 }
 
-interface Shot {
-  locationIndex: number
-  shotNumber: number
-  imagePrompt: string
-  poseInstruction: string
-  technicalNotes: string
-  equipment: string[]
-  storyboardImage?: string
+Style: {MOOD}
+Subject: {SUBJECT}
+
+RESPOND WITH ONLY THE JSON ARRAY, NO OTHER TEXT.`,
+
+  IMAGE_GENERATION: `Professional photography storyboard illustration: {IMAGE_PROMPT}. 
+Style: Clean sketch/illustration style, {MOOD} mood.
+Show camera angle and composition clearly.`
+}
+
+// Types are now imported from shared location
+
+// Helper functions
+
+function handleStageError(stage: string, error: any, getDefault: () => any): any {
+  console.error(`${stage} error:`, error.message || error)
+  return getDefault()
 }
 
 // Vancouver location database for fallbacks
@@ -66,18 +119,24 @@ const VANCOUVER_LOCATIONS = {
 }
 
 serve(async (req) => {
-  if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders })
-  }
+  // Handle CORS preflight
+  const corsResponse = handleCors(req);
+  if (corsResponse) return corsResponse;
 
+  let body: any = {};
+  
   try {
-    const body = await req.json()
+    // Try to parse request body
+    try {
+      body = await req.json()
+    } catch (parseError) {
+      console.error('Failed to parse request body:', parseError);
+      return createErrorResponse('Invalid JSON in request body', 400);
+    }
+    
     console.log('📦 Received request:', JSON.stringify(body, null, 2))
     
-    const geminiApiKey = Deno.env.get('GEMINI_API_KEY')
-    if (!geminiApiKey) {
-      throw new Error('GEMINI_API_KEY not set')
-    }
+    const geminiApiKey = validateEnvVar('GEMINI_API_KEY')
 
     const genAI = new GoogleGenerativeAI(geminiApiKey)
     const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" })
@@ -238,7 +297,7 @@ serve(async (req) => {
       const storyboardText = storyboardResult.response.text()
       
       try {
-        result.shots = JSON.parse(storyboardText.replace(/```json|```/g, '').trim())
+        result.shots = parseJsonResponse(storyboardText)
         console.log(`✅ Generated ${result.shots.length} shots`)
       } catch (error) {
         console.error('Storyboard parsing error:', error)
@@ -296,26 +355,17 @@ serve(async (req) => {
       shots: response.shots?.map(s => ({ ...s, storyboardImage: s.storyboardImage ? '[BASE64_IMAGE]' : undefined }))
     })
     
-    return new Response(
-      JSON.stringify(response),
-      {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 200,
-      },
-    )
+    return createSuccessResponse(response)
     
   } catch (error) {
-    console.error('❌ Error:', error)
-    return new Response(
-      JSON.stringify({ 
-        error: error.message,
+    console.error('Request processing error:', error);
+    return createErrorResponse(
+      error.message || 'An unexpected error occurred',
+      500,
+      {
         stage: body.stage || 'unknown',
         timestamp: new Date().toISOString()
-      }),
-      {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 400,
-      },
+      }
     )
   }
 })

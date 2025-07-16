@@ -1,23 +1,16 @@
 // components/StoryboardView.tsx
 'use client';
 
-interface Shot {
-  locationIndex: number;
-  shotNumber: number;
-  imagePrompt: string;
-  poseInstruction: string;
-  technicalNotes: string;
-  equipment: string[];
-  storyboardImage?: string;
-}
+import { EdgeShot, EdgeLocation } from '../types/photo-session';
 
-interface Location {
+// Create a minimal interface for locations used in the storyboard
+interface StoryboardLocation {
   name: string;
 }
 
 interface StoryboardViewProps {
-  shots: Shot[];
-  locations: Location[];
+  shots: EdgeShot[];
+  locations: StoryboardLocation[] | EdgeLocation[];
 }
 
 export function StoryboardView({ shots, locations }: StoryboardViewProps) {

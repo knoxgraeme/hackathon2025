@@ -8,6 +8,7 @@ import ConversationFlow from '../../components/ConversationFlow';
 import { LocationsList } from '../../components/LocationsList';
 import { StoryboardView } from '../../components/StoryboardView';
 import { LoadingPipeline } from '../../components/LoadingStates';
+import { API_CONFIG } from '../../config/api';
 
 export default function SessionPage() {
   const params = useParams();
@@ -26,12 +27,16 @@ export default function SessionPage() {
     setIsProcessing(true);
     
     try {
-      // Call edge function - update this URL to your actual edge function
-      const response = await fetch('https://akukmblllfqvoibrvrie.supabase.co/functions/v1/elevenlabs-webhook', {
+      // Call edge function
+      console.log('Webhook URL:', API_CONFIG.ELEVENLABS_WEBHOOK_URL);
+      console.log('Has Auth Key:', !!API_CONFIG.SUPABASE_ANON_KEY);
+      const response = await fetch(API_CONFIG.ELEVENLABS_WEBHOOK_URL, {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
-          'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFrdWttYmxsbGZxdm9pYnJ2cmllIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI2MTk3NzAsImV4cCI6MjA2ODE5NTc3MH0.76Um3tnXfezwfXXFesU-LqpDabAG9GAAWbJPP11kMdc'
+          ...(API_CONFIG.SUPABASE_ANON_KEY && {
+            'Authorization': `Bearer ${API_CONFIG.SUPABASE_ANON_KEY}`
+          })
         },
         body: JSON.stringify({ 
           conversationId,

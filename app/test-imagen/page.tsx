@@ -1,48 +1,17 @@
 'use client'
 
 import { useState } from 'react'
-
-// Type definitions matching the edge function
-interface PhotoShootContext {
-  shootType: 'portrait' | 'landscape' | 'product' | 'event' | 'street' | 'fashion'
-  mood: string[]
-  timeOfDay: string
-  subject: string
-  duration: string
-  equipment?: string[]
-  experience: 'beginner' | 'intermediate' | 'professional'
-  specialRequests?: string
-}
-
-interface Location {
-  name: string
-  address?: string
-  description: string
-  bestTime: string
-  lightingNotes: string
-  accessibility: string
-  permits: string
-  alternatives: string[]
-}
-
-interface Shot {
-  locationIndex: number
-  shotNumber: number
-  imagePrompt: string
-  poseInstruction: string
-  technicalNotes: string
-  equipment: string[]
-  storyboardImage?: string
-}
+import { EdgePhotoShootContext, EdgeLocation, EdgeShot } from '../types/photo-session'
+import { API_CONFIG } from '../config/api'
 
 interface TestResult {
   success: boolean
   conversationId: string
   stage: string
   timestamp: string
-  context?: PhotoShootContext
-  locations?: Location[]
-  shots?: Shot[]
+  context?: EdgePhotoShootContext
+  locations?: EdgeLocation[]
+  shots?: EdgeShot[]
   error?: string
 }
 
@@ -93,11 +62,13 @@ export default function PhotoAssistantTestPage() {
       
       console.log('Request:', requestBody)
       
-      const response = await fetch('https://akukmblllfqvoibrvrie.supabase.co/functions/v1/elevenlabs-webhook', {
+      const response = await fetch(API_CONFIG.ELEVENLABS_WEBHOOK_URL, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFrdWttYmxsbGZxdm9pYnJ2cmllIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI2MTk3NzAsImV4cCI6MjA2ODE5NTc3MH0.76Um3tnXfezwfXXFesU-LqpDabAG9GAAWbJPP11kMdc'
+          ...(API_CONFIG.SUPABASE_ANON_KEY && {
+            'Authorization': `Bearer ${API_CONFIG.SUPABASE_ANON_KEY}`
+          })
         },
         body: JSON.stringify(requestBody)
       })
