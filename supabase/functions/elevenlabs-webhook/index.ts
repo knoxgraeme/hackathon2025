@@ -197,7 +197,7 @@ serve(async (req) => {
 
     // Initialize AI models for text and image generation
     const genAI = new GoogleGenerativeAI(geminiApiKey)
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" })
+    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" })
     
     // Determine processing stage: 'context', 'locations', 'storyboard', or 'full'
     const stage = body.stage || 'full'

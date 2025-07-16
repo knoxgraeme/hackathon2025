@@ -10,13 +10,11 @@ interface BeforeInstallPromptEvent extends Event {
 
 export function PWAInstallPrompt() {
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
-  const [isVisible, setIsVisible] = useState(false);
 
   useEffect(() => {
     const handleBeforeInstallPrompt = (e: Event) => {
       e.preventDefault();
       setDeferredPrompt(e as BeforeInstallPromptEvent);
-      setIsVisible(true);
     };
 
     window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
@@ -30,23 +28,11 @@ export function PWAInstallPrompt() {
     if (!deferredPrompt) return;
 
     deferredPrompt.prompt();
-    const { outcome } = await deferredPrompt.userChoice;
-    
-    if (outcome === 'accepted') {
-      console.log('User accepted the install prompt');
-    } else {
-      console.log('User dismissed the install prompt');
-    }
-    
+    await deferredPrompt.userChoice;
     setDeferredPrompt(null);
-    setIsVisible(false);
   };
 
-  const handleDismiss = () => {
-    setIsVisible(false);
-  };
-
-  if (!isVisible || !deferredPrompt) {
+  if (!deferredPrompt) {
     return null;
   }
 
@@ -84,7 +70,7 @@ export function PWAInstallPrompt() {
               Install
             </Button>
             <Button
-              onClick={handleDismiss}
+              onClick={() => setDeferredPrompt(null)}
               variant="ghost"
               size="sm"
               className="text-xs"
@@ -94,7 +80,7 @@ export function PWAInstallPrompt() {
           </div>
         </div>
         <button
-          onClick={handleDismiss}
+          onClick={() => setDeferredPrompt(null)}
           className="flex-shrink-0 p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
         >
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
