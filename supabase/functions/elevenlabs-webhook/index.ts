@@ -108,91 +108,82 @@ serve(async (req) => {
     let result: any = {}
     
     /**
-     * STAGE 1: Extract Photography Context from data_collection or Conversation
+     * STAGE 1: Extract Photography Context from Transcript
      * 
-     * This stage processes photography session details from:
-     * 1. data_collection - Pre-structured fields from ElevenLabs agent
-     * 2. transcript - Direct transcript for AI extraction (fallback)
-     * 
-     * When data_collection is present, no AI extraction is needed.
+     * This stage extracts all data collection fields from the transcript
+     * using AI to parse conversational data into structured format.
      */
     {
-      console.log('🎯 Stage 1: Processing context')
+      console.log('🎯 Stage 1: Extracting context from transcript')
       
-      // Check for pre-structured data_collection from ElevenLabs
-      if (body.data_collection) {
-        console.log('📊 Using structured data_collection')
-        const dc = body.data_collection
+      if (!body.transcript) {
+        console.error('No transcript provided')
+        return createErrorResponse('Transcript is required', 400)
+      }
+      
+      const contextPrompt = `
+      Extract photography shoot details from this conversation transcript.
+      
+      Return ONLY a JSON object with ALL these exact fields:
+      {
+        "location": "city or venue name where shoot will take place",
+        "date": "shoot date in YYYY-MM-DD format (or 'flexible' if not mentioned)",
+        "startTime": "start time in HH:MM format (or 'flexible' if not mentioned)",
+        "duration": "total duration like '2 hours' or '90 minutes'",
+        "shootType": "type like wedding, portrait, engagement, event, product, etc",
+        "mood": ["2-3 mood descriptors like romantic, candid, dramatic, etc"],
+        "primarySubjects": "main subjects with names/relationship/count",
+        "secondarySubjects": "other subjects like pets, family (or empty string if none)",
+        "locationPreference": "clustered (close together) or spread out",
+        "mustHaveShots": "specific requested shots (or empty string if none)",
+        "specialRequirements": "special needs, permits, props (or empty string if none)",
+        "experience": "beginner, intermediate, or professional",
+        "timeOfDay": "preferred lighting time based on startTime or 'flexible'",
+        "subject": "combined description of all subjects",
+        "equipment": [],
+        "specialRequests": "combined mustHaveShots and specialRequirements"
+      }
+      
+      Use reasonable defaults:
+      - location: "local area" if not mentioned
+      - date/startTime: "flexible" if not specified
+      - duration: "2 hours" if not mentioned
+      - shootType: infer from context or use "portrait"
+      - mood: infer 2-3 descriptors from conversation tone
+      - experience: "intermediate" if not mentioned
+      - locationPreference: "clustered" if not specified
+      
+      Transcript:
+      ${body.transcript}
+      
+      RESPOND WITH ONLY THE JSON OBJECT, NO OTHER TEXT.`
+      
+      const contextResult = await model.generateContent(contextPrompt)
+      const contextText = contextResult.response.text()
+      
+      try {
+        const extractedData = JSON.parse(contextText.replace(/```json|```/g, '').trim())
         
-        // Parse mood from comma-separated string to array
-        const moodArray = dc.mood ? dc.mood.split(',').map((m: string) => m.trim()) : ['natural', 'candid']
-        
-        // Combine special requirements and must-have shots
-        const specialRequests = [
-          dc.specialRequirements,
-          dc.mustHaveShots ? `Must include: ${dc.mustHaveShots}` : null
-        ].filter(Boolean).join('. ') || '';
-        
-        // Build context from data_collection
+        // Build context combining extracted fields
         result.context = {
-          shootType: dc.shootType || 'wedding',
-          mood: moodArray,
-          timeOfDay: 'flexible', // Let the LLM determine this based on startTime and context
-          subject: `${dc.primarySubjects}${dc.secondarySubjects ? ', ' + dc.secondarySubjects : ''}`,
-          duration: dc.duration || '2 hours',
-          equipment: [], // Not collected in current agent
-          experience: dc.experience || 'intermediate',
-          specialRequests: specialRequests,
-          location: dc.location,
-          date: dc.date,
-          startTime: dc.startTime,
-          locationPreference: dc.locationPreference || 'clustered'
+          shootType: extractedData.shootType,
+          mood: extractedData.mood,
+          timeOfDay: extractedData.timeOfDay,
+          subject: extractedData.subject,
+          duration: extractedData.duration,
+          equipment: extractedData.equipment,
+          experience: extractedData.experience,
+          specialRequests: extractedData.specialRequests,
+          location: extractedData.location,
+          date: extractedData.date,
+          startTime: extractedData.startTime,
+          locationPreference: extractedData.locationPreference
         }
         
-        console.log('✅ Processed data_collection context:', result.context)
-        
-      } else if (body.transcript) {
-        // Fallback: Extract from transcript using AI
-        console.log('📝 Extracting context from transcript')
-        
-        const contextPrompt = `
-        Extract photography shoot details from this conversation transcript.
-        
-        Return ONLY a JSON object with these exact fields:
-        {
-          "shootType": "type of photography (e.g., portrait, wedding, lifestyle, branding, etc.)",
-          "mood": ["array of 2-3 mood/style descriptors"],
-          "timeOfDay": "preferred lighting time or 'flexible'",
-          "subject": "description of what/who is being photographed",
-          "duration": "estimated shoot duration",
-          "equipment": ["optional: mentioned camera gear"],
-          "experience": "photographer's skill level",
-          "specialRequests": "any specific requirements mentioned",
-          "location": "city or venue mentioned",
-          "locationPreference": "how locations should be arranged (clustered, spread out, etc.)"
-        }
-        
-        Be creative and specific with shootType and mood based on the conversation context.
-        If information is not mentioned, make reasonable assumptions.
-        
-        Transcript:
-        ${body.transcript}
-        
-        RESPOND WITH ONLY THE JSON OBJECT, NO OTHER TEXT.`
-        
-        const contextResult = await model.generateContent(contextPrompt)
-        const contextText = contextResult.response.text()
-        
-        try {
-          result.context = JSON.parse(contextText.replace(/```json|```/g, '').trim())
-          console.log('✅ Extracted context from transcript:', result.context)
-        } catch (error) {
-          console.error('Context parsing error:', error)
-          return createErrorResponse('Failed to extract context from transcript', 400)
-        }
-      } else {
-        console.error('No data_collection or transcript provided')
-        return createErrorResponse('Either data_collection or transcript is required', 400)
+        console.log('✅ Extracted context from transcript:', result.context)
+      } catch (error) {
+        console.error('Context parsing error:', error)
+        return createErrorResponse('Failed to extract context from transcript', 400)
       }
     }
     
