@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { SessionProvider } from "./providers/SessionProvider";
 import { BottomNavigation } from "./components/BottomNavigation";
+import { PWAInstallPrompt } from "./components/PWAInstallPrompt";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -54,6 +55,7 @@ export default function RootLayout({
             {children}
           </div>
           <BottomNavigation />
+          <PWAInstallPrompt />
         </SessionProvider>
       </body>
     </html>
