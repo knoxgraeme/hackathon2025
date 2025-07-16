@@ -27,7 +27,7 @@ export function LocationsList({ locations }: LocationsListProps) {
           <div 
             key={idx} 
             className={`
-              glass-card p-6 cursor-pointer transition-all duration-300
+              glass-card p-4 sm:p-6 cursor-pointer transition-all duration-300
               hover:scale-102 hover:bg-white/15
               ${expandedLocation === idx ? 'md:col-span-2' : ''}
               animate-slide-up stagger-${Math.min(idx + 1, 6)}
@@ -42,7 +42,7 @@ export function LocationsList({ locations }: LocationsListProps) {
                   <h3 className="font-bold text-xl text-primary">{location.name}</h3>
                 </div>
                 {location.address && (
-                  <p className="text-sm text-secondary ml-12">{location.address}</p>
+                  <p className="text-sm text-secondary ml-0 sm:ml-12">{location.address}</p>
                 )}
               </div>
               <div className="glass-card-dark px-3 py-1 rounded-full">
@@ -51,14 +51,14 @@ export function LocationsList({ locations }: LocationsListProps) {
             </div>
             
             {/* Description */}
-            <p className="text-secondary mb-4 leading-relaxed ml-12">
+            <p className="text-secondary mb-4 leading-relaxed ml-0 sm:ml-12">
               {location.description}
             </p>
             
             {/* Key Details Grid */}
-            <div className="grid grid-cols-2 gap-3 mb-4 ml-12">
-              <div className="glass-card-dark p-3 rounded-lg">
-                <div className="flex items-center gap-2">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4 ml-0 sm:ml-12">
+              <div className="glass-card-dark p-2 sm:p-3 rounded-lg">
+                <div className="flex items-start gap-2">
                   <span>🌅</span>
                   <div>
                     <p className="text-xs text-tertiary uppercase tracking-wider">Best Time</p>
@@ -66,8 +66,8 @@ export function LocationsList({ locations }: LocationsListProps) {
                   </div>
                 </div>
               </div>
-              <div className="glass-card-dark p-3 rounded-lg">
-                <div className="flex items-center gap-2">
+              <div className="glass-card-dark p-2 sm:p-3 rounded-lg">
+                <div className="flex items-start gap-2">
                   <span>💡</span>
                   <div>
                     <p className="text-xs text-tertiary uppercase tracking-wider">Lighting</p>
@@ -75,8 +75,8 @@ export function LocationsList({ locations }: LocationsListProps) {
                   </div>
                 </div>
               </div>
-              <div className="glass-card-dark p-3 rounded-lg">
-                <div className="flex items-center gap-2">
+              <div className="glass-card-dark p-2 sm:p-3 rounded-lg">
+                <div className="flex items-start gap-2">
                   <span>🚶</span>
                   <div>
                     <p className="text-xs text-tertiary uppercase tracking-wider">Access</p>
@@ -84,8 +84,8 @@ export function LocationsList({ locations }: LocationsListProps) {
                   </div>
                 </div>
               </div>
-              <div className="glass-card-dark p-3 rounded-lg">
-                <div className="flex items-center gap-2">
+              <div className="glass-card-dark p-2 sm:p-3 rounded-lg">
+                <div className="flex items-start gap-2">
                   <span>📋</span>
                   <div>
                     <p className="text-xs text-tertiary uppercase tracking-wider">Permits</p>
@@ -97,7 +97,7 @@ export function LocationsList({ locations }: LocationsListProps) {
             
             {/* Alternatives (show on expansion) */}
             {location.alternatives.length > 0 && expandedLocation === idx && (
-              <div className="mt-4 ml-12 glass-card-dark p-4 rounded-lg animate-slide-up">
+              <div className="mt-4 ml-0 sm:ml-12 glass-card-dark p-4 rounded-lg animate-slide-up">
                 <p className="text-sm text-tertiary mb-2 font-medium uppercase tracking-wider">
                   Alternative Spots Nearby
                 </p>
@@ -114,7 +114,7 @@ export function LocationsList({ locations }: LocationsListProps) {
 
             {/* Map Preview (placeholder for future) */}
             {expandedLocation === idx && (
-              <div className="mt-4 ml-12 glass-card-dark p-4 rounded-lg animate-slide-up text-center">
+              <div className="mt-4 ml-0 sm:ml-12 glass-card-dark p-4 rounded-lg animate-slide-up text-center">
                 <div className="h-32 flex items-center justify-center">
                   <div>
                     <span className="text-4xl">🗺️</span>

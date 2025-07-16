@@ -272,10 +272,7 @@ export default function ConversationFlow({ onComplete, sessionId }: Conversation
               <span className="text-4xl" role="img" aria-label="Microphone">🎤</span>
             </div>
           </div>
-          <h2 className="text-2xl font-bold mb-2 text-primary">Ready to Create Magic?</h2>
-          <p className="text-secondary max-w-md mx-auto">
-            Tell me about your vision, and I&apos;ll help you find perfect locations and create a stunning storyboard
-          </p>
+
         </div>
 
         {/* Start Button */}
