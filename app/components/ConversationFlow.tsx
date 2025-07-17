@@ -29,64 +29,69 @@ interface ConversationFlowProps {
 
 /**
  * ConversationFlow Component
- * 
+ *
  * Manages the voice conversation lifecycle for AI-powered photo session planning.
  * This component handles the entire conversation flow from connection to disconnection,
  * ensuring the conversation ID is captured through multiple fallback mechanisms.
- * 
+ *
  * ## Conversation Lifecycle:
- * 
+ *
  * ### 1. Connection Phase
  * - User clicks "Start Voice Planning" button
  * - Component requests microphone permissions
  * - Initiates connection with ElevenLabs conversation API
  * - Attempts to capture conversation ID from startSession return value
- * 
- * ### 2. Active Conversation Phase  
+ *
+ * ### 2. Active Conversation Phase
  * - User speaks with AI assistant about their photo session vision
  * - Component shows real-time voice visualizations
  * - Periodically polls for conversation ID as a fallback mechanism
  * - Updates session state to track conversation progress
- * 
+ *
  * ### 3. Disconnection Phase
  * - User clicks "End Planning Session" button
  * - Component makes final attempt to retrieve conversation ID
  * - Calls onComplete callback with captured conversation ID
  * - Falls back to error state if no ID was captured
- * 
+ *
  * ## Conversation ID Capture Strategies:
- * 
+ *
  * The component uses multiple fallback mechanisms to ensure the conversation ID
  * is captured, as the ElevenLabs API may not immediately provide it:
- * 
+ *
  * 1. **Primary**: Check return value from `startSession()`
  * 2. **Secondary**: Periodic polling with `setInterval` during active conversation
  * 3. **Tertiary**: Final attempt using `getId()` before disconnection
  * 4. **Storage**: Uses `conversationIdRef` to persist ID across re-renders
- * 
+ *
  * @param {ConversationFlowProps} props - Component props
  * @returns {JSX.Element} Rendered conversation interface
  */
 export default function ConversationFlow({ onComplete, sessionId, dynamicVariables }: ConversationFlowProps) {
   const { updateSession } = useSession();
-  const [conversationStarted, setConversationStarted] = useState(true); // Start directly in conversation mode
-  
+  const [conversationStarted, setConversationStarted] = useState(false); // Don't start automatically
+
   /**
    * Ref to store the conversation ID persistently across re-renders.
    * This ensures we don't lose the ID once captured, even if the component
    * re-renders during the conversation.
    */
   const conversationIdRef = useRef<string | null>(null);
-  
+
   /**
    * Ref to store the wake lock to prevent screen sleep during recording
    */
   const wakeLockRef = useRef<WakeLockSentinel | null>(null);
-  
+
+  /**
+   * Ref to store the media stream for proper cleanup
+   */
+  const mediaStreamRef = useRef<MediaStream | null>(null);
+
   const conversation = useConversation({
     /**
      * onConnect callback - Triggered when conversation successfully connects
-     * 
+     *
      * This marks the transition from Connection Phase to Active Conversation Phase.
      * Updates UI state to show active conversation interface and updates session
      * status in the global state.
@@ -95,24 +100,24 @@ export default function ConversationFlow({ onComplete, sessionId, dynamicVariabl
       setConversationStarted(true);
       updateSession(sessionId, { status: 'conversation' });
     },
-    
+
     /**
      * onDisconnect callback - Triggered when conversation ends
-     * 
+     *
      * This is the critical moment for ensuring we have captured the conversation ID.
      * If the ID exists in our ref, we pass it to the onComplete callback.
      * If not, we show an error to the user as the conversation data may be lost.
-     * 
+     *
      * This represents the final phase of the conversation lifecycle.
      */
     onDisconnect: () => {
-      
+
       // Release wake lock when conversation ends
       if (wakeLockRef.current) {
         wakeLockRef.current.release();
         wakeLockRef.current = null;
       }
-      
+
       if (conversationIdRef.current) {
         // Success path: We have the conversation ID
         onComplete(conversationIdRef.current);
@@ -122,18 +127,18 @@ export default function ConversationFlow({ onComplete, sessionId, dynamicVariabl
         alert('Failed to capture conversation. Please try again.');
       }
     },
-    
+
     /**
      * onMessage callback - Handles incoming messages during conversation
-     * 
+     *
      * Currently logs messages for debugging. Could be extended to show
      * real-time transcription or conversation progress.
      */
     onMessage: () => {},  // Message handler - currently not logging
-    
+
     /**
      * onError callback - Handles conversation errors
-     * 
+     *
      * Ensures UI doesn't get stuck in connecting state if an error occurs.
      * Common errors include microphone permission denial or network issues.
      */
@@ -144,18 +149,18 @@ export default function ConversationFlow({ onComplete, sessionId, dynamicVariabl
 
   /**
    * startConversation - Initiates the conversation flow
-   * 
+   *
    * This function implements the Connection Phase of the conversation lifecycle.
    * It follows a specific sequence to ensure both the conversation starts and
    * the conversation ID is captured using the primary capture strategy.
-   * 
+   *
    * ## Flow:
    * 1. Request microphone permissions from user
    * 2. Call ElevenLabs startSession with agent configuration
    * 3. Attempt to capture conversation ID from return value (Primary Strategy)
    * 4. Store ID in ref for persistence and update session state
    * 5. Fall back to error handling if any step fails
-   * 
+   *
    * ## Error Handling:
    * - Microphone permission denied
    * - Network connection issues
@@ -165,10 +170,10 @@ export default function ConversationFlow({ onComplete, sessionId, dynamicVariabl
   const startConversation = useCallback(async () => {
     try {
       // Detect if running as PWA (variables used in error handling)
-      // const isStandalone = window.matchMedia('(display-mode: standalone)').matches || 
+      // const isStandalone = window.matchMedia('(display-mode: standalone)').matches ||
       //                     window.navigator.standalone === true; // iOS specific
       // const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
-      
+
       // Request wake lock to prevent screen sleep (iOS 18.4+ PWA support)
       if ('wakeLock' in navigator) {
         try {
@@ -177,61 +182,61 @@ export default function ConversationFlow({ onComplete, sessionId, dynamicVariabl
           // Wake lock not supported or failed
         }
       }
-      
+
       // Request microphone with specific constraints for iOS PWA
-      const stream = await navigator.mediaDevices.getUserMedia({ 
+      const stream = await navigator.mediaDevices.getUserMedia({
         audio: {
           echoCancellation: true,
           noiseSuppression: true,
           autoGainControl: true,
           sampleRate: 44100
-        } 
+        }
       });
-      
+
       // Validate audio stream is actually working
       const audioTracks = stream.getAudioTracks();
-      
+
       if (audioTracks.length === 0 || !audioTracks[0].enabled) {
         throw new Error('No audio track available or track is disabled');
       }
-      
+
       // Test audio levels to ensure mic is actually capturing
       const audioContext = new (window.AudioContext || window.webkitAudioContext)();
       const analyser = audioContext.createAnalyser();
       const microphone = audioContext.createMediaStreamSource(stream);
       microphone.connect(analyser);
-      
+
       // Quick audio level check
       const dataArray = new Uint8Array(analyser.frequencyBinCount);
       analyser.getByteFrequencyData(dataArray);
-      
+
       // Clean up test audio context
       microphone.disconnect();
       audioContext.close();
-      
+
       // PRIMARY CAPTURE STRATEGY: Get conversation ID from startSession return value
       const sessionConfig: Record<string, string | Record<string, string | number | boolean>> = {
         agentId: 'agent_01k0616fckfdzrnt2g2fwq2r2h',
       };
-      
+
       // Add dynamic variables if provided and valid
       if (dynamicVariables && Object.keys(dynamicVariables).length > 0) {
         // Validate dynamic variables (max 50 as per ElevenLabs docs)
         const validatedVariables: Record<string, string | number | boolean> = {};
         let count = 0;
-        
+
         for (const [key, value] of Object.entries(dynamicVariables)) {
           if (count >= 50) {
             console.warn('Maximum of 50 dynamic variables allowed. Additional variables ignored.');
             break;
           }
-          
+
           // Skip system reserved prefixes
           if (key.startsWith('system__')) {
             console.warn(`Skipping variable '${key}': system__ prefix is reserved`);
             continue;
           }
-          
+
           // Ensure value is valid type
           if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
             validatedVariables[key] = value;
@@ -240,15 +245,15 @@ export default function ConversationFlow({ onComplete, sessionId, dynamicVariabl
             console.warn(`Skipping variable '${key}': invalid type ${typeof value}`);
           }
         }
-        
+
         if (Object.keys(validatedVariables).length > 0) {
           sessionConfig.dynamicVariables = validatedVariables;
           console.log('Passing dynamic variables to ElevenLabs:', validatedVariables);
         }
       }
-      
+
       const conversationId = await conversation.startSession(sessionConfig);
-      
+
       if (conversationId) {
         // Success: Store ID in ref for persistence and update session
         conversationIdRef.current = conversationId;
@@ -258,7 +263,7 @@ export default function ConversationFlow({ onComplete, sessionId, dynamicVariabl
       }
     } catch (error) {
       console.error('Failed to start conversation:', error);
-      
+
       // More specific error messages for PWA issues
       const isStandaloneMode = window.matchMedia('(display-mode: standalone)').matches;
       if (isStandaloneMode && error instanceof DOMException && error.name === 'NotAllowedError') {
@@ -271,16 +276,16 @@ export default function ConversationFlow({ onComplete, sessionId, dynamicVariabl
 
   /**
    * stopConversation - Terminates the conversation flow
-   * 
+   *
    * This function implements the final part of the Disconnection Phase.
    * It makes a last-ditch effort to capture the conversation ID before
    * ending the session, implementing the Tertiary Capture Strategy.
-   * 
+   *
    * ## Flow:
    * 1. Check if conversation ID is already captured in ref
    * 2. If not, make final attempt using conversation.getId() (Tertiary Strategy)
    * 3. End the session, which will trigger onDisconnect callback
-   * 
+   *
    * ## Fallback Logic:
    * This function ensures we try every possible method to get the conversation ID
    * before ending the session. The onDisconnect callback will handle the final
@@ -300,22 +305,22 @@ export default function ConversationFlow({ onComplete, sessionId, dynamicVariabl
 
   /**
    * SECONDARY CAPTURE STRATEGY: Periodic polling for conversation ID
-   * 
+   *
    * This useEffect implements the Secondary Capture Strategy during the
    * Active Conversation Phase. It continuously polls for the conversation ID
    * in case the Primary Strategy (startSession return value) failed.
-   * 
+   *
    * ## Polling Logic:
    * - Only runs when conversation is started but ID not yet captured
    * - Checks every 500ms for up to 5 seconds
    * - Stops polling once ID is found or timeout reached
    * - Updates both ref and session state when ID is captured
-   * 
+   *
    * ## Timing Strategy:
    * - 500ms intervals: Frequent enough to catch ID quickly
    * - 5 second timeout: Prevents indefinite polling
    * - Cleanup on unmount: Prevents memory leaks
-   * 
+   *
    * This fallback mechanism ensures we don't miss the conversation ID
    * even if the ElevenLabs API has timing issues with providing it.
    */
@@ -328,12 +333,12 @@ export default function ConversationFlow({ onComplete, sessionId, dynamicVariabl
           updateSession(sessionId, { conversationId: id });
         }
       };
-      
+
       // Check immediately, then set up polling
       checkId();
       const interval = setInterval(checkId, 500); // Check every 500ms
       const timeout = setTimeout(() => clearInterval(interval), 5000); // Stop after 5 seconds
-      
+
       // Cleanup function to prevent memory leaks
       return () => {
         clearInterval(interval);
@@ -342,24 +347,36 @@ export default function ConversationFlow({ onComplete, sessionId, dynamicVariabl
     }
   }, [conversationStarted, conversation, sessionId, updateSession]);
 
-  // Auto-start conversation when component mounts
+  // Cleanup on component unmount
   useEffect(() => {
-    startConversation();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // Empty dependency array to run only on mount
+    return () => {
+      // Clean up media stream on unmount
+      if (mediaStreamRef.current) {
+        mediaStreamRef.current.getTracks().forEach(track => {
+          track.stop();
+        });
+        mediaStreamRef.current = null;
+      }
 
+      // Release wake lock on unmount
+      if (wakeLockRef.current) {
+        wakeLockRef.current.release();
+        wakeLockRef.current = null;
+      }
+    };
+  }, []);
 
   /**
    * UI STATE: Active conversation interface
-   * 
+   *
    * Shows the real-time conversation interface during the Active Conversation Phase.
    * Includes voice visualization, status indicators, and end conversation button.
-   * 
+   *
    * ## Visual States:
    * - Shows different icons/animations based on conversation.isSpeaking
    * - Pulse effects and wave animations for voice activity
    * - Status text updates based on who is speaking
-   * 
+   *
    * ## Interactive Elements:
    * - End conversation button that triggers stopConversation
    * - Visual feedback for conversation state
@@ -373,72 +390,61 @@ export default function ConversationFlow({ onComplete, sessionId, dynamicVariabl
           Tell me about your vision for this session
         </h1>
         <p className="text-xs text-[#6e6e6e]">
-          PixieDirector is listening....
+          {conversationStarted ? 'PixieDirector is listening....' : 'Tap "Start Call" to begin your session'}
         </p>
       </div>
-      
-      {/* Audio Waveform Visualization */}
-      <div className="absolute left-1/2 top-1/2 transform -translate-x-1/2 -translate-y-1/2">
-        <div className="relative w-[338px] h-[190px] flex items-center justify-center">
-          {/* Animated waveform using CSS */}
-          <div className="flex items-center justify-center gap-1">
-            {[...Array(20)].map((_, i) => (
-              <div
-                key={i}
-                className="bg-black rounded-full animate-pulse"
-                style={{
-                  width: '4px',
-                  height: `${Math.random() * 40 + 10}px`,
-                  animationDelay: `${i * 0.1}s`,
-                  animationDuration: `${0.8 + Math.random() * 0.4}s`
-                }}
-              />
-            ))}
+
+      {/* Audio Waveform Visualization - Only show when conversation is active */}
+      {conversationStarted && (
+        <div className="absolute left-1/2 top-1/2 transform -translate-x-1/2 -translate-y-1/2">
+          <div className="relative w-[338px] h-[190px] flex items-center justify-center">
+            {/* Animated waveform using CSS */}
+            <div className="flex items-center justify-center gap-1">
+              {[...Array(20)].map((_, i) => (
+                <div
+                  key={i}
+                  className="bg-black rounded-full animate-pulse"
+                  style={{
+                    width: '4px',
+                    height: `${Math.random() * 40 + 10}px`,
+                    animationDelay: `${i * 0.1}s`,
+                    animationDuration: `${0.8 + Math.random() * 0.4}s`
+                  }}
+                />
+              ))}
+            </div>
           </div>
         </div>
-      </div>
-      
-      {/* Control Buttons */}
+      )}
+
+      {/* Control Button */}
       <div className="fixed bottom-0 left-0 right-0 bg-white px-6 pt-4" style={{ paddingBottom: `max(32px, env(safe-area-inset-bottom))` }}>
-        <div className="flex gap-4 items-center">
-          {/* Delete Button */}
-          <button
-            onClick={() => {
-              if (confirm('Are you sure you want to cancel this session?')) {
-                stopConversation();
-              }
-            }}
-            className="w-12 h-12 bg-[#efefef] rounded-full flex items-center justify-center"
-            aria-label="Cancel session"
-          >
-            <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none">
-              <path d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2m3 0v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6h14zM10 11v6M14 11v6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-            </svg>
-          </button>
-          
-          {/* Pause Button */}
-          <button
-            className="w-12 h-12 bg-[#efefef] rounded-full flex items-center justify-center"
-            aria-label="Pause conversation"
-          >
-            <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none">
-              <path d="M10 4H6v16h4V4zM18 4h-4v16h4V4z" fill="currentColor"/>
-            </svg>
-          </button>
-          
-          {/* Complete Button */}
-          <button
-            onClick={stopConversation}
-            className="flex-1 bg-[#00a887] text-white flex items-center justify-center gap-3 px-8 py-[13px] rounded active:scale-95 transition-transform"
-            aria-label="Complete planning session"
-          >
-            <svg className="w-[22px] h-[22px]" viewBox="0 0 24 24" fill="none">
-              <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-            </svg>
-          </button>
-        </div>
+        <button
+          onClick={conversationStarted ? stopConversation : startConversation}
+          className="w-full bg-[#00a887] text-white flex items-center justify-center gap-3 px-8 py-[13px] rounded active:scale-95 transition-transform"
+          aria-label={conversationStarted ? "End call" : "Start call"}
+        >
+          {conversationStarted ? (
+            <>
+              <svg className="w-[22px] h-[22px]" viewBox="0 0 24 24" fill="none">
+                <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+              <span className="text-[17px] font-semibold leading-[22px]">End Call</span>
+            </>
+          ) : (
+            <>
+              <svg className="w-[22px] h-[22px]" viewBox="0 0 24 24" fill="none">
+                <path d="M12 2C11.4477 2 11 2.44772 11 3V11C11 11.5523 11.4477 12 12 12C12.5523 12 13 11.5523 13 11V3C13 2.44772 12.5523 2 12 2Z" fill="white"/>
+                <path d="M7 9C7 6.23858 9.23858 4 12 4C14.7614 4 17 6.23858 17 9V11C17 13.7614 14.7614 16 12 16C9.23858 16 7 13.7614 7 11V9Z" stroke="white" strokeWidth="2"/>
+                <path d="M12 16V20M12 20H8M12 20H16" stroke="white" strokeWidth="2" strokeLinecap="round"/>
+                <path d="M5 11C5 11 5 14.5 12 14.5C19 14.5 19 11 19 11" stroke="white" strokeWidth="2" strokeLinecap="round"/>
+              </svg>
+              <span className="text-[17px] font-semibold leading-[22px]">Start Call</span>
+            </>
+          )}
+        </button>
       </div>
-      
+
     </div>
   );
 }

@@ -27,7 +27,7 @@ export default function SessionPage() {
   // Extract URL parameters and convert to dynamic variables
   useEffect(() => {
     const variables: Record<string, string | number | boolean> = {};
-    
+
     // Iterate through all search params
     searchParams.forEach((value, key) => {
       // Try to parse as JSON for complex types, otherwise use as string
@@ -47,43 +47,43 @@ export default function SessionPage() {
         }
       }
     });
-    
+
     setDynamicVariables(variables);
   }, [searchParams]);
 
   // Handle conversation completion
   const handleConversationComplete = async (conversationId: string) => {
-    updateSession(sessionId, { 
-      conversationId, 
-      status: 'processing' 
+    updateSession(sessionId, {
+      conversationId,
+      status: 'processing'
     });
-    
+
     setIsProcessing(true);
-    
+
     try {
       // Call edge function
-      
+
       if (!API_CONFIG.ELEVENLABS_WEBHOOK_URL) {
         throw new Error('ELEVENLABS_WEBHOOK_URL is not configured');
       }
-      
+
       const response = await fetch(API_CONFIG.ELEVENLABS_WEBHOOK_URL, {
         method: 'POST',
-        headers: { 
+        headers: {
           'Content-Type': 'application/json',
           ...(API_CONFIG.SUPABASE_ANON_KEY && {
             'Authorization': `Bearer ${API_CONFIG.SUPABASE_ANON_KEY}`
           })
         },
-        body: JSON.stringify({ 
+        body: JSON.stringify({
           conversationId,
           stage: 'full',
-          generateImages: true 
+          generateImages: true
         })
       });
-      
+
       const data = await response.json();
-      
+
       if (data.success) {
         updateSession(sessionId, {
           status: 'complete',
@@ -122,7 +122,7 @@ export default function SessionPage() {
   if (currentSession.status === 'initial' || currentSession.status === 'conversation') {
     return <ConversationFlow onComplete={handleConversationComplete} sessionId={sessionId} dynamicVariables={dynamicVariables} />;
   }
-  
+
   // Show loading screen in full screen
   if (currentSession.status === 'processing' && isProcessing) {
     return <LoadingPipeline />;
@@ -140,7 +140,7 @@ export default function SessionPage() {
       <div className="relative z-10 max-w-6xl mx-auto p-4 sm:p-8 mobile-safe">
         {/* Header */}
         <div className="mb-8 animate-fade-in">
-          <button 
+          <button
             onClick={() => router.back()}
             className="text-secondary hover:text-primary mb-4 flex items-center gap-2 transition-colors hover:scale-105 active:scale-95"
           >
@@ -172,7 +172,7 @@ export default function SessionPage() {
           <span className="text-lg font-medium text-teal-500">Locations</span>
         </div>
         <div className="flex items-center gap-3">
-          <WebShareButton 
+          <WebShareButton
             sessionId={currentSession.id}
             sessionTitle={currentSession.title}
             className="w-6 h-6 text-teal-500"
@@ -199,7 +199,7 @@ export default function SessionPage() {
                 <h1 className="text-2xl font-bold text-gray-900 mb-2">
                   {currentSession.title}
                 </h1>
-                
+
                 {showPlan && currentSession.context && (
                   <div className="space-y-4 mt-6">
                     {/* High-Level Goals */}
@@ -223,8 +223,8 @@ export default function SessionPage() {
                         <span className="text-orange-600 text-xs">📅</span>
                       </div>
                       <span className="font-semibold">
-                        {currentSession.context.startTime ? 
-                          `Session Start: ${currentSession.context.startTime}` : 
+                        {currentSession.context.startTime ?
+                          `Session Start: ${currentSession.context.startTime}` :
                           'Session Planning'
                         }
                       </span>
@@ -234,14 +234,14 @@ export default function SessionPage() {
                     {currentSession.locations && currentSession.locations.map((location, idx) => (
                       <div key={idx} className="mt-4">
                         <h4 className="font-semibold mb-2">Stop {idx + 1}: {location.name}</h4>
-                        
+
                         {/* Shot thumbnails for this location */}
                         <div className="grid grid-cols-3 gap-2 mb-4">
                           {currentSession.shots?.filter(shot => shot.locationIndex === idx).slice(0, 3).map((shot, shotIdx) => (
                             <div key={shotIdx} className="aspect-[3/4] rounded-lg overflow-hidden bg-gray-200">
                               {shot.storyboardImage ? (
                                 <Image
-                                  src={shot.storyboardImage} 
+                                  src={shot.storyboardImage}
                                   alt={`Shot ${shot.shotNumber}`}
                                   width={120}
                                   height={160}
@@ -305,12 +305,12 @@ export default function SessionPage() {
                   {currentSession.shots.map((shot, idx) => (
                     <div key={idx} className="bg-white rounded-lg overflow-hidden shadow-sm border border-gray-200">
                       {shot.storyboardImage && (
-                        <div 
+                        <div
                           className="aspect-[3/4] relative cursor-pointer"
                           onClick={() => setSelectedShotIndex(idx)}
                         >
-                          <Image 
-                            src={shot.storyboardImage} 
+                          <Image
+                            src={shot.storyboardImage}
                             alt={`Shot ${shot.shotNumber}`}
                             fill
                             className="object-cover"
@@ -326,7 +326,7 @@ export default function SessionPage() {
             {/* Bottom Navigation */}
             <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200" style={{ paddingBottom: `max(16px, env(safe-area-inset-bottom))` }}>
               <div className="flex">
-                <button 
+                <button
                   onClick={() => setShowPlan(false)}
                   className={`flex-1 flex items-center justify-center gap-2 py-3 ${
                     !showPlan ? 'text-gray-900' : 'text-gray-400'
@@ -340,7 +340,7 @@ export default function SessionPage() {
                   </svg>
                   <span className="font-medium">Storyboard</span>
                 </button>
-                <button 
+                <button
                   onClick={() => setShowPlan(true)}
                   className={`flex-1 flex items-center justify-center gap-2 py-3 ${
                     showPlan ? 'text-gray-900' : 'text-gray-400'
@@ -370,7 +370,7 @@ export default function SessionPage() {
         isOpen={selectedShotIndex !== null}
         onClose={() => setSelectedShotIndex(null)}
         shot={selectedShotIndex !== null ? currentSession.shots?.[selectedShotIndex] || null : null}
-        location={selectedShotIndex !== null && currentSession.shots?.[selectedShotIndex]?.location ? 
+        location={selectedShotIndex !== null && currentSession.shots?.[selectedShotIndex]?.location ?
           currentSession.locations?.find(loc => loc.name === currentSession.shots?.[selectedShotIndex]?.location) || null : null}
       />
     </div>
