@@ -1,6 +1,6 @@
 {
   "name": "AI Photography Assistant",
-  "short_name": "PhotoAI",
+  "short_name": "PixieDirector",
   "description": "Plan your perfect photoshoot with AI-powered location scouting and storyboarding",
   "start_url": "/",
   "display": "standalone",

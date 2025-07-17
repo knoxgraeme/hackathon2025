@@ -1,8 +1,8 @@
 // app/session/[id]/page.tsx
 'use client';
 
-import { useState } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useState, useEffect } from 'react';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { useSession } from '../../providers/SessionProvider';
 import ConversationFlow from '../../components/ConversationFlow';
 import { LocationsList } from '../../components/LocationsList';
@@ -13,10 +13,39 @@ import { API_CONFIG } from '../../config/api';
 export default function SessionPage() {
   const params = useParams();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const sessionId = params.id as string;
   const { currentSession, updateSession } = useSession();
   const [isProcessing, setIsProcessing] = useState(false);
   const [showInitialView, setShowInitialView] = useState(true);
+  const [dynamicVariables, setDynamicVariables] = useState<Record<string, string | number | boolean>>({});
+
+  // Extract URL parameters and convert to dynamic variables
+  useEffect(() => {
+    const variables: Record<string, string | number | boolean> = {};
+    
+    // Iterate through all search params
+    searchParams.forEach((value, key) => {
+      // Try to parse as JSON for complex types, otherwise use as string
+      try {
+        const parsed = JSON.parse(value);
+        variables[key] = parsed;
+      } catch {
+        // If it's not valid JSON, check if it's a number or boolean
+        if (value === 'true') {
+          variables[key] = true;
+        } else if (value === 'false') {
+          variables[key] = false;
+        } else if (!isNaN(Number(value))) {
+          variables[key] = Number(value);
+        } else {
+          variables[key] = value;
+        }
+      }
+    });
+    
+    setDynamicVariables(variables);
+  }, [searchParams]);
 
   // Handle conversation completion
   const handleConversationComplete = async (conversationId: string) => {
@@ -29,8 +58,6 @@ export default function SessionPage() {
     
     try {
       // Call edge function
-      console.log('Webhook URL:', API_CONFIG.ELEVENLABS_WEBHOOK_URL);
-      console.log('Has Auth Key:', !!API_CONFIG.SUPABASE_ANON_KEY);
       
       if (!API_CONFIG.ELEVENLABS_WEBHOOK_URL) {
         throw new Error('ELEVENLABS_WEBHOOK_URL is not configured');
@@ -166,7 +193,7 @@ export default function SessionPage() {
               {/* Start Button */}
               <button
                 onClick={() => setShowInitialView(false)}
-                className="w-full bg-[#00a887] text-white flex items-center justify-center gap-3 px-8 py-[13px] rounded mt-16 mb-8"
+                className="w-full bg-[#00a887] text-white flex items-center justify-center gap-3 px-8 py-[13px] rounded mt-16 mb-8 active:scale-95 transition-transform"
               >
                 <svg className="w-[22px] h-[22px]" viewBox="0 0 24 24" fill="none">
                   <path d="M12 2C11.4477 2 11 2.44772 11 3V11C11 11.5523 11.4477 12 12 12C12.5523 12 13 11.5523 13 11V3C13 2.44772 12.5523 2 12 2Z" fill="white"/>
@@ -180,16 +207,12 @@ export default function SessionPage() {
               </button>
             </div>
             
-            {/* Home Indicator */}
-            <div className="fixed bottom-2 left-1/2 transform -translate-x-1/2">
-              <div className="w-36 h-[5px] bg-black rounded-full" />
-            </div>
           </div>
       );
     }
     
     // Show conversation flow
-    return <ConversationFlow onComplete={handleConversationComplete} sessionId={sessionId} />;
+    return <ConversationFlow onComplete={handleConversationComplete} sessionId={sessionId} dynamicVariables={dynamicVariables} />;
   }
   
   // Show loading screen in full screen

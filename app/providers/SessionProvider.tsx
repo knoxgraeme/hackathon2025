@@ -91,13 +91,37 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
    * Handles JSON parsing errors gracefully by logging and continuing with empty state.
    */
   useEffect(() => {
+    console.log('[DEBUG] Loading sessions from localStorage...');
     const saved = localStorage.getItem('photoSessions');
+    console.log('[DEBUG] Raw localStorage value:', saved);
+    
     if (saved) {
       try {
-        setSessions(JSON.parse(saved));
+        const parsed = JSON.parse(saved);
+        console.log('[DEBUG] Parsed sessions from localStorage:', parsed);
+        console.log('[DEBUG] Number of sessions in localStorage:', Object.keys(parsed).length);
+        
+        // Log details of each session
+        Object.entries(parsed).forEach(([id, session]: [string, any]) => {
+          console.log(`[DEBUG] Session ${id} from localStorage:`, {
+            status: session.status,
+            hasContext: !!session.context,
+            hasLocations: !!session.locations,
+            locationCount: session.locations?.length || 0,
+            hasShots: !!session.shots,
+            shotCount: session.shots?.length || 0,
+            createdAt: session.createdAt,
+            title: session.title
+          });
+        });
+        
+        setSessions(parsed);
       } catch (e) {
-        console.error('Failed to parse sessions:', e);
+        console.error('[DEBUG] Failed to parse sessions from localStorage:', e);
+        console.error('[DEBUG] Invalid localStorage content:', saved);
       }
+    } else {
+      console.log('[DEBUG] No sessions found in localStorage');
     }
   }, []);
 
@@ -132,7 +156,10 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
         }
         
         // Try to save to localStorage
+        console.log('[DEBUG] Saving sessions to localStorage:', sessions);
+        console.log('[DEBUG] Number of sessions being saved:', Object.keys(sessions).length);
         localStorage.setItem('photoSessions', JSON.stringify(sessions));
+        console.log('[DEBUG] Sessions successfully saved to localStorage');
       } catch (e) {
         console.error('Failed to save sessions to localStorage:', e);
         
@@ -247,14 +274,20 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
    * @param updates - Partial session object with fields to update
    */
   const updateSession = (id: string, updates: Partial<Session>) => {
+    console.log(`[DEBUG] updateSession called for ${id} with updates:`, updates);
+    
     setSessions(prev => {
       if (!prev[id]) {
-        console.error(`Session ${id} not found`);
+        console.error(`[DEBUG] Session ${id} not found in current sessions`);
         return prev;
       }
       
+      console.log(`[DEBUG] Current session ${id} before update:`, prev[id]);
+      
       // Create the updated session object
       const updatedSession = { ...prev[id], ...updates };
+      
+      console.log(`[DEBUG] Updated session ${id} after merge:`, updatedSession);
       
       // Save to Supabase for persistence (async, non-blocking)
       console.log('updating session in supabase', updatedSession);

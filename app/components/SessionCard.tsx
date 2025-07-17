@@ -15,15 +15,6 @@ export function SessionCard({ session }: SessionCardProps) {
 
   // Get the first storyboard image from shots
   const coverImage = session.shots?.[0]?.storyboardImage || null;
-  
-  // Debug logging
-  console.log('Session:', session.id, {
-    hasShots: !!session.shots?.length,
-    firstShotImage: session.shots?.[0]?.storyboardImage,
-    imageType: typeof session.shots?.[0]?.storyboardImage,
-    imageLength: session.shots?.[0]?.storyboardImage?.length,
-    coverImage: coverImage?.substring(0, 100) // Show first 100 chars to see if it's base64
-  });
 
   // Calculate total spots across all locations
   const totalSpots = session.locations.reduce((sum, location) => 
