@@ -141,7 +141,7 @@ serve(async (req) => {
     4.  Adhere strictly to the JSON schema for the output.
 
     ### Defaults for Missing Information
-    - location: "local area"
+    - location: "Mount Pleasant, Vancouver"
     - date/startTime: "flexible"
     - duration: "2 hours"
     - shootType: infer from context or use "portrait"
@@ -261,52 +261,26 @@ serve(async (req) => {
     
     // STAGE 3: Create detailed shot list with composition and direction
     if (result.locations && result.context) {
-  console.log('🎬 Generating storyboards');
+  console.log('🎬 Generating location-aware storyboards');
 
   const context = result.context;
+  const locations = result.locations;
+
+  // Create a formatted list of locations for the prompt
+  const locationDetails = locations.map((loc, idx) => 
+    `Location ${idx + 1}: ${loc.name} - ${loc.description} (Best time: ${loc.bestTime}, Lighting: ${loc.lightingNotes})`
+  ).join('\n');
 
   const storyboardPrompt = `You are an expert wedding, portrait, and engagement photographer and creative director with 20 years of experience. You have a master's degree in fine art photography and a deep understanding of classical art, cinema, and storytelling. Your specialty is creating emotionally resonant, timeless, and dynamic images by meticulously planning every frame. You are not just a photographer; you are a master communicator and director on set, skilled at making subjects feel comfortable and drawing out genuine emotion.
 
 Your Task:
-You will function as an AI Storyboard Assistant. Your primary goal is to analyze a user's request for a photo opportunity—even if it's brief or incomplete—and propose a detailed storyboard sketch. This proposal will be a comprehensive blueprint that the photographer can use to execute the shot perfectly.
+You will function as an AI Storyboard Assistant. Your primary goal is to create a detailed shot list that makes use of the specific locations provided. You must incorporate these actual locations into your shots to create a cohesive photo journey.
 
-Analysis and Inference:
-You’re likely provided a list of photo opportunities. Your first step is to analyze, identify or infer the following key parameters for each opportunity. These are your preferred data points, but they are not required from the user. Your job is to fill in the blanks using your creative expertise and the context provided.
-- Primary Subject(s): Who is the main focus? (e.g., Bride, Groom, Couple).
-- Secondary Subject(s): Are there other people, animals, or important objects? (e.g., family members, wedding parties, pets, crowds).
-- Duration, Time of Day, and lighting notes: What is the lighting situation? What time will this particularly shot happen and how long will it take?
-- Location: Where is the shoot taking place?
-- Accessibility and permits requirement: Does this shot require permits or need instructions for special access?
-- Shot Description: What is the high-level goal or desired photo?
-If the user does not provide one or more of these details, you must make a logical and creative inference based on the information you do have. Your expertise is key to filling these gaps.
-
-Inference Example 1: If the user says, "I need ideas for our couple's wedding in the vineyard," you should infer the Primary Subjects (The Couple), the Secondary Subjects (Their family and perhaps 30 guests and friends) he Location (Vineyard), and the likely Shot Description (Romantic, scenic portraits, with crowd around). You can then propose ideal lighting based on the romantic goal (suggesting golden hour, for instance).
-Inference Example 2: If the user says, "Family photos after the ceremony around 3 PM," you should infer the probable Subjects (Couple with parents/siblings), the Time (3 PM, likely harsh light), and the Shot Description (Post-ceremony formal groupings).
-If you’re provided a list of photo opportunities, make sure you balance the storyboard to cover diverse ideas across the opportunities:
-- Make sure the guests and other members and subjects (if they exist) are also participating in 20-30% of the shots when appropriate.
-- Make sure your shots cover closeups, long shots, intimate shots, crowd shots, that comprehensively capture the unique beauty of the event.
-
-Storyboard Proposal Generation:
-Based on the parameters you have identified and inferred, you must generate the following detailed components for EACH shot opportunity requested.
-1. Title/Scene: A clear, descriptive title for the shot (e.g., "The Grand Family Portrait - Post-Ceremony," "Golden Hour Stroll with a Furry Friend").
-2. Ideal Lighting: Be highly specific, directly referencing the Duration and Time of Day (provided or inferred).
-   Example for "2:30 PM (harsh midday sun)": "Given the harsh midday sun, we must find an area of open shade, like under a large oak tree or on the north side of the main building. This will provide soft, even light and avoid harsh shadows and squinting. If no shade is available, we'll position the sun behind the subjects (backlight) and use a reflector or a single off-camera flash with a large softbox to fill in the shadows on their faces."
-   Example for "7:45 PM (golden hour/dusk)": "We will leverage the low, warm directional light of golden hour. I'll position the subjects so the sun acts as a hair light, creating a beautiful, glowing rim around them. As the light fades into dusk, we'll be ready to introduce a single video light or off-camera flash to maintain a warm, romantic glow."
-3. Framing & Composition: Detail the shot type and compositional elements, considering the number of subjects.
-   Example for "Full wedding party of 10": "A wide shot is necessary to comfortably fit all 10 people. I'll arrange them in two staggered rows to create layers and ensure everyone is visible. Using a slightly lower camera angle will give the group a more heroic, celebratory feel against the sky. We'll frame them using the 'group portrait' composition rule, leaving negative space on the sides to avoid a cramped look."
-4. Body Positions & Poses: Provide a clear description of how all subjects should be positioned.
-   Example for "Couple's romantic portrait with their dog": "The couple will be seated on a rustic blanket. The groom sits with his back against a tree, and the bride nestles between his legs, leaning her head back onto his chest. Their Golden Retriever lies comfortably at their feet, with one of them gently resting a hand on its back. This creates a triangular composition, emphasizing closeness and family."
-5. Blocking & Environment Interaction: Describe the placement and movement of subjects, especially for dynamic shots.
-   Example for "Intimate crowd of ~30 guests": "For the sparkler exit, we will create two lines for the 30 guests to form a tunnel. The couple will start at the far end and walk, then jog through the tunnel of light, holding hands. They should pause halfway through for a quick, dramatic kiss."
-6. Photographer's Communication Cues: Provide the exact words the photographer can use to direct subjects efficiently and effectively.
-   For Large Families: "To the group: 'Okay everyone, we're going to build this portrait around the couple. I need the parents on either side, standing close. Squeeze in tight! Dad, place your hand on your son's shoulder. Mom, let's see you looking proudly at your daughter.'"
-   For Subjects with Pets: "To the couple: 'Interact with your dog as you normally would! Call his name, scratch him behind the ears. I want to capture that real connection, don't worry about looking at me.'"
-   For the Cake Cutting: "To the couple: 'Place both your hands on the knife. Lean in close, cheek to cheek, and look at each other with a smile as you make the first cut. Get ready to feed each other a small bite—let's see some playful fun!'"
-   
-Your goal is to be the ultimate creative partner. You will use text output and your output must be a direct, actionable plan that synthesizes all available information into a clear, artistic, and achievable photographic vision.
+### SPECIFIC LOCATIONS PROVIDED:
+${locationDetails}
 
 ### Shoot Context
-- Location: ${context.location}
+- General area: ${context.location}
 - Shoot type: ${context.shootType}
 - Mood: ${context.mood.join(', ')}
 - Subjects: ${context.subject}
@@ -314,12 +288,32 @@ Your goal is to be the ultimate creative partner. You will use text output and y
 - Special requirements: ${context.specialRequests || 'None'}
 - Time of day: ${context.startTime}
 
+Analysis and Inference:
+You MUST create shots that utilize the specific locations provided above. Distribute your shots across all locations to create a logical flow and variety. For each shot, specify which location it takes place at.
+
+Your shots should:
+- Use at least 3-4 of the provided locations
+- Create a logical progression through the locations
+- Take advantage of each location's unique features and lighting notes
+- Include a mix of wide establishing shots, medium shots, and intimate close-ups
+- Ensure 20-30% of shots include any secondary subjects (family, guests, pets) when appropriate
+
+Storyboard Proposal Generation:
+Based on the parameters you have identified and inferred, you must generate the following detailed components for EACH shot opportunity requested.
+1. Title/Scene: A clear, descriptive title that INCLUDES THE SPECIFIC LOCATION (e.g., "Golden Hour Romance at Queen Elizabeth Park Rose Garden").
+2. Location: Specify which of the provided locations this shot takes place at.
+3. Ideal Lighting: Be highly specific, incorporating the location's lighting notes and the shoot time.
+4. Framing & Composition: Detail the shot type and how to use the location's features.
+5. Body Positions & Poses: Provide clear descriptions considering the location's physical features.
+6. Blocking & Environment Interaction: Describe how subjects interact with the specific location.
+7. Photographer's Communication Cues: Provide exact words to direct subjects at this location.
+
 -----------------------------------
 ### FINAL OUTPUT INSTRUCTIONS
 Your final output MUST be a raw JSON array.
 - Do NOT include any introductory text, explanations, or markdown code fences like \`\`\`json.
 - Your entire response must start with the character \`[\` and end with the character \`]\`.
-- Each object in the array must contain these exact fields: "shotNumber", "title", "idealLighting", "composition", "poses", "blocking", "communicationCues".
+- Each object in the array must contain these exact fields: "shotNumber", "title", "location", "idealLighting", "composition", "poses", "blocking", "communicationCues".
 -----------------------------------`;
 
   // Create model for this stage since we need it
@@ -342,56 +336,72 @@ Your final output MUST be a raw JSON array.
   }
 }
       
-      // STAGE 4: Generate storyboard visualizations (max 3 for performance)
+      // STAGE 4: Generate storyboard visualizations (now up to 6, in parallel)
       if (body.generateImages && result.shots) {
-        console.log('🎨 Generating storyboard images');
+        console.log('🎨 Generating storyboard images in parallel');
 
         const imageAI = new GoogleGenAI({ apiKey: geminiApiKey });
-        const maxImages = Math.min(3, result.shots.length);
+        const maxImages = Math.min(6, result.shots.length); // Increased from 3 to 6
 
+        // Create all image generation promises
+        const imagePromises = [];
+        
         for (let i = 0; i < maxImages; i++) {
-          const shot = result.shots[i]; // Get the specific shot object
-
-          // Create a direct and explicit prompt for THIS shot
+          const shot = result.shots[i];
           const imagePrompt = `
-      You are an expert illustration artist creating a single black-and-white, hand-drawn storyboard panel.
+      Generate ONE SINGLE ILLUSTRATION (not a comic strip, not multiple panels) showing this exact moment:
+
+      **SINGLE SCENE TO ILLUSTRATE:**
+      "${shot.title}"
+
+      **THIS ONE IMAGE MUST SHOW:**
+      - **Main Action:** ${shot.poses}. ${shot.blocking}
+      - **Camera Framing:** ${shot.composition}
+      - **Subject(s):** ${result.context.subject}
+      - **Setting/Location:** ${shot.location || result.context.location}
+      - **Emotional Tone:** ${result.context.mood.join(', ')}
+      - **Specific Direction:** ${shot.communicationCues || 'Follow the poses and blocking described above'}
+
+      **CRITICAL INSTRUCTIONS:**
+      - Create ONLY ONE SINGLE SCENE filling the entire frame
+      - DO NOT create multiple panels, frames, or a comic strip layout
+      - DO NOT divide the image into sections
+      - DO NOT include text in the image
+      - The entire image should depict ONE MOMENT from ONE VIEWPOINT
+
+     **STYLE REQUIREMENTS:**
+      - **Color:** MONOCHROME ONLY - Pure black ink on white. NO COLOR.
+      - **Aesthetic:** Simple black line illustration/sketch style. Clean defined outlines.
+      - **Shading:** Use hatching or solid black areas only. NO gradients.
+      - **Details:** Faces and backgrounds should be highly simplified or suggestive. Focus on clear forms, composition. Avoid photo-realism.
       
-      **STYLE GUIDE (Strictly follow):**
-      - **Aesthetic:** Minimalist, sketchy, graphic novel style. Clean, defined outlines.
-      - **Color:** Strictly black and white. Use solid black shapes or parallel lines for shadows. No gradients or grey tones.
-      - **Details:** Faces and backgrounds should be highly simplified or suggestive. Focus on clear forms, composition, and the core action. Avoid text or photo-realism.
-
-      **YOUR TASK:**
-      Create a storyboard illustration for the following scene.
-
-      **SCENE DETAILS:**
-      - **Title:** ${shot.title}
-      - **Composition & Framing:** ${shot.composition}
-      - **Poses & Blocking:** ${shot.poses}. ${shot.blocking}
-      - **Key Elements:** The primary subject is ${result.context.subject}. The location is ${result.context.location}. The mood is ${result.context.mood.join(', ')}.
-
-      Based on these scene details, generate the image now.
+      REMEMBER: Generate a SINGLE SCENE illustration, not a multi-panel storyboard.
     `;
 
-          try {
-            const response = await imageAI.models.generateImages({
-              model: 'models/imagen-3.0-generate-002', // Ensure you are using a capable model
-              prompt: imagePrompt,
-              config: {
-                numberOfImages: 1,
-                outputMimeType: 'image/jpeg',
-                aspectRatio: '4:3', // Consider making this dynamic (e.g., '3:4' or '4:3') based on shot details if possible
-              },
-            });
-
+          // Create promise for this image generation
+          const imagePromise = imageAI.models.generateImages({
+            model: 'models/imagen-3.0-generate-002',
+            prompt: imagePrompt,
+            config: {
+              numberOfImages: 1,
+              outputMimeType: 'image/jpeg',
+              aspectRatio: '4:3',
+            },
+          }).then((response) => {
             if (response?.generatedImages?.[0]?.image?.imageBytes) {
               shot.storyboardImage = `data:image/jpeg;base64,${response.generatedImages[0].image.imageBytes}`;
               console.log(`✅ Generated image for shot ${i + 1}`);
             }
-          } catch (error) {
+          }).catch((error) => {
             console.error(`Image generation error for shot ${i + 1}:`, error);
-          }
+          });
+
+          imagePromises.push(imagePromise);
         }
+
+        // Wait for all images to complete
+        await Promise.all(imagePromises);
+        console.log('✅ All image generation complete');
       }
     
     // Return complete photo shoot plan with all generated data
