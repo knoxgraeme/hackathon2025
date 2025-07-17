@@ -132,30 +132,66 @@ serve(async (req) => {
     let transcript = '';
     
     if (body.conversationId) {
-      // Fetch from ElevenLabs API
-      console.log('📞 Fetching conversation from ElevenLabs:', body.conversationId)
+      // Always fetch directly from ElevenLabs API
+      console.log('📞 Fetching conversation from ElevenLabs API:', body.conversationId)
       
       const elevenLabsApiKey = Deno.env.get('ELEVENLABS_API_KEY')
       if (!elevenLabsApiKey) {
         return createErrorResponse('ELEVENLABS_API_KEY not configured', 500)
       }
       
-      const conversationResponse = await fetch(
-        `https://api.elevenlabs.io/v1/convai/conversations/${body.conversationId}`,
-        {
-          headers: {
-            'xi-api-key': elevenLabsApiKey
-          }
-        }
-      )
+      // Poll for conversation completion
+      const maxRetries = 30; // 30 retries
+      const retryDelay = 2000; // 2 seconds between retries
+      let conversationData: any = null;
       
-      if (!conversationResponse.ok) {
-        console.error('Failed to fetch conversation:', conversationResponse.status)
-        return createErrorResponse('Failed to fetch conversation from ElevenLabs', 500)
+      for (let attempt = 0; attempt < maxRetries; attempt++) {
+        console.log(`🔄 Polling attempt ${attempt + 1}/${maxRetries}`)
+        
+        const conversationResponse = await fetch(
+          `https://api.elevenlabs.io/v1/convai/conversations/${body.conversationId}`,
+          {
+            headers: {
+              'xi-api-key': elevenLabsApiKey
+            }
+          }
+        )
+        
+        if (!conversationResponse.ok) {
+          const errorText = await conversationResponse.text()
+          console.error('Failed to fetch conversation:', conversationResponse.status, errorText)
+          return createErrorResponse(`Failed to fetch conversation from ElevenLabs: ${conversationResponse.status}`, 500)
+        }
+        
+        conversationData = await conversationResponse.json()
+        console.log(`📊 Conversation Status: ${conversationData.status} (attempt ${attempt + 1})`)
+        
+        // Check if conversation is complete
+        if (conversationData.status === 'done') {
+          console.log('✅ Conversation completed successfully')
+          break;
+        }
+        
+        // Check if conversation failed
+        if (conversationData.status === 'failed') {
+          console.error('❌ Conversation failed')
+          return createErrorResponse('The conversation failed. Please check the conversation in ElevenLabs.', 400)
+        }
+        
+        // If not done yet and not the last attempt, wait before retrying
+        if (attempt < maxRetries - 1) {
+          console.log(`⏳ Status is "${conversationData.status}", waiting ${retryDelay}ms before retry...`)
+          await new Promise(resolve => setTimeout(resolve, retryDelay))
+        }
       }
       
-      const conversationData = await conversationResponse.json()
-      console.log('🔍 ElevenLabs API response - Status:', conversationData.status)
+      // After all retries, check final status
+      if (!conversationData || conversationData.status !== 'done') {
+        console.error(`❌ Conversation did not complete after ${maxRetries} attempts. Current status: ${conversationData?.status || 'unknown'}`)
+        return createErrorResponse(`Conversation did not complete within ${maxRetries * retryDelay / 1000} seconds. Current status: ${conversationData?.status || 'unknown'}`, 408)
+      }
+      
+      console.log('🔍 ElevenLabs API response:', JSON.stringify(conversationData, null, 2))
       console.log('📊 Transcript turns:', conversationData.transcript?.length || 0)
       
       if (conversationData.transcript && Array.isArray(conversationData.transcript)) {
@@ -164,18 +200,23 @@ serve(async (req) => {
         
         if (!hasContent) {
           console.error('❌ Transcript exists but is empty')
-          return createErrorResponse('Transcript is empty - no conversation content found', 400)
+          console.error('Full conversation data:', JSON.stringify(conversationData, null, 2))
+          return createErrorResponse('Transcript is empty - no conversation content found. The conversation may have ended without any exchanges.', 400)
         }
         
+        // Filter out empty messages and format transcript
         transcript = conversationData.transcript
+          .filter((turn: any) => turn.message && turn.message.trim().length > 0)
           .map((turn: any) => `${turn.role}: ${turn.message}`)
           .join('\n');
+        
         console.log('📝 Parsed transcript from API:', transcript)
         console.log('📊 Transcript length:', transcript.length, 'characters')
+        console.log('📊 Number of turns with content:', conversationData.transcript.filter((turn: any) => turn.message && turn.message.trim().length > 0).length)
       } else {
         console.error('❌ No transcript found in response')
         console.error('Response structure:', JSON.stringify(conversationData, null, 2))
-        return createErrorResponse('No transcript found in ElevenLabs conversation', 400)
+        return createErrorResponse('No transcript found in ElevenLabs conversation. The response structure may have changed.', 400)
       }
     } else if (body.transcript) {
       // Direct transcript for testing
@@ -526,7 +567,7 @@ Your final output MUST be a raw JSON array.
     // Return complete photo shoot plan with all generated data
     const response = {
       success: true,
-      conversationId: body.data?.conversation_id || body.conversationId || 'direct-input',
+      conversationId: body.conversationId || 'direct-input',
       timestamp: new Date().toISOString(),
       ...result
     }
