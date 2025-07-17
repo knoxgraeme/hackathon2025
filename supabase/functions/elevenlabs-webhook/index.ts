@@ -368,6 +368,7 @@ Your final output MUST be a raw JSON array.
       - DO NOT divide the image into sections
       - DO NOT include text in the image
       - The entire image should depict ONE MOMENT from ONE VIEWPOINT
+      
 
      **STYLE REQUIREMENTS:**
       - **Color:** MONOCHROME ONLY - Pure black ink on white. NO COLOR.
