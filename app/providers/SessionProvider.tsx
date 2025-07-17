@@ -3,13 +3,7 @@
 
 import { createContext, useContext, useState, useEffect } from 'react';
 import { usePathname } from 'next/navigation';
-import { createClient } from '@supabase/supabase-js';
 import { EdgePhotoShootContext, EdgeLocation, EdgeShot } from '../types/photo-session';
-
-// Initialize Supabase client (will be null if env vars not set)
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-const supabase = supabaseUrl && supabaseAnonKey ? createClient(supabaseUrl, supabaseAnonKey) : null;
 
 /**
  * Represents a photo shoot session with its complete lifecycle state.

@@ -66,15 +66,20 @@ export interface Shot {
 
 // Edge function shot type
 export interface EdgeShot {
-  locationIndex: number;
   shotNumber: number;
   title: string;
-  imagePrompt: string;
-  composition: string; // Combined framing, poses, and environment
-  direction: string; // Communication cues for the photographer
-  technical: string; // Camera settings, lens choice, lighting
-  equipment: string[];
+  idealLighting: string;
+  composition: string;
+  poses: string;
+  blocking: string;
+  communicationCues: string;
   storyboardImage?: string;
+  // Legacy fields for backwards compatibility
+  locationIndex?: number;
+  imagePrompt?: string;
+  direction?: string;
+  technical?: string;
+  equipment?: string[];
 }
 
 export type PhotoSessionStage = PhotoShootContext['stage'];

@@ -341,9 +341,6 @@ export default function PhotoAssistantTestPage() {
                     <div key={idx} className="border border-gray-700 rounded p-4">
                       <div className="flex justify-between items-start mb-2">
                         <h4 className="font-bold">Shot #{shot.shotNumber}</h4>
-                        <span className="text-sm text-gray-400">
-                          Location {shot.locationIndex + 1}
-                        </span>
                       </div>
                       
                       {shot.storyboardImage && (
@@ -358,11 +355,12 @@ export default function PhotoAssistantTestPage() {
                       )}
                       
                       <p className="text-sm mb-2"><span className="font-semibold">Title:</span> {shot.title}</p>
-                      <p className="text-sm mb-2"><span className="font-semibold">Scene:</span> {shot.imagePrompt}</p>
+                      <p className="text-sm mb-2"><span className="font-semibold">Lighting:</span> {shot.idealLighting || shot.imagePrompt}</p>
                       <p className="text-sm mb-2"><span className="font-semibold">Composition:</span> {shot.composition}</p>
-                      <p className="text-sm mb-2"><span className="font-semibold">Direction:</span> {shot.direction}</p>
-                      <p className="text-sm mb-2"><span className="font-semibold">Technical:</span> {shot.technical}</p>
-                      <p className="text-sm"><span className="font-semibold">Gear:</span> {shot.equipment.join(', ')}</p>
+                      <p className="text-sm mb-2"><span className="font-semibold">Poses:</span> {shot.poses || shot.direction}</p>
+                      <p className="text-sm mb-2"><span className="font-semibold">Blocking:</span> {shot.blocking || shot.technical}</p>
+                      <p className="text-sm mb-2"><span className="font-semibold">Direction:</span> {shot.communicationCues || shot.direction}</p>
+                      {shot.equipment && <p className="text-sm"><span className="font-semibold">Gear:</span> {shot.equipment.join(', ')}</p>}
                     </div>
                   ))}
                 </div>
