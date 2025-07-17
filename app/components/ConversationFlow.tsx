@@ -4,7 +4,6 @@
 import { useConversation } from '@elevenlabs/react';
 import { useCallback, useState, useEffect, useRef } from 'react';
 import { useSession } from '../providers/SessionProvider';
-import { Button } from './Button';
 
 // Type for navigator.standalone (iOS specific)
 declare global {
@@ -69,7 +68,7 @@ interface ConversationFlowProps {
  */
 export default function ConversationFlow({ onComplete, sessionId }: ConversationFlowProps) {
   const { updateSession } = useSession();
-  const [conversationStarted, setConversationStarted] = useState(false);
+  const [conversationStarted, setConversationStarted] = useState(true); // Start directly in conversation mode
   const [isConnecting, setIsConnecting] = useState(false);
   
   /**
@@ -330,73 +329,12 @@ export default function ConversationFlow({ onComplete, sessionId }: Conversation
     }
   }, [conversationStarted, conversation, sessionId, updateSession]);
 
-  /**
-   * UI STATE: Pre-conversation interface
-   * 
-   * Shows the initial interface before conversation starts.
-   * Includes introduction, start button, and usage tips.
-   * 
-   * This represents the UI during the Connection Phase preparation.
-   */
-  if (!conversationStarted) {
-    return (
-      <div className="text-center animate-fade-in">
-        {/* Voice Assistant Introduction */}
-        <div className="mb-8">
-          <div className="w-32 h-32 mx-auto mb-6 relative">
-            <div className="absolute inset-0 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full opacity-20 animate-pulse" />
-            <div className="absolute inset-2 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full opacity-40" />
-            <div className="absolute inset-4 glass-card rounded-full flex items-center justify-center">
-              <span className="text-4xl" role="img" aria-label="Microphone">🎤</span>
-            </div>
-          </div>
+  // Auto-start conversation when component mounts
+  useEffect(() => {
+    startConversation();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Empty dependency array to run only on mount
 
-        </div>
-
-        {/* Start Button */}
-        <Button
-          onClick={startConversation}
-          loading={isConnecting}
-          size="lg"
-          icon={<span role="img" aria-label="Microphone">🎙️</span>}
-          aria-label={isConnecting ? 'Connecting to voice assistant' : 'Start voice planning session'}
-        >
-          {isConnecting ? 'Connecting...' : 'Start Voice Planning'}
-        </Button>
-
-        {/* Voice Tips */}
-        <div className="mt-12 grid gap-4 max-w-2xl mx-auto text-left">
-          <div className="glass-card p-4 flex items-start gap-3">
-            <span className="text-2xl" role="img" aria-label="Light bulb">💡</span>
-            <div>
-              <h4 className="font-medium text-primary mb-1">Describe Your Vision</h4>
-              <p className="text-sm text-secondary">
-                &quot;I want a moody portrait session with natural light...&quot;
-              </p>
-            </div>
-          </div>
-          <div className="glass-card p-4 flex items-start gap-3">
-            <span className="text-2xl" role="img" aria-label="Location pin">📍</span>
-            <div>
-              <h4 className="font-medium text-primary mb-1">Get Location Ideas</h4>
-              <p className="text-sm text-secondary">
-                I&apos;ll suggest perfect spots in Vancouver for your shoot
-              </p>
-            </div>
-          </div>
-          <div className="glass-card p-4 flex items-start gap-3">
-            <span className="text-2xl" role="img" aria-label="Movie camera">🎬</span>
-            <div>
-              <h4 className="font-medium text-primary mb-1">Visual Storyboard</h4>
-              <p className="text-sm text-secondary">
-                I&apos;ll create a shot-by-shot plan with AI-generated previews
-              </p>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
 
   /**
    * UI STATE: Active conversation interface
@@ -415,77 +353,71 @@ export default function ConversationFlow({ onComplete, sessionId }: Conversation
    * - Helpful hints for user interaction
    */
   return (
-    <div className="text-center animate-fade-in">
-      {/* Active Conversation UI */}
-      <div className="relative">
-        {/* Voice Visualization */}
-        <div className="mb-8 relative">
-          <div className="w-40 h-40 mx-auto relative">
-            {/* Outer pulse rings - animate when AI is speaking */}
-            <div className={`absolute inset-0 rounded-full ${conversation.isSpeaking ? 'animate-ping' : ''}`}>
-              <div className="w-full h-full rounded-full bg-gradient-to-br from-blue-500/30 to-purple-600/30" />
-            </div>
-            
-            {/* Voice button core - central visual indicator */}
-            <div className="absolute inset-4 rounded-full gradient-voice gradient-voice-shadow">
-              <div className="w-full h-full rounded-full flex items-center justify-center">
-                {/* Dynamic icon based on conversation state */}
-                <div className={`${conversation.isSpeaking ? 'animate-pulse' : 'animate-bounce'}`}>
-                  {conversation.isSpeaking ? (
-                    <span className="text-4xl" role="img" aria-label="Speaking">🗣️</span>
-                  ) : (
-                    <span className="text-4xl" role="img" aria-label="Listening">👂</span>
-                  )}
-                </div>
-              </div>
-            </div>
-
-            {/* Sound wave indicators - show when user is speaking/being listened to */}
-            {!conversation.isSpeaking && (
-              <div className="absolute inset-0 flex items-center justify-center" aria-hidden="true">
-                <div className="flex gap-1">
-                  {/* Animated wave bars with different heights and delays */}
-                  <div className="w-1 h-8 bg-green-400 rounded-full animate-pulse wave-1" />
-                  <div className="w-1 h-12 bg-green-400 rounded-full animate-pulse wave-2" />
-                  <div className="w-1 h-10 bg-green-400 rounded-full animate-pulse wave-3" />
-                  <div className="w-1 h-14 bg-green-400 rounded-full animate-pulse wave-4" />
-                  <div className="w-1 h-9 bg-green-400 rounded-full animate-pulse wave-5" />
-                </div>
-              </div>
-            )}
-          </div>
+    <div className="fixed inset-0 bg-white text-gray-900" style={{ fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif' }}>
+      {/* Content */}
+      <div className="px-4 pt-12">
+        <h1 className="text-[33px] font-semibold leading-[36px] text-[#343434] mb-4">
+          Tell me about your vision for this session
+        </h1>
+        <p className="text-xs text-[#6e6e6e]">
+          PixieGenie is listening....
+        </p>
+      </div>
+      
+      {/* Audio Waveform Visualization */}
+      <div className="absolute left-1/2 top-1/2 transform -translate-x-1/2 -translate-y-1/2">
+        <div className="relative w-[338px] h-[190px]">
+          {/* Placeholder waveform image */}
+          <img 
+            src="http://localhost:3845/assets/8c3615304e3118c6ef2826f97a1ae507405284e9.png"
+            alt="Audio waveform"
+            className="w-full h-full object-cover"
+          />
         </div>
-
-        {/* Status Text - Dynamic based on conversation state */}
-        <div className="mb-8">
-          <h2 className="text-3xl font-bold mb-3 text-primary">
-            {conversation.isSpeaking ? 'AI Assistant Speaking' : 'Listening to You'}
-          </h2>
-          <p className="text-lg text-secondary">
-            {conversation.isSpeaking 
-              ? 'Processing your vision...' 
-              : 'Share your photography ideas'
+      </div>
+      
+      {/* Control Buttons */}
+      <div className="fixed bottom-[100px] left-6 right-6 flex gap-4 items-center">
+        {/* Delete Button */}
+        <button
+          onClick={() => {
+            if (confirm('Are you sure you want to cancel this session?')) {
+              stopConversation();
             }
-          </p>
-        </div>
-
-        {/* Conversation hints */}
-        <div className="glass-card-dark p-4 mb-8 max-w-md mx-auto">
-          <p className="text-sm text-secondary">
-            Try saying: &quot;I need ideas for a sunset portrait session&quot; or &quot;Show me urban locations for street photography&quot;
-          </p>
-        </div>
-
-        {/* End Call Button */}
-        <Button
-          onClick={stopConversation}
-          variant="danger"
-          size="lg"
-          icon={<span role="img" aria-label="Phone">📞</span>}
-          aria-label="End planning session"
+          }}
+          className="w-12 h-12 bg-[#efefef] rounded-full flex items-center justify-center"
+          aria-label="Cancel session"
         >
-          End Planning Session
-        </Button>
+          <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none">
+            <path d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2m3 0v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6h14zM10 11v6M14 11v6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
+        </button>
+        
+        {/* Pause Button */}
+        <button
+          className="w-12 h-12 bg-[#efefef] rounded-full flex items-center justify-center"
+          aria-label="Pause conversation"
+        >
+          <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none">
+            <path d="M10 4H6v16h4V4zM18 4h-4v16h4V4z" fill="currentColor"/>
+          </svg>
+        </button>
+        
+        {/* Complete Button */}
+        <button
+          onClick={stopConversation}
+          className="flex-1 bg-[#00a887] text-white flex items-center justify-center gap-3 px-8 py-[13px] rounded"
+          aria-label="Complete planning session"
+        >
+          <svg className="w-[22px] h-[22px]" viewBox="0 0 24 24" fill="none">
+            <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
+        </button>
+      </div>
+      
+      {/* Home Indicator */}
+      <div className="fixed bottom-2 left-1/2 transform -translate-x-1/2">
+        <div className="w-36 h-[5px] bg-black rounded-full" />
       </div>
     </div>
   );

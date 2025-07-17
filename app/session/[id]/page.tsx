@@ -99,9 +99,14 @@ export default function SessionPage() {
     );
   }
 
-  // Show initial view without dark wrapper
-  if (currentSession.status === 'initial' && showInitialView) {
-    return (
+  // Show initial view or conversation flow without dark wrapper
+  if ((currentSession.status === 'initial' && showInitialView) || 
+      (currentSession.status === 'initial' && !showInitialView) || 
+      currentSession.status === 'conversation') {
+    
+    // Show initial empty state
+    if (currentSession.status === 'initial' && showInitialView) {
+      return (
       <div className="fixed inset-0 bg-white text-gray-900" style={{ fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif' }}>
             {/* Content */}
             <div className="px-4 pt-12">
@@ -180,7 +185,11 @@ export default function SessionPage() {
               <div className="w-36 h-[5px] bg-black rounded-full" />
             </div>
           </div>
-    );
+      );
+    }
+    
+    // Show conversation flow
+    return <ConversationFlow onComplete={handleConversationComplete} sessionId={sessionId} />;
   }
 
   // Regular view with dark background
@@ -212,11 +221,6 @@ export default function SessionPage() {
         </div>
 
         {/* Status-based content */}
-        {(currentSession.status === 'initial' && !showInitialView) || currentSession.status === 'conversation' && (
-          <div className="glass-card p-8 rounded-2xl animate-slide-up">
-            <ConversationFlow onComplete={handleConversationComplete} sessionId={sessionId} />
-          </div>
-        )}
 
         {currentSession.status === 'processing' && isProcessing && (
           <div className="animate-fade-in">

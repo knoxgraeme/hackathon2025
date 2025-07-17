@@ -1,0 +1,22 @@
+{
+    "manifest_version": 3,
+    "name": "Pixieset Storyboard Generator",
+    "version": "1.0",
+    "description": "Generate storyboard QR codes from Pixieset sessions",
+    "permissions": [
+      "activeTab"
+    ],
+    "content_scripts": [
+      {
+        "matches": ["https://studio.pixieset.com/*"],
+        "js": ["content.js"],
+        "css": ["styles.css"]
+      }
+    ],
+    "web_accessible_resources": [
+      {
+        "resources": ["qrcode.min.js"],
+        "matches": ["https://studio.pixieset.com/*"]
+      }
+    ]
+  }
