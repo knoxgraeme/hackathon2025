@@ -2,7 +2,19 @@
 'use client';
 
 import Link from 'next/link';
-import { Session } from '../types/models';
+import { EdgePhotoShootContext, EdgeLocation, EdgeShot } from '../types/photo-session';
+
+// Using the Session interface from SessionProvider
+interface Session {
+  id: string;
+  status: 'initial' | 'conversation' | 'processing' | 'complete';
+  conversationId?: string;
+  context?: EdgePhotoShootContext;
+  locations?: EdgeLocation[];
+  shots?: EdgeShot[];
+  createdAt: string;
+  title?: string;
+}
 
 interface SessionCardProps {
   session: Session;
@@ -16,10 +28,8 @@ export function SessionCard({ session }: SessionCardProps) {
   // Get the first storyboard image from shots
   const coverImage = session.shots?.[0]?.storyboardImage || null;
 
-  // Calculate total spots across all locations
-  const totalSpots = session.locations.reduce((sum, location) => 
-    sum + (location.spots?.length || 0), 0
-  );
+  // Calculate total shots across all locations (EdgeLocation doesn't have spots property)
+  const totalShots = session.shots?.length || 0;
 
   return (
     <Link href={`/session/${session.id}`} className="block mb-6">
@@ -27,6 +37,7 @@ export function SessionCard({ session }: SessionCardProps) {
         {/* Cover Image */}
         {coverImage ? (
           <div className="h-[135px] w-full relative bg-gray-200">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
             <img 
               src={coverImage} 
               alt={session.title || 'Session cover'}
@@ -55,7 +66,7 @@ export function SessionCard({ session }: SessionCardProps) {
           </div>
           
           <p className="text-[13px] text-[#0000008c] leading-[18px] mb-1">
-            {session.locations.length} Locations • {totalSpots} spots total
+            {session.locations.length} Locations • {totalShots} shots total
           </p>
           
           <p className="text-[13px] text-[#0000008c] leading-[18px]">

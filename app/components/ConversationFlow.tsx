@@ -164,10 +164,10 @@ export default function ConversationFlow({ onComplete, sessionId, dynamicVariabl
    */
   const startConversation = useCallback(async () => {
     try {
-      // Detect if running as PWA
-      const isStandalone = window.matchMedia('(display-mode: standalone)').matches || 
-                          window.navigator.standalone === true; // iOS specific
-      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+      // Detect if running as PWA (variables used in error handling)
+      // const isStandalone = window.matchMedia('(display-mode: standalone)').matches || 
+      //                     window.navigator.standalone === true; // iOS specific
+      // const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
       
       // Request wake lock to prevent screen sleep (iOS 18.4+ PWA support)
       if ('wakeLock' in navigator) {
@@ -381,6 +381,7 @@ export default function ConversationFlow({ onComplete, sessionId, dynamicVariabl
       <div className="absolute left-1/2 top-1/2 transform -translate-x-1/2 -translate-y-1/2">
         <div className="relative w-[338px] h-[190px]">
           {/* Placeholder waveform image */}
+          {/* eslint-disable-next-line @next/next/no-img-element */}
           <img 
             src="http://localhost:3845/assets/8c3615304e3118c6ef2826f97a1ae507405284e9.png"
             alt="Audio waveform"

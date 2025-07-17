@@ -102,16 +102,17 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
         console.log('[DEBUG] Number of sessions in localStorage:', Object.keys(parsed).length);
         
         // Log details of each session
-        Object.entries(parsed).forEach(([id, session]: [string, any]) => {
+        Object.entries(parsed).forEach(([id, session]) => {
+          const s = session as Session;
           console.log(`[DEBUG] Session ${id} from localStorage:`, {
-            status: session.status,
-            hasContext: !!session.context,
-            hasLocations: !!session.locations,
-            locationCount: session.locations?.length || 0,
-            hasShots: !!session.shots,
-            shotCount: session.shots?.length || 0,
-            createdAt: session.createdAt,
-            title: session.title
+            status: s.status,
+            hasContext: !!s.context,
+            hasLocations: !!s.locations,
+            locationCount: s.locations?.length || 0,
+            hasShots: !!s.shots,
+            shotCount: s.shots?.length || 0,
+            createdAt: s.createdAt,
+            title: s.title
           });
         });
         
