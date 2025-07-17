@@ -9,6 +9,7 @@ import { LocationsList } from '../../components/LocationsList';
 import { StoryboardView } from '../../components/StoryboardView';
 import { LoadingPipeline } from '../../components/LoadingStates';
 import { BottomSheet } from '../../components/BottomSheet';
+import { QRCodeModal } from '../../components/QRCodeModal';
 import { API_CONFIG } from '../../config/api';
 import Image from 'next/image';
 
@@ -22,6 +23,7 @@ export default function SessionPage() {
   const [showInitialView, setShowInitialView] = useState(true);
   const [showPlan, setShowPlan] = useState(false);
   const [selectedShotIndex, setSelectedShotIndex] = useState<number | null>(null);
+  const [showQRModal, setShowQRModal] = useState(false);
   const [dynamicVariables, setDynamicVariables] = useState<Record<string, string | number | boolean>>({});
 
   // Extract URL parameters and convert to dynamic variables
@@ -257,26 +259,39 @@ export default function SessionPage() {
 
         {currentSession.status === 'complete' && (
           <div className="fixed inset-0 bg-white text-gray-900" style={{ fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif' }}>
-            {/* Header */}
-            <div className="flex justify-between items-center px-4 py-3" style={{ paddingTop: `max(48px, env(safe-area-inset-top) + 12px)` }}>
-              <div className="flex items-center gap-2">
-                <div className="w-6 h-6 text-teal-500">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
-                    <circle cx="12" cy="10" r="3"/>
-                  </svg>
-                </div>
-                <span className="text-lg font-medium text-teal-500">Locations</span>
-              </div>
-              <button className="w-6 h-6 text-teal-500">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/>
-                  <path d="M21 3v5h-5"/>
-                  <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/>
-                  <path d="M3 21v-5h5"/>
-                </svg>
-              </button>
-            </div>
+                  {/* Header */}
+      <div className="flex justify-between items-center px-4 py-3" style={{ paddingTop: `max(48px, env(safe-area-inset-top) + 12px)` }}>
+        <div className="flex items-center gap-2">
+          <div className="w-6 h-6 text-teal-500">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
+              <circle cx="12" cy="10" r="3"/>
+            </svg>
+          </div>
+          <span className="text-lg font-medium text-teal-500">Locations</span>
+        </div>
+        <div className="flex items-center gap-3">
+          <button 
+            onClick={() => setShowQRModal(true)}
+            className="w-6 h-6 text-teal-500 hover:text-teal-600 transition-colors"
+            aria-label="Share session"
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/>
+              <polyline points="16,6 12,2 8,6"/>
+              <line x1="12" y1="2" x2="12" y2="15"/>
+            </svg>
+          </button>
+          <button className="w-6 h-6 text-teal-500">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/>
+              <path d="M21 3v5h-5"/>
+              <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/>
+              <path d="M3 21v-5h5"/>
+            </svg>
+          </button>
+        </div>
+      </div>
 
             {/* Main Content */}
             <div className="px-4 pb-24 overflow-y-auto" style={{ height: 'calc(100vh - 120px)' }}>
@@ -444,15 +459,23 @@ export default function SessionPage() {
               </div>
             </div>
 
-            {/* Bottom Sheet for Shot Details */}
-            <BottomSheet
-              isOpen={selectedShotIndex !== null}
-              onClose={() => setSelectedShotIndex(null)}
-              shot={selectedShotIndex !== null ? currentSession.shots?.[selectedShotIndex] || null : null}
-              location={selectedShotIndex !== null && currentSession.shots?.[selectedShotIndex]?.locationIndex !== undefined ? 
-                currentSession.locations?.[currentSession.shots[selectedShotIndex].locationIndex] || null : null}
-            />
-          </div>
+                  {/* QR Code Modal */}
+      <QRCodeModal
+        isOpen={showQRModal}
+        onClose={() => setShowQRModal(false)}
+        sessionId={currentSession.id}
+        sessionTitle={currentSession.title}
+      />
+
+      {/* Bottom Sheet for Shot Details */}
+      <BottomSheet
+        isOpen={selectedShotIndex !== null}
+        onClose={() => setSelectedShotIndex(null)}
+        shot={selectedShotIndex !== null ? currentSession.shots?.[selectedShotIndex] || null : null}
+        location={selectedShotIndex !== null && currentSession.shots?.[selectedShotIndex]?.locationIndex !== undefined ? 
+          currentSession.locations?.[currentSession.shots[selectedShotIndex].locationIndex] || null : null}
+      />
+    </div>
         )}
       </div>
     </div>
