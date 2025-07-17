@@ -6,7 +6,7 @@ import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { useSession } from '../../providers/SessionProvider';
 import ConversationFlow from '../../components/ConversationFlow';
 import { LoadingPipeline } from '../../components/LoadingStates';
-import { BottomSheet } from '../../components/BottomSheet';
+
 import { WebShareButton } from '../../components/WebShareButton';
 import { QRCodeModal } from '../../components/QRCodeModal';
 import { API_CONFIG } from '../../config/api';
@@ -22,7 +22,21 @@ export default function SessionPage() {
   const [showPlan, setShowPlan] = useState(false);
   const [selectedShotIndex, setSelectedShotIndex] = useState<number | null>(null);
   const [showQRModal, setShowQRModal] = useState(false);
+  const [showFullTextOverlay, setShowFullTextOverlay] = useState(false);
+  const [fullTextContent, setFullTextContent] = useState<{title: string, content: string}>({title: '', content: ''});
   const [dynamicVariables, setDynamicVariables] = useState<Record<string, string | number | boolean>>({});
+
+  // Helper function to show full text overlay
+  const showFullText = (title: string, content: string) => {
+    setFullTextContent({title, content});
+    setShowFullTextOverlay(true);
+  };
+
+  // Helper function to truncate text
+  const truncateText = (text: string, maxLength: number = 100) => {
+    if (text.length <= maxLength) return text;
+    return text.substring(0, maxLength) + '...';
+  };
 
   // Extract URL parameters and convert to dynamic variables
   useEffect(() => {
@@ -304,7 +318,7 @@ export default function SessionPage() {
                             src={shot.storyboardImage}
                             alt={`Shot ${shot.shotNumber}`}
                             fill
-                            className="object-cover"
+                            className="object-cover cursor-pointer"
                           />
                         </div>
                       </div>
@@ -356,14 +370,108 @@ export default function SessionPage() {
         sessionTitle={currentSession.title}
       />
 
-      {/* Bottom Sheet for Shot Details */}
-      <BottomSheet
-        isOpen={selectedShotIndex !== null}
-        onClose={() => setSelectedShotIndex(null)}
-        shot={selectedShotIndex !== null ? currentSession.shots?.[selectedShotIndex] || null : null}
-        location={selectedShotIndex !== null && currentSession.shots?.[selectedShotIndex]?.location ?
-          currentSession.locations?.find(loc => loc.name === currentSession.shots?.[selectedShotIndex]?.location) || null : null}
-      />
+             {/* Lightbox */}
+       {selectedShotIndex !== null && currentSession.shots?.[selectedShotIndex] && (
+         <div className="fixed inset-0 bg-black z-50 flex flex-col">
+           {/* Close Button - Top Overlay */}
+           <button 
+             onClick={() => setSelectedShotIndex(null)}
+             className="absolute top-4 right-4 text-white p-2 z-10"
+             style={{ top: `max(16px, env(safe-area-inset-top) + 4px)` }}
+           >
+             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+             </svg>
+           </button>
+
+           {/* Header */}
+           <div className="flex items-center justify-center p-4 text-white" style={{ paddingTop: `max(48px, env(safe-area-inset-top) + 12px)` }}>
+             <div className="text-center">
+               <h2 className="font-medium text-lg">
+                 Spot: #{currentSession.shots[selectedShotIndex].shotNumber}
+               </h2>
+               {currentSession.shots[selectedShotIndex].title && (
+                 <p className="text-white/80 text-sm mt-1">
+                   {currentSession.shots[selectedShotIndex].title}
+                 </p>
+               )}
+               {(currentSession.shots[selectedShotIndex].location || 
+                 (currentSession.shots[selectedShotIndex].locationIndex !== undefined && 
+                  currentSession.locations?.[currentSession.shots[selectedShotIndex].locationIndex])) && (
+                 <p className="text-white/60 text-xs mt-1">
+                   {currentSession.shots[selectedShotIndex].location || 
+                    currentSession.locations?.[currentSession.shots[selectedShotIndex].locationIndex!]?.name}
+                 </p>
+               )}
+             </div>
+           </div>
+
+          {/* Image */}
+          <div className="flex-1 flex items-center justify-center p-4">
+            <div className="relative w-full max-w-md aspect-[3/4]">
+              <Image
+                src={currentSession.shots[selectedShotIndex].storyboardImage!}
+                alt={`Shot ${currentSession.shots[selectedShotIndex].shotNumber}`}
+                fill
+                className="object-cover rounded-lg"
+              />
+            </div>
+          </div>
+
+                     {/* Bottom Panel with Direction */}
+           <div className="bg-black text-white px-6 rounded-t-3xl overflow-y-auto max-h-[50vh]" style={{ paddingBottom: `max(24px, env(safe-area-inset-bottom) + 24px)` }}>
+                         <div className="mb-4">
+               <h3 className="text-lg font-semibold mb-2">Communication Cues</h3>
+               <p className="text-white/90 leading-relaxed">
+                 {currentSession.shots?.[selectedShotIndex]?.communicationCues || 
+                  'No communication cues available'}
+               </p>
+             </div>
+
+             {/* Ideal Lighting */}
+             {currentSession.shots?.[selectedShotIndex]?.idealLighting && (
+               <div className="mb-4">
+                 <h3 className="text-lg font-semibold mb-2">Ideal Lighting</h3>
+                 <p className="text-white/90 leading-relaxed">
+                   {currentSession.shots[selectedShotIndex].idealLighting}
+                 </p>
+               </div>
+             )}
+
+             {/* Poses */}
+             {currentSession.shots?.[selectedShotIndex]?.poses && (
+               <div className="mb-4">
+                 <h3 className="text-lg font-semibold mb-2">Poses</h3>
+                 <p className="text-white/90 leading-relaxed">
+                   {currentSession.shots[selectedShotIndex].poses}
+                 </p>
+               </div>
+             )}
+          </div>
+        </div>
+      )}
+
+      {/* Full Text Overlay */}
+      {showFullTextOverlay && (
+        <div className="fixed inset-0 bg-black/50 z-60 flex items-end">
+          <div className="bg-white w-full max-h-[80vh] rounded-t-3xl p-6 overflow-y-auto">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-semibold text-gray-900">{fullTextContent.title}</h2>
+              <button
+                onClick={() => setShowFullTextOverlay(false)}
+                className="text-gray-400 hover:text-gray-600 p-2"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            <div className="text-gray-700 leading-relaxed whitespace-pre-wrap">
+              {fullTextContent.content}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
         )}
       </div>
