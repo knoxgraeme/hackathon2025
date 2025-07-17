@@ -68,6 +68,7 @@ export interface Shot {
 export interface EdgeShot {
   shotNumber: number;
   title: string;
+  location: string; // Location name from webhook
   idealLighting: string;
   composition: string;
   poses: string;

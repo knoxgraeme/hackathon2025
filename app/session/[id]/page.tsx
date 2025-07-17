@@ -393,13 +393,15 @@ export default function SessionPage() {
                   {currentSession.shots.map((shot, idx) => (
                     <div key={idx} className="bg-white rounded-lg overflow-hidden shadow-sm border border-gray-200">
                       {shot.storyboardImage && (
-                        <div className="aspect-[3/4] relative">
+                        <div 
+                          className="aspect-[3/4] relative cursor-pointer"
+                          onClick={() => setSelectedShotIndex(idx)}
+                        >
                           <Image 
                             src={shot.storyboardImage} 
                             alt={`Shot ${shot.shotNumber}`}
                             fill
                             className="object-cover"
-                            onClick={() => setSelectedShotIndex(idx)}
                           />
                         </div>
                       )}
@@ -456,8 +458,8 @@ export default function SessionPage() {
         isOpen={selectedShotIndex !== null}
         onClose={() => setSelectedShotIndex(null)}
         shot={selectedShotIndex !== null ? currentSession.shots?.[selectedShotIndex] || null : null}
-        location={selectedShotIndex !== null && currentSession.shots?.[selectedShotIndex]?.locationIndex !== undefined ? 
-          currentSession.locations?.[currentSession.shots[selectedShotIndex].locationIndex] || null : null}
+        location={selectedShotIndex !== null && currentSession.shots?.[selectedShotIndex]?.location ? 
+          currentSession.locations?.find(loc => loc.name === currentSession.shots?.[selectedShotIndex]?.location) || null : null}
       />
     </div>
         )}
