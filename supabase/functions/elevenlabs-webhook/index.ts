@@ -128,11 +128,11 @@ serve(async (req) => {
       }
     }
     
-    // STAGE 1: Get transcript from ElevenLabs or request body
+    // STAGE 1: Get transcript from ElevenLabs API or request body
     let transcript = '';
     
     if (body.conversationId) {
-      // Fetch from ElevenLabs
+      // Fetch from ElevenLabs API
       console.log('📞 Fetching conversation from ElevenLabs:', body.conversationId)
       
       const elevenLabsApiKey = Deno.env.get('ELEVENLABS_API_KEY')
@@ -155,19 +155,35 @@ serve(async (req) => {
       }
       
       const conversationData = await conversationResponse.json()
+      console.log('🔍 ElevenLabs API response - Status:', conversationData.status)
+      console.log('📊 Transcript turns:', conversationData.transcript?.length || 0)
       
       if (conversationData.transcript && Array.isArray(conversationData.transcript)) {
+        // Check if transcript has actual content
+        const hasContent = conversationData.transcript.some((turn: any) => turn.message && turn.message.trim().length > 0)
+        
+        if (!hasContent) {
+          console.error('❌ Transcript exists but is empty')
+          return createErrorResponse('Transcript is empty - no conversation content found', 400)
+        }
+        
         transcript = conversationData.transcript
           .map((turn: any) => `${turn.role}: ${turn.message}`)
           .join('\n');
+        console.log('📝 Parsed transcript from API:', transcript)
+        console.log('📊 Transcript length:', transcript.length, 'characters')
       } else {
+        console.error('❌ No transcript found in response')
+        console.error('Response structure:', JSON.stringify(conversationData, null, 2))
         return createErrorResponse('No transcript found in ElevenLabs conversation', 400)
       }
     } else if (body.transcript) {
       // Direct transcript for testing
       transcript = body.transcript;
+      console.log('📝 Received body.transcript:', transcript)
+      console.log('📊 Transcript length:', transcript.length, 'characters')
     } else {
-      return createErrorResponse('Either conversationId or transcript is required', 400)
+      return createErrorResponse('Either webhook payload, conversationId, or transcript is required', 400)
     }
     
     // Extract all 12 data collection fields from conversational transcript
@@ -238,6 +254,9 @@ serve(async (req) => {
     ### Transcript
     ${transcript}`
     
+    console.log('🧠 Sending to AI model - transcript preview:', transcript.substring(0, 200) + '...')
+    console.log('🧠 Full prompt length:', contextPrompt.length, 'characters')
+    
     const contextResult = await contextModel.generateContent(contextPrompt)
     const contextText = contextResult.response.text()
     
@@ -260,9 +279,10 @@ serve(async (req) => {
         locationPreference: extractedData.locationPreference
       }
       
-      console.log('✅ Extracted context:', result.context)
+      console.log('✅ Extracted context:', JSON.stringify(result.context, null, 2))
     } catch (error) {
       console.error('Context parsing error:', error)
+      console.error('Raw AI response:', contextText)
       return createErrorResponse('Failed to extract context from transcript', 400)
     }
     
@@ -506,7 +526,7 @@ Your final output MUST be a raw JSON array.
     // Return complete photo shoot plan with all generated data
     const response = {
       success: true,
-      conversationId: body.conversationId || 'direct-input',
+      conversationId: body.data?.conversation_id || body.conversationId || 'direct-input',
       timestamp: new Date().toISOString(),
       ...result
     }
