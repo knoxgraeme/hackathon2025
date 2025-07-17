@@ -385,11 +385,11 @@ export default function ConversationFlow({ onComplete, sessionId, dynamicVariabl
   return (
     <div className="fixed inset-0 bg-white text-gray-900" style={{ fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif' }}>
       {/* Content */}
-      <div className="px-4" style={{ paddingTop: `max(12px, env(safe-area-inset-top))` }}>
+      <div className="px-4" style={{ paddingTop: `max(48px, env(safe-area-inset-top) + 36px)` }}>
         <h1 className="text-[33px] font-semibold leading-[36px] text-[#343434] mb-4">
           Tell me about your vision for this session
         </h1>
-        <p className="text-xs text-[#6e6e6e]">
+        <p className="text-[15px] text-[#6e6e6e]">
           {conversationStarted ? 'PixieDirector is listening....' : 'Tap "Start Call" to begin your session'}
         </p>
       </div>
