@@ -50,15 +50,7 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         <SessionProvider>
-          <div className="min-h-screen relative">
-            {/* Safe area padding for iOS devices */}
-            <div className="fixed inset-x-0 top-0 h-[env(safe-area-inset-top)] bg-black z-50" />
-            
-            {/* Main content with safe area padding */}
-            <div className="pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)] px-[env(safe-area-inset-left)] min-h-screen">
-              {children}
-            </div>
-          </div>
+          {children}
           <PWAInstallPrompt />
         </SessionProvider>
       </body>

@@ -136,7 +136,7 @@ export default function SessionPage() {
       return (
       <div className="fixed inset-0 bg-white text-gray-900" style={{ fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif' }}>
             {/* Content */}
-            <div className="px-4 pt-12">
+            <div className="px-4" style={{ paddingTop: `max(48px, env(safe-area-inset-top) + 36px)` }}>
               <h1 className="text-[33px] font-semibold leading-[36px] text-[#343434] mb-4">
                 New Session
               </h1>
@@ -193,7 +193,8 @@ export default function SessionPage() {
               {/* Start Button */}
               <button
                 onClick={() => setShowInitialView(false)}
-                className="w-full bg-[#00a887] text-white flex items-center justify-center gap-3 px-8 py-[13px] rounded mt-16 mb-8 active:scale-95 transition-transform"
+                className="w-full bg-[#00a887] text-white flex items-center justify-center gap-3 px-8 py-[13px] rounded mt-16 active:scale-95 transition-transform"
+                style={{ marginBottom: `max(32px, env(safe-area-inset-bottom))` }}
               >
                 <svg className="w-[22px] h-[22px]" viewBox="0 0 24 24" fill="none">
                   <path d="M12 2C11.4477 2 11 2.44772 11 3V11C11 11.5523 11.4477 12 12 12C12.5523 12 13 11.5523 13 11V3C13 2.44772 12.5523 2 12 2Z" fill="white"/>

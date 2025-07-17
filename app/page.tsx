@@ -50,7 +50,7 @@ export default function Home() {
     <div className="min-h-screen bg-white flex flex-col relative">
       {/* Header - Mobile app style */}
       <header className="bg-white">
-        <div className="px-4 pt-12 pb-4">
+        <div className="px-4 pb-4" style={{ paddingTop: `max(48px, env(safe-area-inset-top) + 36px)` }}>
           <h1 className="text-[33px] font-semibold leading-[36px] text-[#343434]">
             Your Sessions
           </h1>
@@ -79,7 +79,7 @@ export default function Home() {
       )}
 
       {/* Fixed Bottom CTA Button */}
-      <div className="fixed bottom-0 left-0 right-0 bg-white px-6 pb-8 pt-4">
+      <div className="fixed bottom-0 left-0 right-0 bg-white px-6 pt-4" style={{ paddingBottom: `max(32px, env(safe-area-inset-bottom))` }}>
         <button
           onClick={handleCreateSession}
           className="w-full bg-[#00a887] text-white flex items-center justify-center gap-3 px-8 py-[13px] rounded active:scale-95 transition-transform"

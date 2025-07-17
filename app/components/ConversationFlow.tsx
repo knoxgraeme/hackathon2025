@@ -368,7 +368,7 @@ export default function ConversationFlow({ onComplete, sessionId, dynamicVariabl
   return (
     <div className="fixed inset-0 bg-white text-gray-900" style={{ fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif' }}>
       {/* Content */}
-      <div className="px-4 pt-12">
+      <div className="px-4" style={{ paddingTop: `max(12px, env(safe-area-inset-top))` }}>
         <h1 className="text-[33px] font-semibold leading-[36px] text-[#343434] mb-4">
           Tell me about your vision for this session
         </h1>
@@ -379,19 +379,27 @@ export default function ConversationFlow({ onComplete, sessionId, dynamicVariabl
       
       {/* Audio Waveform Visualization */}
       <div className="absolute left-1/2 top-1/2 transform -translate-x-1/2 -translate-y-1/2">
-        <div className="relative w-[338px] h-[190px]">
-          {/* Placeholder waveform image */}
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img 
-            src="http://localhost:3845/assets/8c3615304e3118c6ef2826f97a1ae507405284e9.png"
-            alt="Audio waveform"
-            className="w-full h-full object-cover"
-          />
+        <div className="relative w-[338px] h-[190px] flex items-center justify-center">
+          {/* Animated waveform using CSS */}
+          <div className="flex items-center justify-center gap-1">
+            {[...Array(20)].map((_, i) => (
+              <div
+                key={i}
+                className="bg-black rounded-full animate-pulse"
+                style={{
+                  width: '4px',
+                  height: `${Math.random() * 40 + 10}px`,
+                  animationDelay: `${i * 0.1}s`,
+                  animationDuration: `${0.8 + Math.random() * 0.4}s`
+                }}
+              />
+            ))}
+          </div>
         </div>
       </div>
       
       {/* Control Buttons */}
-      <div className="fixed bottom-0 left-0 right-0 bg-white px-6 pb-8 pt-4">
+      <div className="fixed bottom-0 left-0 right-0 bg-white px-6 pt-4" style={{ paddingBottom: `max(32px, env(safe-area-inset-bottom))` }}>
         <div className="flex gap-4 items-center">
           {/* Delete Button */}
           <button
