@@ -168,7 +168,7 @@ export default function SessionPage() {
                   </div>
                   <div className="glass-card-dark p-4 rounded-xl">
                     <p className="text-tertiary text-sm mb-1 uppercase tracking-wider">Mood</p>
-                    <p className="text-lg font-medium text-primary">{currentSession.context.mood.join(', ')}</p>
+                    <p className="text-lg font-medium text-primary">{currentSession.context.mood?.join(', ') || 'N/A'}</p>
                   </div>
                   <div className="glass-card-dark p-4 rounded-xl">
                     <p className="text-tertiary text-sm mb-1 uppercase tracking-wider">Time</p>

@@ -292,7 +292,7 @@ export default function PhotoAssistantTestPage() {
                 <div className="grid md:grid-cols-2 gap-4 text-sm">
                   <div>
                     <p><span className="font-semibold">Type:</span> {result.context.shootType}</p>
-                    <p><span className="font-semibold">Mood:</span> {result.context.mood.join(', ')}</p>
+                    <p><span className="font-semibold">Mood:</span> {result.context.mood?.join(', ') || 'Not specified'}</p>
                     <p><span className="font-semibold">Time:</span> {result.context.timeOfDay}</p>
                     <p><span className="font-semibold">Duration:</span> {result.context.duration}</p>
                   </div>
