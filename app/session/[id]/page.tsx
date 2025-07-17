@@ -109,25 +109,13 @@ export default function SessionPage() {
     }
   };
 
-  // Check if session exists
+  // Check if session exists - show loading spinner like share page
   if (!currentSession) {
     return (
-      <div className="min-h-screen text-white flex items-center justify-center">
-        {/* Background */}
-        <div className="fixed inset-0 bg-black">
-          <div className="absolute inset-0 bg-gradient-to-br from-blue-900/20 via-purple-900/20 to-pink-900/20" />
-        </div>
-        
-        <div className="relative z-10 text-center glass-card p-8 max-w-md">
-          <div className="text-5xl mb-4">🔍</div>
-          <h1 className="text-2xl font-bold mb-4">Session not found</h1>
-          <p className="text-secondary mb-6">This session doesn&apos;t exist or has been removed.</p>
-          <button 
-            onClick={() => router.back()}
-            className="voice-button px-6 py-3 rounded-xl font-medium"
-          >
-            Back
-          </button>
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#00a887] mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading session...</p>
         </div>
       </div>
     );
