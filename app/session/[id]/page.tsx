@@ -8,7 +8,9 @@ import ConversationFlow from '../../components/ConversationFlow';
 import { LocationsList } from '../../components/LocationsList';
 import { StoryboardView } from '../../components/StoryboardView';
 import { LoadingPipeline } from '../../components/LoadingStates';
+import { BottomSheet } from '../../components/BottomSheet';
 import { API_CONFIG } from '../../config/api';
+import Image from 'next/image';
 
 export default function SessionPage() {
   const params = useParams();
@@ -18,6 +20,8 @@ export default function SessionPage() {
   const { currentSession, updateSession } = useSession();
   const [isProcessing, setIsProcessing] = useState(false);
   const [showInitialView, setShowInitialView] = useState(true);
+  const [showPlan, setShowPlan] = useState(false);
+  const [selectedShotIndex, setSelectedShotIndex] = useState<number | null>(null);
   const [dynamicVariables, setDynamicVariables] = useState<Record<string, string | number | boolean>>({});
 
   // Extract URL parameters and convert to dynamic variables
@@ -252,68 +256,202 @@ export default function SessionPage() {
         {/* Status-based content */}
 
         {currentSession.status === 'complete' && (
-          <div className="space-y-8">
-            {/* Shoot Overview */}
-            {currentSession.context && (
-              <div className="glass-card p-6 rounded-2xl animate-slide-up">
-                <h2 className="text-2xl font-bold mb-6 flex items-center gap-3">
-                  <span>📋</span>
-                  <span className="bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
-                    Shoot Overview
-                  </span>
-                </h2>
-                <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                  <div className="glass-card-dark p-4 rounded-xl">
-                    <p className="text-tertiary text-sm mb-1 uppercase tracking-wider">Type</p>
-                    <p className="text-lg font-medium text-primary">{currentSession.context.shootType}</p>
-                  </div>
-                  <div className="glass-card-dark p-4 rounded-xl">
-                    <p className="text-tertiary text-sm mb-1 uppercase tracking-wider">Subject</p>
-                    <p className="text-lg font-medium text-primary">{currentSession.context.subject}</p>
-                  </div>
-                  <div className="glass-card-dark p-4 rounded-xl">
-                    <p className="text-tertiary text-sm mb-1 uppercase tracking-wider">Duration</p>
-                    <p className="text-lg font-medium text-primary">{currentSession.context.duration}</p>
-                  </div>
-                  <div className="glass-card-dark p-4 rounded-xl">
-                    <p className="text-tertiary text-sm mb-1 uppercase tracking-wider">Mood</p>
-                    <p className="text-lg font-medium text-primary">{currentSession.context.mood?.join(', ') || 'N/A'}</p>
-                  </div>
-                  <div className="glass-card-dark p-4 rounded-xl">
-                    <p className="text-tertiary text-sm mb-1 uppercase tracking-wider">Time</p>
-                    <p className="text-lg font-medium text-primary">{currentSession.context.timeOfDay}</p>
-                  </div>
-                  <div className="glass-card-dark p-4 rounded-xl">
-                    <p className="text-tertiary text-sm mb-1 uppercase tracking-wider">Experience</p>
-                    <p className="text-lg font-medium text-primary">{currentSession.context.experience}</p>
-                  </div>
+          <div className="fixed inset-0 bg-white text-gray-900" style={{ fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif' }}>
+            {/* Header */}
+            <div className="flex justify-between items-center px-4 py-3" style={{ paddingTop: `max(48px, env(safe-area-inset-top) + 12px)` }}>
+              <div className="flex items-center gap-2">
+                <div className="w-6 h-6 text-teal-500">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
+                    <circle cx="12" cy="10" r="3"/>
+                  </svg>
                 </div>
-                {currentSession.context.specialRequests && (
-                  <div className="mt-6 glass-card-dark p-4 rounded-xl">
-                    <p className="text-tertiary text-sm mb-1 uppercase tracking-wider">Special Requests</p>
-                    <p className="text-primary">{currentSession.context.specialRequests}</p>
+                <span className="text-lg font-medium text-teal-500">Locations</span>
+              </div>
+              <button className="w-6 h-6 text-teal-500">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/>
+                  <path d="M21 3v5h-5"/>
+                  <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/>
+                  <path d="M3 21v-5h5"/>
+                </svg>
+              </button>
+            </div>
+
+            {/* Main Content */}
+            <div className="px-4 pb-24 overflow-y-auto" style={{ height: 'calc(100vh - 120px)' }}>
+              {/* Section Header */}
+              <div className="mb-6">
+                <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">
+                  {showPlan ? 'SHOOT PLAN' : 'STORYBOARD'}
+                </p>
+                <h1 className="text-2xl font-bold text-gray-900 mb-2">
+                  {currentSession.title}
+                </h1>
+                
+                {showPlan && currentSession.context && (
+                  <div className="space-y-4 mt-6">
+                    {/* High-Level Goals */}
+                    <div>
+                      <h3 className="text-lg font-semibold mb-2">High-Level Goals:</h3>
+                      <ul className="space-y-1 text-gray-700">
+                        <li>• {currentSession.context.shootType} session featuring {currentSession.context.subject}</li>
+                        {currentSession.context.mood && currentSession.context.mood.length > 0 && (
+                          <li>• Capture {currentSession.context.mood.join(', ')} aesthetic</li>
+                        )}
+                        <li>• {currentSession.context.timeOfDay} lighting for optimal results</li>
+                        {currentSession.context.duration && (
+                          <li>• {currentSession.context.duration} session duration</li>
+                        )}
+                      </ul>
+                    </div>
+
+                    {/* Session Details */}
+                    <div className="flex items-center gap-2 mt-6">
+                      <div className="w-6 h-6 bg-orange-100 rounded-full flex items-center justify-center">
+                        <span className="text-orange-600 text-xs">📅</span>
+                      </div>
+                      <span className="font-semibold">
+                        {currentSession.context.startTime ? 
+                          `Session Start: ${currentSession.context.startTime}` : 
+                          'Session Planning'
+                        }
+                      </span>
+                    </div>
+
+                    {/* Location Stops */}
+                    {currentSession.locations && currentSession.locations.map((location, idx) => (
+                      <div key={idx} className="mt-4">
+                        <h4 className="font-semibold mb-2">Stop {idx + 1}: {location.name}</h4>
+                        
+                        {/* Shot thumbnails for this location */}
+                        <div className="grid grid-cols-3 gap-2 mb-4">
+                          {currentSession.shots?.filter(shot => shot.locationIndex === idx).slice(0, 3).map((shot, shotIdx) => (
+                            <div key={shotIdx} className="aspect-[3/4] rounded-lg overflow-hidden bg-gray-200">
+                              {shot.storyboardImage ? (
+                                <Image 
+                                  src={shot.storyboardImage} 
+                                  alt={`Shot ${shot.shotNumber}`}
+                                  width={120}
+                                  height={160}
+                                  className="w-full h-full object-cover"
+                                />
+                              ) : (
+                                <div className="w-full h-full flex items-center justify-center">
+                                  <span className="text-2xl opacity-50">📸</span>
+                                </div>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+
+                        <div className="space-y-2 text-sm text-gray-600">
+                          <p><strong>Description:</strong> {location.description}</p>
+                          {location.address && (
+                            <p><strong>Address:</strong> {location.address}</p>
+                          )}
+                          <p><strong>Best Time:</strong> {location.bestTime}</p>
+                          <p><strong>Lighting:</strong> {location.lightingNotes}</p>
+                          <p><strong>Accessibility:</strong> {location.accessibility}</p>
+                          {location.permits && (
+                            <p><strong>Permits:</strong> {location.permits}</p>
+                          )}
+                          {currentSession.shots?.find(shot => shot.locationIndex === idx) && (
+                            <p><strong>Featured Shot:</strong> {currentSession.shots.find(shot => shot.locationIndex === idx)?.title || 'Untitled'}</p>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+
+                    {/* Equipment Summary */}
+                    {currentSession.context.equipment && currentSession.context.equipment.length > 0 && (
+                      <div className="mt-6 p-4 bg-gray-50 rounded-lg">
+                        <h4 className="font-semibold mb-2">Required Equipment:</h4>
+                        <div className="flex flex-wrap gap-2">
+                          {currentSession.context.equipment.map((item, idx) => (
+                            <span key={idx} className="px-3 py-1 bg-teal-100 text-teal-700 rounded-full text-sm">
+                              {item}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Special Requests */}
+                    {currentSession.context.specialRequests && (
+                      <div className="mt-4 p-4 bg-blue-50 rounded-lg">
+                        <h4 className="font-semibold mb-2">Special Requests:</h4>
+                        <p className="text-sm text-gray-700">{currentSession.context.specialRequests}</p>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
-            )}
 
-            {/* Locations */}
-            {currentSession.locations && (
-              <div className="animate-slide-up" style={{ animationDelay: '0.1s' }}>
-                <LocationsList locations={currentSession.locations} />
+              {/* Storyboard Images */}
+              {!showPlan && currentSession.shots && (
+                <div className="space-y-4">
+                  {currentSession.shots.map((shot, idx) => (
+                    <div key={idx} className="bg-white rounded-lg overflow-hidden shadow-sm border border-gray-200">
+                      {shot.storyboardImage && (
+                        <div className="aspect-[3/4] relative">
+                          <Image 
+                            src={shot.storyboardImage} 
+                            alt={`Shot ${shot.shotNumber}`}
+                            fill
+                            className="object-cover"
+                            onClick={() => setSelectedShotIndex(idx)}
+                          />
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Bottom Navigation */}
+            <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200" style={{ paddingBottom: `max(16px, env(safe-area-inset-bottom))` }}>
+              <div className="flex">
+                <button 
+                  onClick={() => setShowPlan(false)}
+                  className={`flex-1 flex items-center justify-center gap-2 py-3 ${
+                    !showPlan ? 'text-gray-900' : 'text-gray-400'
+                  }`}
+                >
+                  <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <rect x="3" y="3" width="7" height="7"/>
+                    <rect x="14" y="3" width="7" height="7"/>
+                    <rect x="14" y="14" width="7" height="7"/>
+                    <rect x="3" y="14" width="7" height="7"/>
+                  </svg>
+                  <span className="font-medium">Storyboard</span>
+                </button>
+                <button 
+                  onClick={() => setShowPlan(true)}
+                  className={`flex-1 flex items-center justify-center gap-2 py-3 ${
+                    showPlan ? 'text-gray-900' : 'text-gray-400'
+                  }`}
+                >
+                  <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+                    <line x1="16" y1="2" x2="16" y2="6"/>
+                    <line x1="8" y1="2" x2="8" y2="6"/>
+                    <line x1="3" y1="10" x2="21" y2="10"/>
+                  </svg>
+                  <span className="font-medium">Plan</span>
+                </button>
               </div>
-            )}
+            </div>
 
-            {/* Storyboard */}
-            {currentSession.shots && currentSession.locations && (
-              <div className="animate-slide-up" style={{ animationDelay: '0.2s' }}>
-                <StoryboardView 
-                  shots={currentSession.shots} 
-                  locations={currentSession.locations}
-                />
-              </div>
-            )}
-
+            {/* Bottom Sheet for Shot Details */}
+            <BottomSheet
+              isOpen={selectedShotIndex !== null}
+              onClose={() => setSelectedShotIndex(null)}
+              shot={selectedShotIndex !== null ? currentSession.shots?.[selectedShotIndex] || null : null}
+              location={selectedShotIndex !== null && currentSession.shots?.[selectedShotIndex]?.locationIndex !== undefined ? 
+                currentSession.locations?.[currentSession.shots[selectedShotIndex].locationIndex] || null : null}
+            />
           </div>
         )}
       </div>

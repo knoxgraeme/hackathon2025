@@ -15,13 +15,13 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "AI Photography Assistant",
+  title: "PixieDirector",
   description: "Plan your perfect photoshoot with AI-powered location scouting and storyboarding",
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
-    title: "Photo AI",
+    title: "PixieDirector",
   },
 };
 

@@ -3,14 +3,29 @@
 import { useRouter } from 'next/navigation';
 import { useSession } from './providers/SessionProvider';
 import { SessionCard } from './components/SessionCard';
-import { useMemo } from 'react';
+import { SplashScreen } from './components/SplashScreen';
+import { useMemo, useState, useEffect } from 'react';
 
 export default function Home() {
   const router = useRouter();
   const { createNewSession, sessions } = useSession();
+  const [showSplash, setShowSplash] = useState(true);
 
-  // Get completed sessions sorted by date
-  const completedSessions = useMemo(() => {
+  // Check if this is the first time visiting the app
+  useEffect(() => {
+    const hasVisited = localStorage.getItem('pixie-director-visited');
+    if (hasVisited) {
+      setShowSplash(false);
+    }
+  }, []);
+
+  const handleSplashComplete = () => {
+    localStorage.setItem('pixie-director-visited', 'true');
+    setShowSplash(false);
+  };
+
+  // Get all sessions that are not just empty initial states, sorted by date
+  const sessionsWithProgress = useMemo(() => {
     // Debug logging to understand session filtering
     console.log('[DEBUG] All sessions from provider:', sessions);
     console.log('[DEBUG] Number of sessions:', Object.keys(sessions).length);
@@ -20,23 +35,24 @@ export default function Home() {
     
     const filtered = allSessionsArray
       .filter(session => {
-        const isComplete = session.status === 'complete';
-        const hasLocations = session.locations && session.locations.length > 0;
+        // Show sessions that have meaningful progress:
+        const hasProgress = session.status !== 'initial' || session.conversationId || session.context || session.locations;
         
         console.log(`[DEBUG] Session ${session.id}:`, {
           status: session.status,
-          isComplete,
-          locations: session.locations,
-          hasLocations,
-          passesFilter: isComplete && hasLocations
+          hasConversationId: !!session.conversationId,
+          hasContext: !!session.context,
+          hasLocations: !!(session.locations && session.locations.length > 0),
+          hasProgress,
+          passesFilter: hasProgress
         });
         
-        return isComplete && hasLocations;
+        return hasProgress;
       })
       .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
     
-    console.log('[DEBUG] Filtered completed sessions:', filtered);
-    console.log('[DEBUG] Number of completed sessions:', filtered.length);
+    console.log('[DEBUG] Filtered sessions with progress:', filtered);
+    console.log('[DEBUG] Number of sessions with progress:', filtered.length);
     
     return filtered;
   }, [sessions]);
@@ -47,7 +63,10 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen bg-white flex flex-col relative">
+    <>
+      {showSplash && <SplashScreen onComplete={handleSplashComplete} />}
+      
+      <div className="min-h-screen bg-white flex flex-col relative">
       {/* Header - Mobile app style */}
       <header className="bg-white">
         <div className="px-4 pb-4" style={{ paddingTop: `max(48px, env(safe-area-inset-top) + 36px)` }}>
@@ -58,7 +77,7 @@ export default function Home() {
       </header>
 
       {/* Main Content */}
-      {completedSessions.length === 0 ? (
+      {sessionsWithProgress.length === 0 ? (
         // Empty State
         <div className="flex-1 flex flex-col items-center justify-center px-4 pb-24">
           <div className="max-w-[290px] text-center">
@@ -71,7 +90,7 @@ export default function Home() {
         // Sessions List - with padding bottom for fixed button
         <div className="flex-1 px-4 py-6 overflow-y-auto pb-24">
           <div className="max-w-md mx-auto">
-            {completedSessions.map(session => (
+            {sessionsWithProgress.map(session => (
               <SessionCard key={session.id} session={session} />
             ))}
           </div>
@@ -92,6 +111,7 @@ export default function Home() {
       </div>
 
     </div>
+    </>
   );
 }
 
