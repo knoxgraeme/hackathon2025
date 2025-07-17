@@ -5,8 +5,6 @@ import { useState, useEffect } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { useSession } from '../../providers/SessionProvider';
 import ConversationFlow from '../../components/ConversationFlow';
-import { LocationsList } from '../../components/LocationsList';
-import { StoryboardView } from '../../components/StoryboardView';
 import { LoadingPipeline } from '../../components/LoadingStates';
 import { BottomSheet } from '../../components/BottomSheet';
 import { WebShareButton } from '../../components/WebShareButton';
@@ -21,7 +19,6 @@ export default function SessionPage() {
   const sessionId = params.id as string;
   const { currentSession, updateSession } = useSession();
   const [isProcessing, setIsProcessing] = useState(false);
-  const [showInitialView, setShowInitialView] = useState(true);
   const [showPlan, setShowPlan] = useState(false);
   const [selectedShotIndex, setSelectedShotIndex] = useState<number | null>(null);
   const [showQRModal, setShowQRModal] = useState(false);
@@ -121,93 +118,8 @@ export default function SessionPage() {
     );
   }
 
-  // Show initial view or conversation flow without dark wrapper
-  if ((currentSession.status === 'initial' && showInitialView) || 
-      (currentSession.status === 'initial' && !showInitialView) || 
-      currentSession.status === 'conversation') {
-    
-    // Show initial empty state
-    if (currentSession.status === 'initial' && showInitialView) {
-      return (
-      <div className="fixed inset-0 bg-white text-gray-900" style={{ fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif' }}>
-            {/* Content */}
-            <div className="px-4" style={{ paddingTop: `max(48px, env(safe-area-inset-top) + 36px)` }}>
-              <h1 className="text-[33px] font-semibold leading-[36px] text-[#343434] mb-4">
-                New Session
-              </h1>
-              <p className="text-xs text-[#6e6e6e] mb-8">
-                created {new Date(currentSession.createdAt).toLocaleString('en-US', { 
-                  month: 'long',
-                  day: 'numeric',
-                  year: 'numeric',
-                  hour: 'numeric',
-                  minute: '2-digit',
-                  hour12: true
-                }).toLowerCase()}
-              </p>
-              
-              <div className="space-y-4">
-                {/* Insight Cards */}
-                <div className="border border-[#8080803d] rounded-lg p-6">
-                  <h3 className="text-[17px] font-semibold text-[#343434] mb-0.5">
-                    Describe your vision
-                  </h3>
-                  <p className="text-xs text-[#6e6e6e] leading-4">
-                    &ldquo;I want to have retro photoshoot with in Vancouver for an one hour long session.&rdquo;
-                  </p>
-                </div>
-                
-                <div className="border border-[#8080803d] rounded-lg p-6">
-                  <h3 className="text-[17px] font-semibold text-[#343434] mb-0.5">
-                    Get Location Ideas
-                  </h3>
-                  <p className="text-xs text-[#6e6e6e] leading-4">
-                    I&apos;ll suggest perfect sports in the area for your shoot.
-                  </p>
-                </div>
-                
-                <div className="border border-[#8080803d] rounded-lg p-6">
-                  <h3 className="text-[17px] font-semibold text-[#343434] mb-0.5">
-                    Visual Storyboard
-                  </h3>
-                  <p className="text-xs text-[#6e6e6e] leading-4">
-                    I&apos;ll create a shot-by-shot plan with AI-generated previews, no guesses needed on site!
-                  </p>
-                </div>
-                
-                <div className="border border-[#8080803d] rounded-lg p-6">
-                  <h3 className="text-[17px] font-semibold text-[#343434] mb-0.5">
-                    Shooting schedule to share
-                  </h3>
-                  <p className="text-xs text-[#6e6e6e] leading-4">
-                    Keep your shooting time on track, make sure you don&apos;t missed a pose.
-                  </p>
-                </div>
-              </div>
-              
-              {/* Start Button */}
-              <button
-                onClick={() => setShowInitialView(false)}
-                className="w-full bg-[#00a887] text-white flex items-center justify-center gap-3 px-8 py-[13px] rounded mt-16 active:scale-95 transition-transform"
-                style={{ marginBottom: `max(32px, env(safe-area-inset-bottom))` }}
-              >
-                <svg className="w-[22px] h-[22px]" viewBox="0 0 24 24" fill="none">
-                  <path d="M12 2C11.4477 2 11 2.44772 11 3V11C11 11.5523 11.4477 12 12 12C12.5523 12 13 11.5523 13 11V3C13 2.44772 12.5523 2 12 2Z" fill="white"/>
-                  <path d="M7 9C7 6.23858 9.23858 4 12 4C14.7614 4 17 6.23858 17 9V11C17 13.7614 14.7614 16 12 16C9.23858 16 7 13.7614 7 11V9Z" stroke="white" strokeWidth="2"/>
-                  <path d="M12 16V20M12 20H8M12 20H16" stroke="white" strokeWidth="2" strokeLinecap="round"/>
-                  <path d="M5 11C5 11 5 14.5 12 14.5C19 14.5 19 11 19 11" stroke="white" strokeWidth="2" strokeLinecap="round"/>
-                </svg>
-                <span className="text-[17px] font-semibold leading-[22px]">
-                  Let&apos;s start
-                </span>
-              </button>
-            </div>
-            
-          </div>
-      );
-    }
-    
-    // Show conversation flow
+  // Show conversation flow for initial or conversation status
+  if (currentSession.status === 'initial' || currentSession.status === 'conversation') {
     return <ConversationFlow onComplete={handleConversationComplete} sessionId={sessionId} dynamicVariables={dynamicVariables} />;
   }
   
