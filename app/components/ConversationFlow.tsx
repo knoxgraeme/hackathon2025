@@ -4,7 +4,6 @@
 import { useConversation } from '@elevenlabs/react';
 import { useCallback, useState, useEffect, useRef } from 'react';
 import { useSession } from '../providers/SessionProvider';
-import { Button } from './Button';
 
 // Type for navigator.standalone (iOS specific)
 declare global {
@@ -25,6 +24,7 @@ declare global {
 interface ConversationFlowProps {
   onComplete: (conversationId: string) => void;
   sessionId: string;
+  dynamicVariables?: Record<string, string | number | boolean>;
 }
 
 /**
@@ -67,10 +67,9 @@ interface ConversationFlowProps {
  * @param {ConversationFlowProps} props - Component props
  * @returns {JSX.Element} Rendered conversation interface
  */
-export default function ConversationFlow({ onComplete, sessionId }: ConversationFlowProps) {
+export default function ConversationFlow({ onComplete, sessionId, dynamicVariables }: ConversationFlowProps) {
   const { updateSession } = useSession();
-  const [conversationStarted, setConversationStarted] = useState(false);
-  const [isConnecting, setIsConnecting] = useState(false);
+  const [conversationStarted, setConversationStarted] = useState(true); // Start directly in conversation mode
   
   /**
    * Ref to store the conversation ID persistently across re-renders.
@@ -93,9 +92,7 @@ export default function ConversationFlow({ onComplete, sessionId }: Conversation
      * status in the global state.
      */
     onConnect: () => {
-      console.log('Connected');
       setConversationStarted(true);
-      setIsConnecting(false);
       updateSession(sessionId, { status: 'conversation' });
     },
     
@@ -109,14 +106,11 @@ export default function ConversationFlow({ onComplete, sessionId }: Conversation
      * This represents the final phase of the conversation lifecycle.
      */
     onDisconnect: () => {
-      console.log('Disconnected');
-      console.log('Stored conversation ID in ref:', conversationIdRef.current);
       
       // Release wake lock when conversation ends
       if (wakeLockRef.current) {
         wakeLockRef.current.release();
         wakeLockRef.current = null;
-        console.log('Wake lock released');
       }
       
       if (conversationIdRef.current) {
@@ -135,7 +129,7 @@ export default function ConversationFlow({ onComplete, sessionId }: Conversation
      * Currently logs messages for debugging. Could be extended to show
      * real-time transcription or conversation progress.
      */
-    onMessage: (message) => console.log('Message:', message),
+    onMessage: () => {},  // Message handler - currently not logging
     
     /**
      * onError callback - Handles conversation errors
@@ -145,7 +139,6 @@ export default function ConversationFlow({ onComplete, sessionId }: Conversation
      */
     onError: (error) => {
       console.error('Error:', error);
-      setIsConnecting(false);
     },
   });
 
@@ -171,22 +164,17 @@ export default function ConversationFlow({ onComplete, sessionId }: Conversation
    */
   const startConversation = useCallback(async () => {
     try {
-      setIsConnecting(true);
-      
-      // Detect if running as PWA
-      const isStandalone = window.matchMedia('(display-mode: standalone)').matches || 
-                          window.navigator.standalone === true; // iOS specific
-      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
-      
-      console.log('Environment:', { isStandalone, isIOS, userAgent: navigator.userAgent });
+      // Detect if running as PWA (variables used in error handling)
+      // const isStandalone = window.matchMedia('(display-mode: standalone)').matches || 
+      //                     window.navigator.standalone === true; // iOS specific
+      // const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
       
       // Request wake lock to prevent screen sleep (iOS 18.4+ PWA support)
       if ('wakeLock' in navigator) {
         try {
           wakeLockRef.current = await navigator.wakeLock.request('screen');
-          console.log('Wake lock acquired');
-        } catch (err) {
-          console.log('Wake lock failed:', err);
+        } catch {
+          // Wake lock not supported or failed
         }
       }
       
@@ -202,7 +190,6 @@ export default function ConversationFlow({ onComplete, sessionId }: Conversation
       
       // Validate audio stream is actually working
       const audioTracks = stream.getAudioTracks();
-      console.log('Audio tracks:', audioTracks.length, audioTracks[0]?.getSettings());
       
       if (audioTracks.length === 0 || !audioTracks[0].enabled) {
         throw new Error('No audio track available or track is disabled');
@@ -217,43 +204,70 @@ export default function ConversationFlow({ onComplete, sessionId }: Conversation
       // Quick audio level check
       const dataArray = new Uint8Array(analyser.frequencyBinCount);
       analyser.getByteFrequencyData(dataArray);
-      const avgLevel = dataArray.reduce((a, b) => a + b) / dataArray.length;
-      console.log('Initial audio level:', avgLevel);
       
       // Clean up test audio context
       microphone.disconnect();
       audioContext.close();
       
-      console.log('Starting session...');
       // PRIMARY CAPTURE STRATEGY: Get conversation ID from startSession return value
-      const conversationId = await conversation.startSession({
+      const sessionConfig: Record<string, string | Record<string, string | number | boolean>> = {
         agentId: 'agent_01k0616fckfdzrnt2g2fwq2r2h',
-      });
+      };
       
-      console.log('startSession returned:', conversationId);
-      console.log('Type of returned value:', typeof conversationId);
+      // Add dynamic variables if provided and valid
+      if (dynamicVariables && Object.keys(dynamicVariables).length > 0) {
+        // Validate dynamic variables (max 50 as per ElevenLabs docs)
+        const validatedVariables: Record<string, string | number | boolean> = {};
+        let count = 0;
+        
+        for (const [key, value] of Object.entries(dynamicVariables)) {
+          if (count >= 50) {
+            console.warn('Maximum of 50 dynamic variables allowed. Additional variables ignored.');
+            break;
+          }
+          
+          // Skip system reserved prefixes
+          if (key.startsWith('system__')) {
+            console.warn(`Skipping variable '${key}': system__ prefix is reserved`);
+            continue;
+          }
+          
+          // Ensure value is valid type
+          if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
+            validatedVariables[key] = value;
+            count++;
+          } else {
+            console.warn(`Skipping variable '${key}': invalid type ${typeof value}`);
+          }
+        }
+        
+        if (Object.keys(validatedVariables).length > 0) {
+          sessionConfig.dynamicVariables = validatedVariables;
+          console.log('Passing dynamic variables to ElevenLabs:', validatedVariables);
+        }
+      }
+      
+      const conversationId = await conversation.startSession(sessionConfig);
       
       if (conversationId) {
         // Success: Store ID in ref for persistence and update session
         conversationIdRef.current = conversationId;
         updateSession(sessionId, { conversationId });
       } else {
-        // Warning: Primary strategy failed, will rely on fallback mechanisms
-        console.warn('No conversation ID returned from startSession');
+        // Primary strategy failed, will rely on fallback mechanisms
       }
     } catch (error) {
       console.error('Failed to start conversation:', error);
-      setIsConnecting(false);
       
       // More specific error messages for PWA issues
-      const isStandalone = window.matchMedia('(display-mode: standalone)').matches;
-      if (isStandalone && error instanceof DOMException && error.name === 'NotAllowedError') {
+      const isStandaloneMode = window.matchMedia('(display-mode: standalone)').matches;
+      if (isStandaloneMode && error instanceof DOMException && error.name === 'NotAllowedError') {
         alert('Microphone access denied. Please go to Settings > Safari > Advanced > Website Data, find this app, and ensure microphone is enabled.');
       } else {
         alert('Failed to start conversation. Please check your microphone permissions.');
       }
     }
-  }, [conversation, sessionId, updateSession]);
+  }, [conversation, sessionId, updateSession, dynamicVariables]);
 
   /**
    * stopConversation - Terminates the conversation flow
@@ -276,7 +290,6 @@ export default function ConversationFlow({ onComplete, sessionId }: Conversation
     // TERTIARY CAPTURE STRATEGY: Final attempt to get ID before ending session
     if (!conversationIdRef.current) {
       const id = conversation.getId();
-      console.log('Last attempt to get conversation ID before ending:', id);
       if (id) {
         conversationIdRef.current = id;
       }
@@ -310,7 +323,6 @@ export default function ConversationFlow({ onComplete, sessionId }: Conversation
     if (conversationStarted && !conversationIdRef.current) {
       const checkId = () => {
         const id = conversation.getId();
-        console.log('Checking for conversation ID:', id);
         if (id) {
           conversationIdRef.current = id;
           updateSession(sessionId, { conversationId: id });
@@ -330,73 +342,12 @@ export default function ConversationFlow({ onComplete, sessionId }: Conversation
     }
   }, [conversationStarted, conversation, sessionId, updateSession]);
 
-  /**
-   * UI STATE: Pre-conversation interface
-   * 
-   * Shows the initial interface before conversation starts.
-   * Includes introduction, start button, and usage tips.
-   * 
-   * This represents the UI during the Connection Phase preparation.
-   */
-  if (!conversationStarted) {
-    return (
-      <div className="text-center animate-fade-in">
-        {/* Voice Assistant Introduction */}
-        <div className="mb-8">
-          <div className="w-32 h-32 mx-auto mb-6 relative">
-            <div className="absolute inset-0 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full opacity-20 animate-pulse" />
-            <div className="absolute inset-2 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full opacity-40" />
-            <div className="absolute inset-4 glass-card rounded-full flex items-center justify-center">
-              <span className="text-4xl" role="img" aria-label="Microphone">🎤</span>
-            </div>
-          </div>
+  // Auto-start conversation when component mounts
+  useEffect(() => {
+    startConversation();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Empty dependency array to run only on mount
 
-        </div>
-
-        {/* Start Button */}
-        <Button
-          onClick={startConversation}
-          loading={isConnecting}
-          size="lg"
-          icon={<span role="img" aria-label="Microphone">🎙️</span>}
-          aria-label={isConnecting ? 'Connecting to voice assistant' : 'Start voice planning session'}
-        >
-          {isConnecting ? 'Connecting...' : 'Start Voice Planning'}
-        </Button>
-
-        {/* Voice Tips */}
-        <div className="mt-12 grid gap-4 max-w-2xl mx-auto text-left">
-          <div className="glass-card p-4 flex items-start gap-3">
-            <span className="text-2xl" role="img" aria-label="Light bulb">💡</span>
-            <div>
-              <h4 className="font-medium text-primary mb-1">Describe Your Vision</h4>
-              <p className="text-sm text-secondary">
-                &quot;I want a moody portrait session with natural light...&quot;
-              </p>
-            </div>
-          </div>
-          <div className="glass-card p-4 flex items-start gap-3">
-            <span className="text-2xl" role="img" aria-label="Location pin">📍</span>
-            <div>
-              <h4 className="font-medium text-primary mb-1">Get Location Ideas</h4>
-              <p className="text-sm text-secondary">
-                I&apos;ll suggest perfect spots in Vancouver for your shoot
-              </p>
-            </div>
-          </div>
-          <div className="glass-card p-4 flex items-start gap-3">
-            <span className="text-2xl" role="img" aria-label="Movie camera">🎬</span>
-            <div>
-              <h4 className="font-medium text-primary mb-1">Visual Storyboard</h4>
-              <p className="text-sm text-secondary">
-                I&apos;ll create a shot-by-shot plan with AI-generated previews
-              </p>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
 
   /**
    * UI STATE: Active conversation interface
@@ -415,78 +366,79 @@ export default function ConversationFlow({ onComplete, sessionId }: Conversation
    * - Helpful hints for user interaction
    */
   return (
-    <div className="text-center animate-fade-in">
-      {/* Active Conversation UI */}
-      <div className="relative">
-        {/* Voice Visualization */}
-        <div className="mb-8 relative">
-          <div className="w-40 h-40 mx-auto relative">
-            {/* Outer pulse rings - animate when AI is speaking */}
-            <div className={`absolute inset-0 rounded-full ${conversation.isSpeaking ? 'animate-ping' : ''}`}>
-              <div className="w-full h-full rounded-full bg-gradient-to-br from-blue-500/30 to-purple-600/30" />
-            </div>
-            
-            {/* Voice button core - central visual indicator */}
-            <div className="absolute inset-4 rounded-full gradient-voice gradient-voice-shadow">
-              <div className="w-full h-full rounded-full flex items-center justify-center">
-                {/* Dynamic icon based on conversation state */}
-                <div className={`${conversation.isSpeaking ? 'animate-pulse' : 'animate-bounce'}`}>
-                  {conversation.isSpeaking ? (
-                    <span className="text-4xl" role="img" aria-label="Speaking">🗣️</span>
-                  ) : (
-                    <span className="text-4xl" role="img" aria-label="Listening">👂</span>
-                  )}
-                </div>
-              </div>
-            </div>
-
-            {/* Sound wave indicators - show when user is speaking/being listened to */}
-            {!conversation.isSpeaking && (
-              <div className="absolute inset-0 flex items-center justify-center" aria-hidden="true">
-                <div className="flex gap-1">
-                  {/* Animated wave bars with different heights and delays */}
-                  <div className="w-1 h-8 bg-green-400 rounded-full animate-pulse wave-1" />
-                  <div className="w-1 h-12 bg-green-400 rounded-full animate-pulse wave-2" />
-                  <div className="w-1 h-10 bg-green-400 rounded-full animate-pulse wave-3" />
-                  <div className="w-1 h-14 bg-green-400 rounded-full animate-pulse wave-4" />
-                  <div className="w-1 h-9 bg-green-400 rounded-full animate-pulse wave-5" />
-                </div>
-              </div>
-            )}
+    <div className="fixed inset-0 bg-white text-gray-900" style={{ fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif' }}>
+      {/* Content */}
+      <div className="px-4" style={{ paddingTop: `max(12px, env(safe-area-inset-top))` }}>
+        <h1 className="text-[33px] font-semibold leading-[36px] text-[#343434] mb-4">
+          Tell me about your vision for this session
+        </h1>
+        <p className="text-xs text-[#6e6e6e]">
+          PixieDirector is listening....
+        </p>
+      </div>
+      
+      {/* Audio Waveform Visualization */}
+      <div className="absolute left-1/2 top-1/2 transform -translate-x-1/2 -translate-y-1/2">
+        <div className="relative w-[338px] h-[190px] flex items-center justify-center">
+          {/* Animated waveform using CSS */}
+          <div className="flex items-center justify-center gap-1">
+            {[...Array(20)].map((_, i) => (
+              <div
+                key={i}
+                className="bg-black rounded-full animate-pulse"
+                style={{
+                  width: '4px',
+                  height: `${Math.random() * 40 + 10}px`,
+                  animationDelay: `${i * 0.1}s`,
+                  animationDuration: `${0.8 + Math.random() * 0.4}s`
+                }}
+              />
+            ))}
           </div>
         </div>
-
-        {/* Status Text - Dynamic based on conversation state */}
-        <div className="mb-8">
-          <h2 className="text-3xl font-bold mb-3 text-primary">
-            {conversation.isSpeaking ? 'AI Assistant Speaking' : 'Listening to You'}
-          </h2>
-          <p className="text-lg text-secondary">
-            {conversation.isSpeaking 
-              ? 'Processing your vision...' 
-              : 'Share your photography ideas'
-            }
-          </p>
-        </div>
-
-        {/* Conversation hints */}
-        <div className="glass-card-dark p-4 mb-8 max-w-md mx-auto">
-          <p className="text-sm text-secondary">
-            Try saying: &quot;I need ideas for a sunset portrait session&quot; or &quot;Show me urban locations for street photography&quot;
-          </p>
-        </div>
-
-        {/* End Call Button */}
-        <Button
-          onClick={stopConversation}
-          variant="danger"
-          size="lg"
-          icon={<span role="img" aria-label="Phone">📞</span>}
-          aria-label="End planning session"
-        >
-          End Planning Session
-        </Button>
       </div>
+      
+      {/* Control Buttons */}
+      <div className="fixed bottom-0 left-0 right-0 bg-white px-6 pt-4" style={{ paddingBottom: `max(32px, env(safe-area-inset-bottom))` }}>
+        <div className="flex gap-4 items-center">
+          {/* Delete Button */}
+          <button
+            onClick={() => {
+              if (confirm('Are you sure you want to cancel this session?')) {
+                stopConversation();
+              }
+            }}
+            className="w-12 h-12 bg-[#efefef] rounded-full flex items-center justify-center"
+            aria-label="Cancel session"
+          >
+            <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none">
+              <path d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2m3 0v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6h14zM10 11v6M14 11v6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+          </button>
+          
+          {/* Pause Button */}
+          <button
+            className="w-12 h-12 bg-[#efefef] rounded-full flex items-center justify-center"
+            aria-label="Pause conversation"
+          >
+            <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none">
+              <path d="M10 4H6v16h4V4zM18 4h-4v16h4V4z" fill="currentColor"/>
+            </svg>
+          </button>
+          
+          {/* Complete Button */}
+          <button
+            onClick={stopConversation}
+            className="flex-1 bg-[#00a887] text-white flex items-center justify-center gap-3 px-8 py-[13px] rounded active:scale-95 transition-transform"
+            aria-label="Complete planning session"
+          >
+            <svg className="w-[22px] h-[22px]" viewBox="0 0 24 24" fill="none">
+              <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+      
     </div>
   );
 }

@@ -1,52 +1,19 @@
 // components/LoadingStates.tsx
 'use client';
 
-import { useState, useEffect } from 'react';
-
 export function LoadingPipeline() {
-    const [stage, setStage] = useState(0);
-    
-    useEffect(() => {
-      const stages = [
-        'Analyzing conversation...',
-        'Scouting locations...',
-        'Creating storyboard...',
-        'Generating visuals...'
-      ];
-      
-      const interval = setInterval(() => {
-        setStage(prev => (prev + 1) % stages.length);
-      }, 3000);
-      
-      return () => clearInterval(interval);
-    }, []);
-    
-    const stages = [
-      { label: 'Analyzing conversation', icon: '🎤' },
-      { label: 'Scouting locations', icon: '📍' },
-      { label: 'Creating storyboard', icon: '🎬' },
-      { label: 'Generating visuals', icon: '🎨' }
-    ];
-    
     return (
-      <div className="bg-gray-800 rounded-lg p-12">
-        <div className="max-w-md mx-auto">
-          {stages.map((s, idx) => (
-            <div key={idx} className={`mb-6 transition-opacity ${idx <= stage ? 'opacity-100' : 'opacity-30'}`}>
-              <div className="flex items-center gap-4">
-                <span className="text-3xl">{s.icon}</span>
-                <div className="flex-1">
-                  <p className="font-medium">{s.label}</p>
-                  {idx === stage && (
-                    <div className="mt-2 h-2 bg-gray-700 rounded-full overflow-hidden">
-                      <div className="h-full bg-blue-500 rounded-full animate-loading" />
-                    </div>
-                  )}
-                </div>
-                {idx < stage && <span className="text-green-500">✓</span>}
-              </div>
-            </div>
-          ))}
+      <div className="fixed inset-0 bg-[#e1f2ec]" style={{ fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif' }}>
+        {/* Centered loading text */}
+        <div className="absolute left-1/2 top-1/2 transform -translate-x-1/2 -translate-y-1/2 text-center">
+          <p className="text-[#343434] text-[25px] leading-[32px]">
+            Creating your<br />storyboard...
+          </p>
+        </div>
+        
+        {/* Home Indicator */}
+        <div className="fixed bottom-2 left-1/2 transform -translate-x-1/2">
+          <div className="w-36 h-[5px] bg-black rounded-full" />
         </div>
       </div>
     );

@@ -15,13 +15,13 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "AI Photography Assistant",
+  title: "PixieDirector",
   description: "Plan your perfect photoshoot with AI-powered location scouting and storyboarding",
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
-    title: "Photo AI",
+    title: "PixieDirector",
   },
 };
 
@@ -50,17 +50,18 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         <SessionProvider>
-          <div className="min-h-screen relative">
-            {/* Safe area padding for iOS devices */}
-            <div className="fixed inset-x-0 top-0 h-[env(safe-area-inset-top)] bg-black z-50" />
-            
-            {/* Main content with safe area padding */}
-            <div className="pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)] px-[env(safe-area-inset-left)] min-h-screen">
-              {children}
-            </div>
-          </div>
+          {children}
           <PWAInstallPrompt />
         </SessionProvider>
+        <script dangerouslySetInnerHTML={{
+          __html: `
+            if ('serviceWorker' in navigator) {
+              window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js');
+              });
+            }
+          `
+        }} />
       </body>
     </html>
   );
