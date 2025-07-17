@@ -13,10 +13,17 @@ export function SessionCard({ session }: SessionCardProps) {
     return null;
   }
 
-  // Get the first image with priority: shots > locations > placeholder
-  const coverImage = session.shots?.[0]?.generatedImageUrl || 
-                     session.locations[0]?.imageUrl ||
-                     null;
+  // Get the first storyboard image from shots
+  const coverImage = session.shots?.[0]?.storyboardImage || null;
+  
+  // Debug logging
+  console.log('Session:', session.id, {
+    hasShots: !!session.shots?.length,
+    firstShotImage: session.shots?.[0]?.storyboardImage,
+    imageType: typeof session.shots?.[0]?.storyboardImage,
+    imageLength: session.shots?.[0]?.storyboardImage?.length,
+    coverImage: coverImage?.substring(0, 100) // Show first 100 chars to see if it's base64
+  });
 
   // Calculate total spots across all locations
   const totalSpots = session.locations.reduce((sum, location) => 
@@ -27,10 +34,21 @@ export function SessionCard({ session }: SessionCardProps) {
     <Link href={`/session/${session.id}`} className="block mb-6">
       <div className="rounded overflow-hidden border border-[#dedede] hover:border-[#00a887] transition-colors">
         {/* Cover Image */}
-        <div 
-          className="h-[135px] w-full bg-cover bg-center bg-gray-200"
-          style={coverImage ? { backgroundImage: `url(${coverImage})` } : undefined}
-        />
+        {coverImage ? (
+          <div className="h-[135px] w-full relative bg-gray-200">
+            <img 
+              src={coverImage} 
+              alt={session.title || 'Session cover'}
+              className="w-full h-full object-cover"
+              onError={(e) => {
+                console.error('Image failed to load:', coverImage);
+                e.currentTarget.style.display = 'none';
+              }}
+            />
+          </div>
+        ) : (
+          <div className="h-[135px] w-full bg-gray-200" />
+        )}
         
         {/* Session Details */}
         <div className="p-4 bg-white">

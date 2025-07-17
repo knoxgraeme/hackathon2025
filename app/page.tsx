@@ -67,17 +67,6 @@ export default function Home() {
         </button>
       </div>
 
-      {/* Dev Tools (remove for production) */}
-      {process.env.NODE_ENV === 'development' && (
-        <div className="absolute bottom-28 right-4 bg-gray-100 p-2 rounded shadow z-10">
-          <Link 
-            href="/test-imagen" 
-            className="text-xs px-2 py-1 bg-gray-200 hover:bg-gray-300 rounded"
-          >
-            Test Page
-          </Link>
-        </div>
-      )}
     </div>
   );
 }
