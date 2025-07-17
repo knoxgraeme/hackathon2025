@@ -12,11 +12,5 @@
         "js": ["content.js"],
         "css": ["styles.css"]
       }
-    ],
-    "web_accessible_resources": [
-      {
-        "resources": ["qrcode.min.js"],
-        "matches": ["https://studio.pixieset.com/*"]
-      }
     ]
   }
