@@ -151,7 +151,7 @@ export function BottomSheet({ isOpen, onClose, shot, location }: BottomSheetProp
             </div>
 
             {/* Equipment */}
-            {shot.equipment.length > 0 && (
+            {shot.equipment && shot.equipment.length > 0 && (
               <div className="glass-card-dark p-4 rounded-xl">
                 <div className="flex items-start gap-3">
                   <span className="text-2xl">📷</span>

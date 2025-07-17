@@ -380,7 +380,7 @@ Your final output MUST be a raw JSON array.
               config: {
                 numberOfImages: 1,
                 outputMimeType: 'image/jpeg',
-                aspectRatio: '16:9', // Consider making this dynamic (e.g., '3:4' or '4:3') based on shot details if possible
+                aspectRatio: '4:3', // Consider making this dynamic (e.g., '3:4' or '4:3') based on shot details if possible
               },
             });
 

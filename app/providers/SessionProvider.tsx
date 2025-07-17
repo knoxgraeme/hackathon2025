@@ -4,6 +4,7 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 import { usePathname } from 'next/navigation';
 import { EdgePhotoShootContext, EdgeLocation, EdgeShot } from '../types/photo-session';
+import { supabase } from '../lib/supabase';
 
 /**
  * Represents a photo shoot session with its complete lifecycle state.

@@ -19,7 +19,7 @@ interface StoryboardViewProps {
 export function StoryboardView({ shots, locations }: StoryboardViewProps) {
   const [selectedShotIndex, setSelectedShotIndex] = useState<number | null>(null);
   const selectedShot = selectedShotIndex !== null ? shots[selectedShotIndex] : null;
-  const selectedLocation = selectedShot && locations[selectedShot.locationIndex] ? 
+  const selectedLocation = selectedShot && selectedShot.locationIndex !== undefined && locations[selectedShot.locationIndex] ? 
     locations[selectedShot.locationIndex] as EdgeLocation : null;
 
   // Extract shot title from composition (first sentence or phrase)
