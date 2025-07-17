@@ -9,6 +9,7 @@ import { LocationsList } from '../../components/LocationsList';
 import { StoryboardView } from '../../components/StoryboardView';
 import { LoadingPipeline } from '../../components/LoadingStates';
 import { BottomSheet } from '../../components/BottomSheet';
+import { WebShareButton } from '../../components/WebShareButton';
 import { QRCodeModal } from '../../components/QRCodeModal';
 import { API_CONFIG } from '../../config/api';
 import Image from 'next/image';
@@ -271,17 +272,12 @@ export default function SessionPage() {
           <span className="text-lg font-medium text-teal-500">Locations</span>
         </div>
         <div className="flex items-center gap-3">
-          <button 
-            onClick={() => setShowQRModal(true)}
-            className="w-6 h-6 text-teal-500 hover:text-teal-600 transition-colors"
-            aria-label="Share session"
-          >
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/>
-              <polyline points="16,6 12,2 8,6"/>
-              <line x1="12" y1="2" x2="12" y2="15"/>
-            </svg>
-          </button>
+          <WebShareButton 
+            sessionId={currentSession.id}
+            sessionTitle={currentSession.title}
+            className="w-6 h-6 text-teal-500"
+            onFallback={() => setShowQRModal(true)}
+          />
           <button className="w-6 h-6 text-teal-500">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/>
@@ -459,7 +455,7 @@ export default function SessionPage() {
               </div>
             </div>
 
-                  {/* QR Code Modal */}
+      {/* QR Code Modal */}
       <QRCodeModal
         isOpen={showQRModal}
         onClose={() => setShowQRModal(false)}
