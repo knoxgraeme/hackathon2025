@@ -292,7 +292,7 @@ export default function PhotoAssistantTestPage() {
                 <div className="grid md:grid-cols-2 gap-4 text-sm">
                   <div>
                     <p><span className="font-semibold">Type:</span> {result.context.shootType}</p>
-                    <p><span className="font-semibold">Mood:</span> {result.context.mood?.join(', ') || 'Not specified'}</p>
+                    <p><span className="font-semibold">Mood:</span> {Array.isArray(result.context.mood) ? result.context.mood.join(', ') : result.context.mood || 'Not specified'}</p>
                     <p><span className="font-semibold">Time:</span> {result.context.timeOfDay}</p>
                     <p><span className="font-semibold">Duration:</span> {result.context.duration}</p>
                   </div>
@@ -300,7 +300,7 @@ export default function PhotoAssistantTestPage() {
                     <p><span className="font-semibold">Subject:</span> {result.context.subject}</p>
                     <p><span className="font-semibold">Experience:</span> {result.context.experience}</p>
                     {result.context.equipment && (
-                      <p><span className="font-semibold">Equipment:</span> {result.context.equipment.join(', ')}</p>
+                      <p><span className="font-semibold">Equipment:</span> {Array.isArray(result.context.equipment) ? result.context.equipment.join(', ') : result.context.equipment}</p>
                     )}
                   </div>
                 </div>
@@ -360,7 +360,7 @@ export default function PhotoAssistantTestPage() {
                       <p className="text-sm mb-2"><span className="font-semibold">Poses:</span> {shot.poses || shot.direction}</p>
                       <p className="text-sm mb-2"><span className="font-semibold">Blocking:</span> {shot.blocking || shot.technical}</p>
                       <p className="text-sm mb-2"><span className="font-semibold">Direction:</span> {shot.communicationCues || shot.direction}</p>
-                      {shot.equipment && <p className="text-sm"><span className="font-semibold">Gear:</span> {shot.equipment.join(', ')}</p>}
+                      {shot.equipment && <p className="text-sm"><span className="font-semibold">Gear:</span> {Array.isArray(shot.equipment) ? shot.equipment.join(', ') : shot.equipment}</p>}
                     </div>
                   ))}
                 </div>
