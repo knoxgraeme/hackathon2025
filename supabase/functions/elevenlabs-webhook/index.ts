@@ -19,6 +19,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { GoogleGenerativeAI } from "https://esm.sh/@google/generative-ai@0.21.0"
 import { GoogleGenAI } from "https://esm.sh/@google/genai@latest"
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2"
 import { 
   parseJsonResponse, 
   createErrorResponse, 
@@ -42,7 +43,90 @@ serve(async (req) => {
     const geminiApiKey = validateEnvVar('GEMINI_API_KEY')
     const genAI = new GoogleGenerativeAI(geminiApiKey)
     
+    // Initialize Supabase client for storage
+    const supabaseUrl = validateEnvVar('SUPABASE_URL')
+    const supabaseServiceKey = validateEnvVar('SUPABASE_SERVICE_ROLE_KEY')
+    const supabase = createClient(supabaseUrl, supabaseServiceKey)
+    
     const result: any = {}
+    
+    // Helper function to ensure bucket exists and create if needed
+    const ensureBucketExists = async (): Promise<boolean> => {
+      try {
+        const bucketName = 'storyboard-images'
+        
+        // Check if bucket exists
+        const { data: buckets, error: listError } = await supabase.storage.listBuckets()
+        
+        if (listError) {
+          console.error('Error listing buckets:', listError)
+          return false
+        }
+        
+        const bucketExists = buckets?.some(bucket => bucket.name === bucketName)
+        
+        if (!bucketExists) {
+          console.log('Creating storyboard-images bucket...')
+          
+          // Create bucket with public access
+          const { data, error } = await supabase.storage.createBucket(bucketName, {
+            public: true,
+            allowedMimeTypes: ['image/jpeg', 'image/png', 'image/webp'],
+            fileSizeLimit: 10 * 1024 * 1024 // 10MB
+          })
+          
+          if (error) {
+            console.error('Error creating bucket:', error)
+            return false
+          }
+          
+          console.log('✅ Bucket created successfully')
+        }
+        
+        return true
+      } catch (error) {
+        console.error('Bucket creation error:', error)
+        return false
+      }
+    }
+
+    // Helper function to save image to Supabase Storage
+    const saveImageToStorage = async (imageBase64: string, fileName: string): Promise<string | null> => {
+      try {
+        // Ensure bucket exists first
+        const bucketReady = await ensureBucketExists()
+        if (!bucketReady) {
+          console.error('Bucket not ready, skipping image save')
+          return null
+        }
+        
+        // Convert base64 to bytes
+        const imageData = Uint8Array.from(atob(imageBase64), c => c.charCodeAt(0))
+        
+        // Upload to Supabase Storage
+        const { data, error } = await supabase.storage
+          .from('storyboard-images')
+          .upload(fileName, imageData, {
+            contentType: 'image/jpeg',
+            upsert: true
+          })
+        
+        if (error) {
+          console.error('Storage upload error:', error)
+          return null
+        }
+        
+        // Get public URL
+        const { data: publicURL } = supabase.storage
+          .from('storyboard-images')
+          .getPublicUrl(fileName)
+        
+        return publicURL.publicUrl
+      } catch (error) {
+        console.error('Image storage error:', error)
+        return null
+      }
+    }
     
     // STAGE 1: Get transcript from ElevenLabs or request body
     let transcript = '';
@@ -388,10 +472,24 @@ Your final output MUST be a raw JSON array.
               outputMimeType: 'image/jpeg',
               aspectRatio: '4:3',
             },
-          }).then((response) => {
+          }).then(async (response) => {
             if (response?.generatedImages?.[0]?.image?.imageBytes) {
-              shot.storyboardImage = `data:image/jpeg;base64,${response.generatedImages[0].image.imageBytes}`;
-              console.log(`✅ Generated image for shot ${i + 1}`);
+              const imageBase64 = response.generatedImages[0].image.imageBytes;
+              
+              // Generate unique filename
+              const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+              const conversationId = body.conversationId || 'direct';
+              const fileName = `storyboard-${conversationId}-shot-${i + 1}-${timestamp}.jpg`;
+              
+              // Save to Supabase Storage and get public URL
+              const imageUrl = await saveImageToStorage(imageBase64, fileName);
+              
+              if (imageUrl) {
+                shot.storyboardImage = imageUrl;
+                console.log(`✅ Generated and saved image for shot ${i + 1}: ${imageUrl}`);
+              } else {
+                console.log(`❌ Failed to save image for shot ${i + 1}, skipping`);
+              }
             }
           }).catch((error) => {
             console.error(`Image generation error for shot ${i + 1}:`, error);
@@ -413,9 +511,9 @@ Your final output MUST be a raw JSON array.
       ...result
     }
     
-    console.log('📤 Sending response (without images):', {
+    console.log('📤 Sending response:', {
       ...response,
-      shots: response.shots?.map((s: Shot & {storyboardImage?: string}) => ({ ...s, storyboardImage: s.storyboardImage ? '[BASE64_IMAGE]' : undefined }))
+      shots: response.shots?.map((s: Shot & {storyboardImage?: string}) => ({ ...s, storyboardImage: s.storyboardImage }))
     })
     
     return createSuccessResponse(response)

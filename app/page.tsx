@@ -29,15 +29,15 @@ export default function Home() {
     // Debug logging to understand session filtering
     console.log('[DEBUG] All sessions from provider:', sessions);
     console.log('[DEBUG] Number of sessions:', Object.keys(sessions).length);
-    
+
     const allSessionsArray = Object.values(sessions);
     console.log('[DEBUG] Sessions as array:', allSessionsArray);
-    
+
     const filtered = allSessionsArray
       .filter(session => {
         // Show sessions that have meaningful progress:
         const hasProgress = session.status !== 'initial' || session.conversationId || session.context || session.locations;
-        
+
         console.log(`[DEBUG] Session ${session.id}:`, {
           status: session.status,
           hasConversationId: !!session.conversationId,
@@ -46,14 +46,14 @@ export default function Home() {
           hasProgress,
           passesFilter: hasProgress
         });
-        
+
         return hasProgress;
       })
       .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-    
+
     console.log('[DEBUG] Filtered sessions with progress:', filtered);
     console.log('[DEBUG] Number of sessions with progress:', filtered.length);
-    
+
     return filtered;
   }, [sessions]);
 
@@ -65,16 +65,18 @@ export default function Home() {
   return (
     <>
       {showSplash && <SplashScreen onComplete={handleSplashComplete} />}
-      
+
       <div className="min-h-screen bg-white flex flex-col relative">
-      {/* Header - Mobile app style */}
-      <header className="bg-white">
-        <div className="px-4 pb-4" style={{ paddingTop: `max(48px, env(safe-area-inset-top) + 36px)` }}>
-          <h1 className="text-[33px] font-semibold leading-[36px] text-[#343434]">
-            Your Sessions
-          </h1>
-        </div>
-      </header>
+      {/* Header - Mobile app style - Only show when sessions exist */}
+      {sessionsWithProgress.length > 0 && (
+        <header className="bg-white">
+          <div className="px-4 pb-4" style={{ paddingTop: `max(48px, env(safe-area-inset-top) + 36px)` }}>
+            <h1 className="text-[33px] font-semibold leading-[36px] text-[#343434]">
+              Your Sessions
+            </h1>
+          </div>
+        </header>
+      )}
 
       {/* Main Content */}
       {sessionsWithProgress.length === 0 ? (
