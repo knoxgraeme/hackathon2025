@@ -328,8 +328,7 @@ export default function SessionPage() {
                           {currentSession.shots?.filter(shot => shot.locationIndex === idx).slice(0, 3).map((shot, shotIdx) => (
                             <div key={shotIdx} className="aspect-[3/4] rounded-lg overflow-hidden bg-gray-200">
                               {shot.storyboardImage ? (
-                                // eslint-disable-next-line @next/next/no-img-element
-                                <img
+                                <Image
                                   src={shot.storyboardImage} 
                                   alt={`Shot ${shot.shotNumber}`}
                                   width={120}
