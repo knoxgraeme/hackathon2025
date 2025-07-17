@@ -191,6 +191,11 @@ export default function SessionPage() {
     // Show conversation flow
     return <ConversationFlow onComplete={handleConversationComplete} sessionId={sessionId} />;
   }
+  
+  // Show loading screen in full screen
+  if (currentSession.status === 'processing' && isProcessing) {
+    return <LoadingPipeline />;
+  }
 
   // Regular view with dark background
   return (
@@ -221,12 +226,6 @@ export default function SessionPage() {
         </div>
 
         {/* Status-based content */}
-
-        {currentSession.status === 'processing' && isProcessing && (
-          <div className="animate-fade-in">
-            <LoadingPipeline />
-          </div>
-        )}
 
         {currentSession.status === 'complete' && (
           <div className="space-y-8">

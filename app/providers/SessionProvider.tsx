@@ -111,12 +111,64 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
    * - Saves complete session object as JSON
    * - Key: 'photoSessions'
    * - No debouncing (immediate persistence)
+   * - Implements cleanup for old sessions to prevent quota issues
    */
   useEffect(() => {
     if (Object.keys(sessions).length > 0) {
-      localStorage.setItem('photoSessions', JSON.stringify(sessions));
+      try {
+        // Clean up old sessions if we have too many
+        const sessionEntries = Object.entries(sessions);
+        const MAX_SESSIONS = 10; // Keep only the 10 most recent sessions
+        
+        if (sessionEntries.length > MAX_SESSIONS) {
+          // Sort by creation date and keep only the most recent
+          const sortedSessions = sessionEntries
+            .sort(([, a], [, b]) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+            .slice(0, MAX_SESSIONS);
+          
+          const trimmedSessions = Object.fromEntries(sortedSessions);
+          setSessions(trimmedSessions);
+          return; // Will trigger this effect again with trimmed sessions
+        }
+        
+        // Try to save to localStorage
+        localStorage.setItem('photoSessions', JSON.stringify(sessions));
+      } catch (e) {
+        console.error('Failed to save sessions to localStorage:', e);
+        
+        // If quota exceeded, try to clear old data and retry
+        if (e instanceof DOMException && e.name === 'QuotaExceededError') {
+          console.log('LocalStorage quota exceeded, clearing old sessions...');
+          
+          // Keep only the current session and the 5 most recent
+          const currentSession = sessions[currentSessionId || ''];
+          const otherSessions = Object.entries(sessions)
+            .filter(([id]) => id !== currentSessionId)
+            .sort(([, a], [, b]) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+            .slice(0, 4);
+          
+          const minimalSessions = {
+            ...(currentSession ? { [currentSessionId!]: currentSession } : {}),
+            ...Object.fromEntries(otherSessions)
+          };
+          
+          try {
+            localStorage.setItem('photoSessions', JSON.stringify(minimalSessions));
+            setSessions(minimalSessions);
+          } catch (retryError) {
+            console.error('Failed to save even after cleanup:', retryError);
+            // As a last resort, clear localStorage and save only current session
+            localStorage.removeItem('photoSessions');
+            if (currentSession && currentSessionId) {
+              const currentOnly = { [currentSessionId]: currentSession };
+              localStorage.setItem('photoSessions', JSON.stringify(currentOnly));
+              setSessions(currentOnly);
+            }
+          }
+        }
+      }
     }
-  }, [sessions]);
+  }, [sessions, currentSessionId]);
 
   /**
    * Save session to Supabase database
