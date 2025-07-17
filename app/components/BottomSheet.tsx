@@ -69,7 +69,10 @@ export function BottomSheet({ isOpen, onClose, shot, location }: BottomSheetProp
     };
   }, [handleTouchEnd]);
 
-  if (!isOpen || !shot || !location) return null;
+  if (!isOpen || !shot) return null;
+
+  // Handle case where location might be null
+  const locationName = location?.name || shot.location || 'Unknown Location';
 
   return (
     <>
@@ -106,7 +109,7 @@ export function BottomSheet({ isOpen, onClose, shot, location }: BottomSheetProp
               <h3 className="text-2xl font-bold text-gray-900 mb-1">
                 Shot #{shot.shotNumber}
               </h3>
-              <p className="text-gray-600 font-medium">{location.name}</p>
+              <p className="text-gray-600 font-medium">{locationName}</p>
             </div>
             <button
               onClick={onClose}

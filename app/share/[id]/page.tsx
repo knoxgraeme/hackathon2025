@@ -321,8 +321,17 @@ export default function SharePage() {
         isOpen={selectedShotIndex !== null}
         onClose={() => setSelectedShotIndex(null)}
         shot={selectedShotIndex !== null ? session.shots?.[selectedShotIndex] || null : null}
-        location={selectedShotIndex !== null && session.shots?.[selectedShotIndex]?.locationIndex !== undefined ? 
-          session.locations?.[session.shots[selectedShotIndex].locationIndex] || null : null}
+        location={selectedShotIndex !== null && session.shots?.[selectedShotIndex] ? 
+          (() => {
+            const shot = session.shots[selectedShotIndex];
+            // Try to get location by index first, then fall back to finding by name
+            if (shot.locationIndex !== undefined && session.locations?.[shot.locationIndex]) {
+              return session.locations[shot.locationIndex];
+            } else if (shot.location && session.locations) {
+              return session.locations.find(loc => loc.name === shot.location) || null;
+            }
+            return null;
+          })() : null}
       />
     </div>
   );
