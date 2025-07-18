@@ -54,9 +54,9 @@ export default function SessionPage() {
 
   const getStateColor = (state: 'TODO' | 'COMPLETED' | 'SKIPPED') => {
     switch (state) {
-      case 'TODO': return 'bg-amber-500';
+      case 'TODO': return 'bg-[#EEBB55]';
       case 'COMPLETED': return 'bg-[#00A887]';
-      case 'SKIPPED': return 'bg-gray-500';
+      case 'SKIPPED': return 'bg-[#999999]';
       default: return 'bg-amber-500';
     }
   };
@@ -405,7 +405,7 @@ export default function SessionPage() {
                           />
                           
                           {/* State indicator badge */}
-                          <div className={`absolute top-2 right-2 px-4 py-2 rounded-full text-xs font-medium ${getStateColor(getShotState(idx))}`}>
+                          <div className={`absolute top-4 right-4 px-4 py-2 rounded-full text-xs font-medium ${getStateColor(getShotState(idx))}`}>
                             <span className="text-white">{getStateLabel(getShotState(idx))}</span>
                           </div>
                         </div>
