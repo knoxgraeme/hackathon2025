@@ -252,40 +252,8 @@ serve(async (req) => {
       transcript = body.transcript;
       console.log('📝 Received body.transcript:', transcript)
       console.log('📊 Transcript length:', transcript.length, 'characters')
-    } else if (body.data_collection) {
-      // Convert data collection to simulated transcript
-      const dc = body.data_collection;
-      console.log('📝 Converting data_collection to transcript:', dc)
-      
-      transcript = `Agent: I'll help you plan your photo shoot. Let me ask you some questions.
-Agent: Where would you like to have the photo shoot?
-User: ${dc.location || 'Mount Pleasant, Vancouver'}
-Agent: What date are you planning for?
-User: ${dc.date || 'flexible'}
-Agent: What time would you like to start?
-User: ${dc.startTime || 'flexible'}
-Agent: How long do you want the shoot to last?
-User: ${dc.duration || '2 hours'}
-Agent: What type of shoot is this?
-User: ${dc.shootType || 'portrait'}
-Agent: What mood or style are you going for?
-User: ${dc.mood || 'natural, candid'}
-Agent: Who are the primary subjects?
-User: ${dc.primarySubjects || 'Just me'}
-Agent: Are there any secondary subjects?
-User: ${dc.secondarySubjects || 'None'}
-Agent: Do you prefer locations close together or spread out?
-User: ${dc.locationPreference || 'clustered'}
-Agent: Are there any must-have shots?
-User: ${dc.mustHaveShots || 'No specific requirements'}
-Agent: Any special requirements?
-User: ${dc.specialRequirements || 'None'}
-Agent: What's your photography experience level?
-User: ${dc.experience || 'intermediate'}`
-      
-      console.log('📊 Generated transcript length:', transcript.length, 'characters')
     } else {
-      return createErrorResponse('Either webhook payload, conversationId, transcript, or data_collection is required', 400)
+      return createErrorResponse('Either conversationId or transcript is required', 400)
     }
     
     // Extract all 12 data collection fields from conversational transcript
@@ -611,44 +579,43 @@ Your final output MUST be a raw JSON array.
         const locationDescription = fullLocation?.description || '';
         const locationAddress = fullLocation?.address || '';
         
-        const imagePrompt = `Create a PHOTOGRAPHY STORYBOARD SKETCH for this shot:
+        const imagePrompt = `IMPORTANT: Create a SIMPLE BLACK AND WHITE LINE DRAWING (not a photo, not grayscale)
 
-SHOT: "${shot.title}"
-LOCATION: ${locationName} (${locationAddress})
-SETTING: ${locationDescription}
-SUBJECTS: ${result.context.subject}
-ACTION: ${poses}
-${blocking ? `BLOCKING/MOVEMENT: ${blocking}` : ''}
+WHAT TO DRAW:
+Shot Title: "${shot.title}"
+Location: ${locationName} (${locationAddress})
+Setting Details: ${locationDescription}
+Subjects: ${result.context.subject}
+Action/Pose: ${poses}${blocking ? ` with ${blocking}` : ''}
 
-COMPOSITION REQUIREMENTS:
-1. Frame like looking through a camera viewfinder
-2. Apply RULE OF THIRDS - place subjects on intersection points (not centered)
-3. Subjects should fill 40-60% of the frame while ${poses}
-4. Create DEPTH with three layers:
-   - Foreground: Element in front (branch, railing, etc.)
-   - Middle: The subjects performing the action
-   - Background: Location identifiers visible but not dominant
-5. Include LEADING LINES that guide eye to subjects (paths, shorelines, architecture)
-6. Show clear CAMERA POSITION:
-   - Height: eye level, low angle, or high angle
-   - Distance: close intimate, medium full body, or wide environmental
-7. Use NATURAL FRAMING if available (archways, trees, structures)
+STRICT VISUAL RULES - MUST FOLLOW:
+1. ONLY use pure black lines on white background
+2. NO PHOTOGRAPHS - this must be a hand-drawn style sketch
+3. NO GRAYSCALE - only black lines and white space
+4. NO TEXT OR LABELS anywhere in image
+5. NO PHOTO FILTERS OR EFFECTS
 
-LOCATION SPECIFICS TO SHOW:
-- Key features that identify this exact location
-- Interactive elements (benches, railings, water edge)
-- Lighting direction (where shadows fall)
-- Unique architectural or natural elements mentioned above
+COMPOSITION TO SHOW:
+- Subjects positioned using rule of thirds (40-60% of frame)
+- Clear foreground, middle ground, background layers
+- Leading lines pointing to subjects (path, railing, etc)
+- Camera angle: ${shot.composition?.includes('low') ? 'low angle' : shot.composition?.includes('high') ? 'high angle' : 'eye level'}
 
-SKETCH TECHNIQUE:
-- BLACK & WHITE ONLY - use clean lines with selective solid blacks
-- NO GRAYSCALE, NO SHADING - only line work and solid fills
-- Professional storyboard aesthetic - clear and readable
-- Use solid black for: dark hair, dark clothing, strong shadows
-- Keep faces simple - just profile lines and basic features
-- NO TEXT, LABELS, or WRITING anywhere in the image
+DRAWING STYLE:
+Think of this as a film director's storyboard sketch:
+- Simple line art showing camera framing
+- Subjects drawn as simple figures with clear poses
+- Location shown with minimal detail (just key landmarks)
+- Use solid black fills sparingly for contrast (hair, shadows)
 
-OUTPUT: One clear sketch showing a photographer EXACTLY how to compose this shot at this location.`;
+SPECIFIC LOCATION ELEMENTS TO INCLUDE:
+Based on the setting "${locationName}", include:
+- The KEY identifying features mentioned
+- Interactive elements (benches, railings, paths, water)
+- Natural framing elements if described
+- Simplify all details - show essence not every detail
+
+Remember: This is a SKETCH to show a photographer how to frame the shot, NOT a realistic image.`;
 
         console.log(`🎨 Generating image ${i + 1}/${maxImages} for shot: "${shot.title}"`);
         
