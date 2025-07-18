@@ -647,7 +647,7 @@ Based on these scene details, generate the image now.`;
             debugInfo.prompts.images.push({ shotNumber: i + 1, prompt: imagePrompt });
           }
 
-          // Return the promise for this image generation
+          // Retrn the promise for this image generation
           return imageAI.models.generateImages({
             model: 'models/imagen-3.0-generate-002',
             prompt: imagePrompt,
