@@ -393,6 +393,9 @@ When information is missing, apply these defaults or infer from context:
 - duration: "2 hours"
 - shootType: infer from context or use "portrait"
 - mood: infer 2-3 descriptors from conversation tone
+- primarySubjects: infer from shootType (wedding="Bride and groom", family="Family members", portrait="Individual", etc.)
+- secondarySubjects: infer if mentioned (wedding party, children, pets, etc.)
+- subject: combine primarySubjects + secondarySubjects for general description
 - experience: "intermediate"
 - locationPreference: "clustered"
 - equipment: []
@@ -428,7 +431,9 @@ ${transcript}`
         shootType: extractedData.shootType,
         mood: extractedData.mood,
         timeOfDay: extractedData.timeOfDay,
-        subject: extractedData.subject,
+        subject: extractedData.subject || extractedData.primarySubjects || 'No subjects specified',
+        primarySubjects: extractedData.primarySubjects,
+        secondarySubjects: extractedData.secondarySubjects,
         duration: extractedData.duration,
         equipment: extractedData.equipment,
         experience: extractedData.experience,
@@ -561,7 +566,8 @@ ${locationDetails}
 Shoot Context:
 - Type: ${context.shootType}
 - Mood: ${context.mood.join(', ')}
-- Subjects: ${context.subject}
+- Primary Subjects: ${context.primarySubjects || context.subject || 'Not specified'}
+- Secondary Subjects: ${context.secondarySubjects || 'None'}
 
 For each shot, provide:
 1. shotNumber, locationIndex, title (must include location name)

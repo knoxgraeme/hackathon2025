@@ -169,10 +169,10 @@ export default function ConversationFlow({ onComplete, sessionId, dynamicVariabl
    */
   const startConversation = useCallback(async () => {
     try {
-      // Detect if running as PWA (variables used in error handling)
-      // const isStandalone = window.matchMedia('(display-mode: standalone)').matches ||
-      //                     window.navigator.standalone === true; // iOS specific
-      // const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+      // Detect if running as PWA and on iOS
+      const isStandalone = window.matchMedia('(display-mode: standalone)').matches ||
+                          window.navigator.standalone === true; // iOS specific
+      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
 
       // Request wake lock to prevent screen sleep (iOS 18.4+ PWA support)
       if ('wakeLock' in navigator) {
@@ -193,6 +193,9 @@ export default function ConversationFlow({ onComplete, sessionId, dynamicVariabl
         }
       });
 
+      // Store the stream reference for cleanup
+      mediaStreamRef.current = stream;
+
       // Validate audio stream is actually working
       const audioTracks = stream.getAudioTracks();
 
@@ -200,19 +203,15 @@ export default function ConversationFlow({ onComplete, sessionId, dynamicVariabl
         throw new Error('No audio track available or track is disabled');
       }
 
-      // Test audio levels to ensure mic is actually capturing
-      const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-      const analyser = audioContext.createAnalyser();
-      const microphone = audioContext.createMediaStreamSource(stream);
-      microphone.connect(analyser);
-
-      // Quick audio level check
-      const dataArray = new Uint8Array(analyser.frequencyBinCount);
-      analyser.getByteFrequencyData(dataArray);
-
-      // Clean up test audio context
-      microphone.disconnect();
-      audioContext.close();
+      // For iOS PWA, ensure audio session is properly activated
+      if (isIOS && isStandalone) {
+        // Create a silent audio element to activate iOS audio session
+        const audio = new Audio();
+        audio.src = 'data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAAAAAAAA';
+        await audio.play().catch(() => {
+          // Silent audio might fail but that's okay
+        });
+      }
 
       // PRIMARY CAPTURE STRATEGY: Get conversation ID from startSession return value
       const sessionConfig: Record<string, string | Record<string, string | number | boolean>> = {
@@ -252,24 +251,43 @@ export default function ConversationFlow({ onComplete, sessionId, dynamicVariabl
         }
       }
 
+      console.log('[ConversationFlow] Starting ElevenLabs session with config:', sessionConfig);
       const conversationId = await conversation.startSession(sessionConfig);
+      console.log('[ConversationFlow] Session started, conversationId:', conversationId);
 
       if (conversationId) {
         // Success: Store ID in ref for persistence and update session
         conversationIdRef.current = conversationId;
         updateSession(sessionId, { conversationId });
+        console.log('[ConversationFlow] Conversation ID stored successfully');
       } else {
         // Primary strategy failed, will rely on fallback mechanisms
+        console.warn('[ConversationFlow] No conversation ID returned from startSession, using fallback mechanisms');
       }
     } catch (error) {
-      console.error('Failed to start conversation:', error);
+      console.error('[ConversationFlow] Failed to start conversation:', error);
+      console.error('[ConversationFlow] Error details:', {
+        name: error instanceof Error ? error.name : 'Unknown',
+        message: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined
+      });
+
+      // Clean up media stream on error
+      if (mediaStreamRef.current) {
+        mediaStreamRef.current.getTracks().forEach(track => {
+          track.stop();
+        });
+        mediaStreamRef.current = null;
+      }
 
       // More specific error messages for PWA issues
       const isStandaloneMode = window.matchMedia('(display-mode: standalone)').matches;
       if (isStandaloneMode && error instanceof DOMException && error.name === 'NotAllowedError') {
         alert('Microphone access denied. Please go to Settings > Safari > Advanced > Website Data, find this app, and ensure microphone is enabled.');
+      } else if (error instanceof Error && error.message.includes('ElevenLabs')) {
+        alert('Failed to connect to ElevenLabs. Please check your internet connection and try again.');
       } else {
-        alert('Failed to start conversation. Please check your microphone permissions.');
+        alert('Failed to start conversation. Please check your microphone permissions and internet connection.');
       }
     }
   }, [conversation, sessionId, updateSession, dynamicVariables]);
