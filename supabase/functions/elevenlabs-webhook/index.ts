@@ -54,6 +54,7 @@ serve(async (req) => {
       conversationId: body.conversationId,
       hasTranscript: !!body.transcript,
       generateImages: body.generateImages,
+      debugMode: body.debug || false,
       timestamp: new Date().toISOString()
     })
     
@@ -69,6 +70,21 @@ serve(async (req) => {
     console.log('✅ Initialized Supabase client')
     
     const result: any = {}
+    
+    // Initialize debug object if debug mode is enabled
+    const debugInfo = body.debug ? {
+      prompts: {
+        context: '',
+        location: '',
+        storyboard: '',
+        images: [] as Array<{ shotNumber: number; prompt: string }>
+      },
+      responses: {
+        context: '',
+        location: '',
+        storyboard: ''
+      }
+    } : null
     
     // Helper function to ensure bucket exists and create if needed
     const ensureBucketExists = async (): Promise<boolean> => {
@@ -248,8 +264,40 @@ serve(async (req) => {
       transcript = body.transcript;
       console.log('📝 Received body.transcript:', transcript)
       console.log('📊 Transcript length:', transcript.length, 'characters')
+    } else if (body.data_collection) {
+      // Convert data collection to simulated transcript
+      const dc = body.data_collection;
+      console.log('📝 Converting data_collection to transcript:', dc)
+      
+      transcript = `Agent: I'll help you plan your photo shoot. Let me ask you some questions.
+Agent: Where would you like to have the photo shoot?
+User: ${dc.location || 'Mount Pleasant, Vancouver'}
+Agent: What date are you planning for?
+User: ${dc.date || 'flexible'}
+Agent: What time would you like to start?
+User: ${dc.startTime || 'flexible'}
+Agent: How long do you want the shoot to last?
+User: ${dc.duration || '2 hours'}
+Agent: What type of shoot is this?
+User: ${dc.shootType || 'portrait'}
+Agent: What mood or style are you going for?
+User: ${dc.mood || 'natural, candid'}
+Agent: Who are the primary subjects?
+User: ${dc.primarySubjects || 'Just me'}
+Agent: Are there any secondary subjects?
+User: ${dc.secondarySubjects || 'None'}
+Agent: Do you prefer locations close together or spread out?
+User: ${dc.locationPreference || 'clustered'}
+Agent: Are there any must-have shots?
+User: ${dc.mustHaveShots || 'No specific requirements'}
+Agent: Any special requirements?
+User: ${dc.specialRequirements || 'None'}
+Agent: What's your photography experience level?
+User: ${dc.experience || 'intermediate'}`
+      
+      console.log('📊 Generated transcript length:', transcript.length, 'characters')
     } else {
-      return createErrorResponse('Either webhook payload, conversationId, or transcript is required', 400)
+      return createErrorResponse('Either webhook payload, conversationId, transcript, or data_collection is required', 400)
     }
     
     // Extract all 12 data collection fields from conversational transcript
@@ -328,9 +376,19 @@ serve(async (req) => {
     console.log('🧠 Sending to AI model - transcript preview:', transcript.substring(0, 200) + '...')
     console.log('🧠 Full prompt length:', contextPrompt.length, 'characters')
     
+    // Store prompt in debug info if enabled
+    if (debugInfo) {
+      debugInfo.prompts.context = contextPrompt
+    }
+    
     const contextResult = await contextModel.generateContent(contextPrompt)
     const contextText = contextResult.response.text()
     console.log('🤖 AI response received, length:', contextText.length)
+    
+    // Store response in debug info if enabled
+    if (debugInfo) {
+      debugInfo.responses.context = contextText
+    }
     
     try {
       const extractedData = JSON.parse(contextText)
@@ -425,9 +483,20 @@ serve(async (req) => {
     5.  Suggest realistic backup alternatives for each primary spot.`
       
       console.log('🏗️ Sending location request to AI')
+      
+      // Store prompt in debug info if enabled
+      if (debugInfo) {
+        debugInfo.prompts.location = locationPrompt
+      }
+      
       const locationResult = await locationModel.generateContent(locationPrompt)
       const locationText = locationResult.response.text()
       console.log('🤖 Location AI response received, length:', locationText.length)
+      
+      // Store response in debug info if enabled
+      if (debugInfo) {
+        debugInfo.responses.location = locationText
+      }
       
       try {
         result.locations = JSON.parse(locationText)
@@ -495,9 +564,20 @@ Your final output MUST be a raw JSON array.
       });
 
       console.log('🏗️ Sending storyboard request to AI');
+      
+      // Store prompt in debug info if enabled
+      if (debugInfo) {
+        debugInfo.prompts.storyboard = storyboardPrompt
+      }
+      
       const storyboardResult = await storyboardModel.generateContent(storyboardPrompt);
       const storyboardText = storyboardResult.response.text();
       console.log('🤖 Storyboard AI response received, length:', storyboardText.length);
+      
+      // Store response in debug info if enabled
+      if (debugInfo) {
+        debugInfo.responses.storyboard = storyboardText
+      }
 
       try {
         result.shots = parseJsonResponse(storyboardText);
@@ -557,6 +637,14 @@ Create one single, powerful image that brings this specific scene to life, adher
 `;
 
         console.log(`🎨 Generating image ${i + 1}/${maxImages} for shot: "${shot.title}"`);
+        
+        // Store image prompt in debug info if enabled
+        if (debugInfo) {
+          debugInfo.prompts.images.push({
+            shotNumber: shot.shotNumber || i + 1,
+            prompt: imagePrompt
+          })
+        }
 
         const imagePromise = imageAI.models.generateImages({
           model: 'models/imagen-3.0-generate-002',
@@ -607,7 +695,8 @@ Create one single, powerful image that brings this specific scene to life, adher
       success: true,
       conversationId: body.conversationId || 'direct-input',
       timestamp: new Date().toISOString(),
-      ...result
+      ...result,
+      ...(debugInfo && { debug: debugInfo })
     }
     
     console.log('📤 Sending response:', {
