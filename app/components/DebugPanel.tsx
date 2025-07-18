@@ -6,7 +6,7 @@ interface LogEntry {
   timestamp: string;
   level: 'log' | 'warn' | 'error';
   message: string;
-  details?: any;
+  details?: unknown[];
 }
 
 export function DebugPanel() {
@@ -19,7 +19,7 @@ export function DebugPanel() {
     const originalWarn = console.warn;
     const originalError = console.error;
 
-    const addLog = (level: LogEntry['level'], args: any[]) => {
+    const addLog = (level: LogEntry['level'], args: unknown[]) => {
       const message = args.map(arg => 
         typeof arg === 'object' ? JSON.stringify(arg, null, 2) : String(arg)
       ).join(' ');

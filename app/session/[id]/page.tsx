@@ -290,23 +290,8 @@ export default function SessionPage() {
 
                 {showPlan && currentSession.context && (
                   <div className="space-y-4 mt-6">
-                    {/* High-Level Goals */}
-                    <div>
-                      <h3 className="text-lg font-semibold mb-2">High-Level Goals:</h3>
-                      <ul className="space-y-1 text-gray-700">
-                        <li>• {currentSession.context.shootType} session featuring {currentSession.context.subject}</li>
-                        {currentSession.context.mood && currentSession.context.mood.length > 0 && (
-                          <li>• Capture {currentSession.context.mood.join(', ')} aesthetic</li>
-                        )}
-                        <li>• {currentSession.context.timeOfDay} lighting for optimal results</li>
-                        {currentSession.context.duration && (
-                          <li>• {currentSession.context.duration} session duration</li>
-                        )}
-                      </ul>
-                    </div>
-
                     {/* Session Details */}
-                    <div className="flex items-center gap-2 mt-6">
+                    <div className="flex items-center gap-2">
                       <div className="w-6 h-6 bg-orange-100 rounded-full flex items-center justify-center">
                         <span className="text-orange-600 text-xs">📅</span>
                       </div>
@@ -389,7 +374,7 @@ export default function SessionPage() {
 
               {/* Storyboard Images */}
               {!showPlan && currentSession.shots && (
-                <div className="space-y-4">
+                <div className="space-y-8">
                   {currentSession.shots.map((shot, idx) => (
                     shot.storyboardImage && (
                       <div key={idx} className="bg-white rounded-lg overflow-hidden shadow-sm border border-gray-200">
