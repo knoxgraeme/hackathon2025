@@ -341,11 +341,11 @@ serve(async (req) => {
     4.  Adhere strictly to the JSON schema for the output.
 
     ### Defaults for Missing Information
-    - location: "Mount Pleasant, Vancouver"
+    - location: "Stanley Park, Vancouver"
     - date/startTime: "flexible"
     - duration: "2 hours"
-    - shootType: infer from context or use "portrait"
-    - mood: infer 2-3 descriptors from conversation tone
+    - shootType: wedding
+    - mood: "joyful" and "candid"
     - experience: "intermediate"
     - locationPreference: "clustered"
     - equipment: []
@@ -646,7 +646,7 @@ Remember: This is a SKETCH to show a photographer how to frame the shot, NOT a r
         }
 
         const imagePromise = imageAI.models.generateImages({
-          model: 'models/imagen-3.0-generate-002',
+          model: 'models/imagen-4.0-ultra-generate-preview-06-06',
           prompt: imagePrompt,
           config: {
             numberOfImages: 1,
