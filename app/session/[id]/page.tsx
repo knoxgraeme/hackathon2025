@@ -178,7 +178,9 @@ export default function SessionPage() {
           context: data.context,
           locations: data.locations,
           shots: data.shots,
-          title: `${data.context.shootType} - ${data.context.subject}`
+          title: data.context.location 
+            ? `${data.context.location.split(' ').map((word: string) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()).join(' ')} ${data.context.shootType.split(' ').map((word: string) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()).join(' ')}`
+            : `${data.context.shootType.split(' ').map((word: string) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()).join(' ')}`
         });
       } else {
         throw new Error(data.error || 'Processing failed');
