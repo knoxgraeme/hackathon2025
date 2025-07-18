@@ -540,20 +540,27 @@ ${locationDetails}
 - Subjects: ${context.subject}
 
 ### Instructions:
-For EACH shot, you must generate the following detailed components.
-1.  **Title/Scene:** A clear, descriptive title that INCLUDES THE SPECIFIC LOCATION.
-2.  **Location:** Specify which of the provided locations this shot takes place at.
-3.  **Visual_Keywords:** A comma-separated list of 5-7 critical visual keywords for an image generator (e.g., "wide angle, low perspective, grand staircase, bride looking back, dramatic shadow, architectural archway"). This is essential for the next step.
-4.  **Framing & Composition:** Detail the shot type and how to use the location's features.
-5.  **Poses & Blocking:** Provide clear descriptions of subject positions and interactions with the specific location.
-6.  **Photographer's Communication Cues:** Provide exact words to direct subjects.
+For EACH shot, you must generate the following detailed components:
+1.  **Title:** A clear, descriptive title that INCLUDES THE SPECIFIC LOCATION.
+2.  **Location Index:** Which location from the list (0-based index).
+3.  **Image Prompt:** The core visual keywords and elements for storyboard generation (5-7 keywords).
+4.  **Composition:** Combined framing, poses, and environmental interaction details.
+5.  **Direction:** Communication cues and instructions for the photographer.
+6.  **Technical:** Camera settings, lens choice, and lighting approach.
+7.  **Equipment:** List of recommended gear for this shot.
+
+For backwards compatibility, also include:
+- **visual_Keywords:** Same as imagePrompt
+- **poses:** Subject positioning details
+- **blocking:** Movement and spatial arrangement
+- **communicationCues:** Same as direction
 
 -----------------------------------
 ### FINAL OUTPUT INSTRUCTIONS
 Your final output MUST be a raw JSON array.
 - Do NOT include any introductory text or markdown code fences.
 - Your entire response must start with '[' and end with ']'.
-- Each object in the array must contain these exact fields: "shotNumber", "title", "location", "visual_Keywords", "composition", "poses", "blocking", "communicationCues".
+- Each object must contain: "shotNumber", "locationIndex", "title", "imagePrompt", "composition", "direction", "technical", "equipment", "visual_Keywords", "poses", "blocking", "communicationCues".
 -----------------------------------`;
 
       const storyboardModel = genAI.getGenerativeModel({
@@ -605,36 +612,38 @@ Your final output MUST be a raw JSON array.
       for (let i = 0; i < maxImages; i++) {
         const shot = result.shots[i];
 
-        // UPDATED: Context of previous shots to encourage variety
-        const shotHistory = result.shots
-          .slice(0, i)
-          .map(p_shot => `- ${p_shot.title} (Keywords: ${p_shot.visual_Keywords})`)
-          .join('\n');
-
-        // UPDATED: A much more robust and context-aware image prompt
+        // Simplified and more structured image prompt
+        const visualKeywords = shot.visual_Keywords || shot.imagePrompt || '';
+        const poses = shot.poses || (shot.composition ? shot.composition.split('.')[0] : '');
+        const blocking = shot.blocking || '';
+        
         const imagePrompt = `
-You are a master storyboard illustrator with a distinct, minimalist black-and-white ink style.
-Your task is to create a SINGLE illustration for a photo shoot plan.
-
 ${STORYBOARD_STYLE_GUIDE}
 
-### CONTEXT OF PREVIOUS SHOTS
-To ensure variety, avoid repeating the compositions or core ideas from these previously illustrated scenes:
-${shotHistory.length > 0 ? shotHistory : "This is the first shot."}
+### SHOOT CONTEXT
+**Type:** ${result.context.shootType} photography
+**Overall Mood:** ${result.context.mood.join(', ')}
+**Time of Day:** ${result.context.timeOfDay || 'flexible'}
 
-### CURRENT SCENE TO ILLUSTRATE
-Your illustration must vividly capture the following single moment.
+### SCENE TO ILLUSTRATE
+Create a ${result.context.shootType} photography storyboard frame capturing this specific moment:
 
-- **Scene Title:** "${shot.title}"
-- **Core Visuals:** ${shot.visual_Keywords}
-- **Location:** ${shot.location || result.context.location}
-- **Subjects:** ${result.context.subject}
-- **Action & Pose:** ${shot.poses}. ${shot.blocking}
-- **Composition:** ${shot.composition}
-- **Mood:** ${result.context.mood.join(', ')}
+**Title:** "${shot.title}"
+**Location:** ${shot.location || (shot.locationIndex !== undefined ? result.locations?.[shot.locationIndex]?.name : result.context.location)}
 
-Create one single, powerful image that brings this specific scene to life, adhering strictly to the art style defined above.
-`;
+**Visual Elements:** ${visualKeywords}
+
+**Composition & Framing:**
+${shot.composition}
+
+**Subject Positioning:**
+- Subjects: ${result.context.subject}
+- Poses: ${poses}
+- Blocking: ${blocking}
+
+**Mood & Atmosphere:** ${result.context.mood.join(', ')}
+
+Create one single, cohesive illustration that brings this scene to life as a black and white ${result.context.shootType} photography storyboard sketch.`;
 
         console.log(`🎨 Generating image ${i + 1}/${maxImages} for shot: "${shot.title}"`);
         
