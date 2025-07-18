@@ -10,7 +10,7 @@ import { supabase } from '../lib/supabase';
  * Default session to seed the app with example data
  * This provides users with a comprehensive example to explore
  */
-const DEFAULT_SESSION: Session = {
+const VANCOUVER_DEFAULT_SESSION: Session = {
   id: "session-1752857576488-g7nfrr622",
   status: "complete",
   createdAt: "2025-07-18T16:52:56.488Z",
@@ -256,6 +256,252 @@ const DEFAULT_SESSION: Session = {
   ]
 }
 
+const TOKYO_DEFAULT_SESSION: Session = {
+  "id": "session-1752867519849-nmnfsa0a2",
+  "status": "complete", 
+  "createdAt": "2025-07-18T19:38:39.849Z",
+  "title": "Tokyo Wedding",
+  "conversationId": "conv_01k0fgqhp4emv828j12jxrhhrg",
+  "context": {
+    "shootType": "wedding",
+    "mood": [
+      "joyful",
+      "candid"
+    ],
+    "timeOfDay": "daytime",
+    "subject": "wedding",
+    "duration": "2 hours",
+    "equipment": [],
+    "experience": "intermediate",
+    "specialRequests": "",
+    "location": "Tokyo",
+    "date": "flexible",
+    "startTime": "flexible",
+    "locationPreference": "clustered"
+  },
+  "locations": [
+    {
+      "accessibility": "Mostly flat cobblestone streets, some slight inclines. Wheelchair accessible in wider main streets but less so in narrow alleys.",
+      "address": "Kagurazaka, Shinjuku, Tokyo (specific alleys like Hyogo Yokocho, Kakurenbo Yokocho)",
+      "alternatives": [
+        "Ningyocho (similar old Tokyo vibe, but more bustling)",
+        "Monzen-nakacho (less known, with temples and canals)"
+      ],
+      "bestTime": "Morning (for fewer crowds) or late afternoon/golden hour (for beautiful light).",
+      "description": "A charming historical district with stone-paved alleys, traditional Japanese wooden houses, hidden shrines, and a touch of French influence. Perfect for intimate, candid, joyful strolls.",
+      "lightingNotes": "Narrow alleys create interesting light and shadow. Direct sun can be harsh at midday but provides strong contrasts. Golden hour is ideal for soft, warm light.",
+      "name": "Kagurazaka Alleys and Streets",
+      "permits": "Generally no permits required for personal photography on public streets. Be respectful of private property and local businesses."
+    },
+    {
+      "accessibility": "Yanaka Ginza is flat and walkable. Cemetery paths are generally paved and flat, but some parts have uneven ground.",
+      "address": "Yanaka, Taito, Tokyo (Yanaka Ginza, Tennoji Temple, Yanaka Cemetery)",
+      "alternatives": [
+        "Togoshi Ginza Shotengai (Tokyo's longest shopping street, very local)",
+        "Sugamo Jizo-dori Shotengai (known as 'Harajuku for Grandmas')"
+      ],
+      "bestTime": "Late morning for the liveliest street atmosphere; early afternoon for softer light in the cemetery/temples.",
+      "description": "A nostalgic, retro shopping street known for its local charm, friendly shopkeepers, and numerous cats. Adjacent, the tranquil Yanaka Cemetery and various temples (like Tennoji Temple) offer serene, green backdrops with traditional architecture. Great for lively candid street shots and peaceful, reflective moments.",
+      "lightingNotes": "Open sky on the street can be bright. Cemetery/temples offer dappled light under trees and interesting shadows from architecture. Golden hour light can be beautiful filtering through trees.",
+      "name": "Yanaka Ginza & Tennoji Temple Area",
+      "permits": "No permits needed for photography on the public street or in the cemetery/temple grounds (be respectful of worshipers)."
+    },
+    {
+      "accessibility": "Garden paths are mostly flat, but some stepping stones (isowatari) may be tricky for elaborate attire. MOT area is fully accessible.",
+      "address": "3-9-10 Hirano, Koto, Tokyo (Kiyosumi Gardens, Museum of Contemporary Art Tokyo)",
+      "alternatives": [
+        "Shinjuku Gyoen National Garden (larger, more diverse landscapes but more popular)",
+        "Hama-rikyu Gardens (beautiful waterside garden, but sometimes busier)"
+      ],
+      "bestTime": "Morning (for fewer crowds in the garden) or late afternoon (for softer light over the pond).",
+      "description": "Kiyosumi Gardens is a classic Edo-period strolling garden with large ponds, stepping stones, and beautiful traditional landscaping, offering a serene and elegant backdrop. Nearby, the Museum of Contemporary Art Tokyo (MOT) provides a contrasting modern, minimalist architectural aesthetic for clean, contemporary shots.",
+      "lightingNotes": "Gardens have open sky and reflective water, offering varied light. MOT exterior has clean lines and ample space for even lighting. Overcast days work well in the garden.",
+      "name": "Kiyosumi Gardens & MOT Surroundings",
+      "permits": "Kiyosumi Gardens has a small entrance fee (typically no photo permit needed for personal use). MOT exterior is public space."
+    },
+    {
+      "accessibility": "Paths can be uneven, and there are some stairs. Not ideal for elaborate gowns or those with mobility issues. Flat shoes recommended.",
+      "address": "1-22 Todoroki, Setagaya, Tokyo",
+      "alternatives": [
+        "Komazawa Olympic Park (large urban park with diverse scenery but less 'hidden gem')",
+        "Rinshi-no-mori Park (forest-like park, also less dramatic)"
+      ],
+      "bestTime": "Morning for tranquil light and fewer visitors; late afternoon for soft, diffused light filtering through the canopy.",
+      "description": "Tokyo's only natural gorge, offering a surprising escape into lush greenery, a serene stream, small waterfall, and a charming red bridge. It feels like a completely different world from the urban bustle, perfect for natural, intimate, and joyful moments amidst nature.",
+      "lightingNotes": "Heavily shaded by trees, leading to soft, diffused light, which is excellent for flattering portraits. Can be dim on very overcast days.",
+      "name": "Todoroki Valley",
+      "permits": "Public park, no permits generally needed for casual photography."
+    },
+    {
+      "accessibility": "Mostly flat, walkable streets and covered arcades. Very accessible.",
+      "address": "Koenji, Suginami, Tokyo (around Koenji Station, particularly Pal and Look shopping arcades)",
+      "alternatives": [
+        "Shimokitazawa (similar indie/vintage vibe, but often more crowded)",
+        "Nakano Broadway (unique shopping complex with a strong subculture vibe, but very interior)"
+      ],
+      "bestTime": "Late morning to early afternoon for bustling activity, or early evening for a lively, illuminated ambiance (especially in Pal arcade).",
+      "description": "A vibrant, bohemian neighborhood known for its vintage shops, indie music scene, and unique local character. The covered Pal arcade offers a retro, lively vibe, while Look Street provides a more relaxed, quirky atmosphere with cafes and small businesses. Great for joyful, quirky, and genuinely candid interactions.",
+      "lightingNotes": "Pal arcade is covered but well-lit by fluorescent and shop lights, creating a unique urban glow. Look Street is open-air, offering natural light.",
+      "name": "Koenji Pal & Look Street",
+      "permits": "Public streets and shopping arcades; no permits required for general photography. Be mindful of shop owners and don't block entrances."
+    }
+  ],
+  "shots": [
+    {
+      "shotNumber": 1,
+      "locationIndex": 0,
+      "location": "Kagurazaka Alleys and Streets",
+      "idealLighting": "Morning (for fewer crowds) or late afternoon/golden hour (for beautiful light)",
+      "title": "Joyful Stroll in Kagurazaka Alley",
+      "imagePrompt": "Kagurazaka, narrow alley, couple walking, laughter, traditional houses, stone path, warm light",
+      "composition": "Medium shot, couple in motion walking hand-in-hand down a stone-paved alley. Utilize leading lines of the alley and traditional wooden houses framing them on both sides. Capture their genuine laughter and interaction.",
+      "direction": "Encourage the couple to walk naturally, chatting and laughing. Be ready to capture spontaneous moments of connection. Let them lead the direction of their stroll.",
+      "technical": "Aperture priority, f/2.8-4 to balance subject sharpness with environmental context. ISO auto, fast shutter speed (1/250s+) to freeze motion. Use a 35mm or 50mm prime lens. Shoot during golden hour for warm, soft light filtering into the alley.",
+      "equipment": ["Mirrorless camera body", "35mm prime lens"],
+      "poses": "Couple walking, holding hands, looking at each other, laughing naturally.",
+      "blocking": "Couple walking away from or towards the camera down the alley. Photographer moves ahead or behind to capture their dynamic.",
+      "communicationCues": "Encourage genuine interaction and movement. Let them lead, capture spontaneous moments.",
+      "storyboardImage": "https://akukmblllfqvoibrvrie.supabase.co/storage/v1/object/public/storyboard-images/storyboard-conv_01k0fgqhp4emv828j12jxrhhrg-shot-1-2025-07-18T19-40-03-235Z.jpg"
+    },
+    {
+      "shotNumber": 2,
+      "locationIndex": 0,
+      "location": "Kagurazaka Alleys and Streets",
+      "idealLighting": "Morning (for fewer crowds) or late afternoon/golden hour (for beautiful light)",
+      "title": "Quiet Glance at Kagurazaka Shrine",
+      "imagePrompt": "Kagurazaka, hidden shrine, couple intimate, soft light, traditional details, serene moment",
+      "composition": "Close-up to medium shot of the couple peeking into a small, hidden shrine or by its entrance. Focus on their expressions and intimate connection, with the shrine's traditional details in the softly blurred background.",
+      "direction": "Guide the couple to a small, quiet shrine. Ask them to quietly observe it together, allowing for a reflective, intimate moment. Be patient for authentic interaction.",
+      "technical": "Aperture priority, f/1.8-2.5 for shallow depth of field, emphasizing the couple. ISO auto. Use an 85mm or 50mm prime lens for flattering compression. Utilize soft, diffused light from shade or early morning.",
+      "equipment": ["Mirrorless camera body", "85mm prime lens"],
+      "poses": "Couple standing close, looking into the shrine, perhaps one arm around the other, shared gaze.",
+      "blocking": "Couple positioned slightly off-center or framed by the shrine's entrance. Photographer remains unobtrusive.",
+      "communicationCues": "Wait for a natural pause, capture a quiet, connected moment as they observe the shrine.",
+      "storyboardImage": "https://akukmblllfqvoibrvrie.supabase.co/storage/v1/object/public/storyboard-images/storyboard-conv_01k0fgqhp4emv828j12jxrhhrg-shot-2-2025-07-18T19-40-04-633Z.jpg"
+    },
+    {
+      "shotNumber": 3,
+      "locationIndex": 1,
+      "location": "Yanaka Ginza & Tennoji Temple Area",
+      "idealLighting": "Late morning for the liveliest street atmosphere",
+      "title": "Yanaka Ginza Street Market Merriment",
+      "imagePrompt": "Yanaka Ginza, couple laughing, street market, local interaction, retro charm, candid street photography",
+      "composition": "Wide-angle to medium shot, capturing the couple amidst the bustling Yanaka Ginza street. Frame them interacting with a friendly shopkeeper, observing a cat, or simply laughing while soaking in the lively atmosphere. Use the vibrant shop signs and street elements to add context.",
+      "direction": "Encourage the couple to explore the shops and engage with their surroundings. Blend into the street, observe, and anticipate genuine, candid moments of joy and interaction.",
+      "technical": "Shutter priority (1/250s or faster) to freeze motion of the street. Aperture f/4-5.6 for good depth of field to capture the street context. ISO auto. Use a versatile 24-70mm zoom lens. Shoot in late morning for the liveliest street activity.",
+      "equipment": ["Mirrorless camera body", "24-70mm zoom lens"],
+      "poses": "Couple interacting with environment, laughing, pointing, engaging with locals/cats, candid walking.",
+      "blocking": "Couple moving through the street, photographer anticipates their movement and positions to capture interactions.",
+      "communicationCues": "Blend in, observe, and anticipate. Capture them genuinely interacting with their surroundings or each other amidst the bustle.",
+      "storyboardImage": "https://akukmblllfqvoibrvrie.supabase.co/storage/v1/object/public/storyboard-images/storyboard-conv_01k0fgqhp4emv828j12jxrhhrg-shot-3-2025-07-18T19-40-02-998Z.jpg"
+    },
+    {
+      "shotNumber": 4,
+      "locationIndex": 1,
+      "location": "Yanaka Ginza & Tennoji Temple Area",
+      "idealLighting": "Early afternoon for softer light in the temple",
+      "title": "Tranquil Moments at Tennoji Temple",
+      "imagePrompt": "Tennoji Temple, couple walking, serene, dappled light, traditional temple, lush greenery, reflective",
+      "composition": "Medium to wide shot of the couple walking slowly through the tranquil Tennoji Temple grounds. Frame them with traditional temple architecture and lush greenery, utilizing dappled light filtering through trees to create interesting patterns. Focus on their peaceful connection.",
+      "direction": "Guide the couple to walk slowly and deliberately, encouraging quiet conversation and a sense of reflection. Point out interesting architectural details or serene spots. Look for natural frames within the temple grounds.",
+      "technical": "Aperture priority, f/2.8-4 for a pleasing balance of subject sharpness and environmental context. ISO auto. Use a 50mm or 85mm prime lens. Shoot in early afternoon for softer light in the cemetery/temples, capitalizing on dappled light.",
+      "equipment": ["Mirrorless camera body", "50mm prime lens"],
+      "poses": "Couple walking, holding hands, arm-in-arm, quietly conversing or observing.",
+      "blocking": "Couple walking away from or towards the camera on a path, framed by temple structures or trees.",
+      "communicationCues": "Guide them to walk slowly, encouraging quiet connection. Utilize natural frames from temple elements."
+    },
+    {
+      "shotNumber": 5,
+      "locationIndex": 2,
+      "location": "Kiyosumi Gardens & MOT Surroundings",
+      "idealLighting": "Morning (for fewer crowds in the garden) or late afternoon (for softer light over the pond)",
+      "title": "Graceful Stroll in Kiyosumi Gardens",
+      "imagePrompt": "Kiyosumi Gardens, couple, stepping stones, pond reflection, elegant, serene, traditional landscape",
+      "composition": "Wide shot, capturing the couple gracefully navigating the stepping stones across the large pond in Kiyosumi Gardens. Aim for a low angle to capture reflections in the water. Emphasize the elegant, traditional Japanese landscape as the backdrop.",
+      "direction": "Ask the couple to walk slowly and deliberately across the stepping stones, perhaps pausing briefly on one. Guide their movements to ensure good composition with the pond and garden elements. Look for beautiful reflections.",
+      "technical": "Aperture priority, f/4-5.6 for sufficient depth of field to capture the landscape and reflections. Use a CPL filter to enhance reflections and color saturation. Use a 24-70mm zoom lens to adjust framing. Shoot in the morning for fewer crowds and soft light over the pond.",
+      "equipment": ["Mirrorless camera body", "24-70mm zoom lens", "Circular Polarizer (CPL) filter"],
+      "poses": "Couple walking across stepping stones, holding hands, looking at reflection, graceful movement.",
+      "blocking": "Couple walking across stones in mid-distance. Photographer positioned to capture reflections and the garden's breadth.",
+      "communicationCues": "Ask them to walk slowly and deliberately, pausing slightly on a stone. Look for reflections."
+    },
+    {
+      "shotNumber": 6,
+      "locationIndex": 2,
+      "location": "Kiyosumi Gardens & MOT Surroundings",
+      "idealLighting": "Overcast days work well for even lighting",
+      "title": "Modern Romance at MOT Tokyo",
+      "imagePrompt": "MOT Tokyo, couple, minimalist architecture, clean lines, contemporary, artistic, connection",
+      "composition": "Wide to medium shot, featuring the couple interacting with the minimalist, clean architectural lines of the Museum of Contemporary Art Tokyo (MOT) exterior. Use strong geometric shapes and negative space to create a contemporary, artistic feel. Focus on their modern connection against this backdrop.",
+      "direction": "Position the couple to interact with the building's lines – perhaps walking in parallel, leaning against a clean wall, or standing in front of a striking architectural feature. Guide them for a sleek, contemporary aesthetic.",
+      "technical": "Aperture priority, f/5.6-8 for sharp details across the architectural elements. Low ISO for clean, crisp images. Use a 35mm or 50mm prime lens. Overcast days provide excellent, even lighting for minimalist architecture, otherwise look for soft, diffused light.",
+      "equipment": ["Mirrorless camera body", "35mm prime lens"],
+      "poses": "Couple standing, walking, leaning against a wall, interacting subtly with the modern environment, looking at each other or camera.",
+      "blocking": "Couple positioned symmetrically or asymmetrically against the stark architectural background. Photographer uses clean lines for framing.",
+      "communicationCues": "Position them to interact with the architecture, perhaps leaning against a wall or walking in sync. Focus on sleekness."
+    },
+    {
+      "shotNumber": 7,
+      "locationIndex": 3,
+      "location": "Todoroki Valley",
+      "idealLighting": "Morning for tranquil light and fewer visitors; late afternoon for soft, diffused light filtering through the canopy",
+      "title": "Red Bridge Romance in Todoroki Valley",
+      "imagePrompt": "Todoroki Valley, red bridge, couple, lush greenery, intimate, natural, tranquil",
+      "composition": "Medium shot of the couple on the charming red bridge in Todoroki Valley. Frame them intimately amidst the dense, lush greenery surrounding the bridge. Emphasize the contrast of the red bridge against the natural backdrop and their quiet connection.",
+      "direction": "Suggest the couple pause mid-bridge, perhaps holding hands or sharing a gentle embrace, as if taking in the serene view. Capture their natural, intimate interaction in this unique setting.",
+      "technical": "Aperture priority, f/2.8-4 for soft background blur while keeping the couple sharp. ISO auto. Use a 50mm or 85mm prime lens to compress the lush background. Shoot in morning or late afternoon for soft, diffused light filtering through the canopy.",
+      "equipment": ["Mirrorless camera body", "50mm prime lens"],
+      "poses": "Couple holding hands on bridge, gentle embrace, looking at each other, or looking out at the valley.",
+      "blocking": "Couple positioned on the red bridge, photographer captures them from slightly off-center or from a classic head-on perspective.",
+      "communicationCues": "Suggest they pause on the bridge, look at each other, or simply take in the view. Capture their natural interaction."
+    },
+    {
+      "shotNumber": 8,
+      "locationIndex": 3,
+      "location": "Todoroki Valley",
+      "idealLighting": "Morning for tranquil light and fewer visitors; late afternoon for soft, diffused light filtering through the canopy",
+      "title": "Secluded Serenity by Todoroki Stream",
+      "imagePrompt": "Todoroki Valley, couple, stream, small waterfall, lush canopy, serene, natural light",
+      "composition": "Wide to medium shot, capturing the couple by the serene stream, with a glimpse of the small waterfall in the background. Frame them under the lush canopy, emphasizing the soft, diffused light. Focus on their connection amidst this natural escape.",
+      "direction": "Encourage the couple to find a comfortable spot by the stream, perhaps sitting on a rock or simply enjoying the tranquil sound of the water. Look for pockets of beautiful, diffused light filtering through the leaves.",
+      "technical": "Aperture priority, f/2.8-4 for gentle background separation. ISO auto, may need to be higher due to deep shade. Use a 35mm or 50mm prime lens. Utilize the soft, diffused light, potentially using a collapsible reflector for subtle fill light on faces if needed.",
+      "equipment": ["Mirrorless camera body", "35mm prime lens", "collapsible reflector"],
+      "poses": "Couple seated by stream, holding hands, looking at water, or standing close together enjoying the nature.",
+      "blocking": "Couple positioned near the stream, potentially with the waterfall visible in the background. Photographer works with the natural light and environment.",
+      "communicationCues": "Encourage them to find a comfortable spot, perhaps dipping toes in the stream, or simply enjoying the quiet. Look for pockets of light."
+    },
+    {
+      "shotNumber": 9,
+      "locationIndex": 4,
+      "location": "Koenji Pal & Look Street",
+      "idealLighting": "Early evening for a lively, illuminated ambiance (especially in Pal arcade)",
+      "title": "Lively Stroll in Koenji Pal Arcade",
+      "imagePrompt": "Koenji Pal, couple walking, arcade, vintage shops, vibrant, urban glow, candid",
+      "composition": "Wide to medium shot, capturing the couple walking through the covered Pal arcade. Use the depth of the arcade and the vibrant, eclectic storefronts as the backdrop. Focus on their energetic interaction and the lively urban glow created by the shop lights.",
+      "direction": "Encourage the couple to genuinely explore the arcade, pointing out interesting vintage items or shops. Capture their spontaneous reactions, laughter, and genuine enjoyment of the bohemian atmosphere.",
+      "technical": "Shutter priority (1/160s or faster) to capture movement without too much blur. Aperture f/2.8-4 to manage the varied lighting. High ISO may be needed due to artificial lighting. Use a 24-70mm zoom lens. Shoot in early evening for the best illuminated ambiance.",
+      "equipment": ["Mirrorless camera body", "24-70mm zoom lens"],
+      "poses": "Couple walking, looking into shops, gesturing, laughing, interacting with the bustling environment.",
+      "blocking": "Couple walking along the arcade, photographer moves to capture leading lines and vibrant shop fronts.",
+      "communicationCues": "Let them explore, encourage pointing out interesting things, capture the spontaneous joy of discovery. Use the urban lights."
+    },
+    {
+      "shotNumber": 10,
+      "locationIndex": 4,
+      "location": "Koenji Pal & Look Street",
+      "idealLighting": "Late morning to early afternoon for bustling activity",
+      "title": "Quirky Cafe Connection on Koenji Look Street",
+      "imagePrompt": "Koenji Look Street, couple, cafe, vintage, quirky, candid interaction, warm light",
+      "composition": "Close-up to medium shot of the couple enjoying a moment at a quirky cafe on Look Street, or browsing a vintage store. Focus on their genuine interaction, expressions, and the unique details of the surroundings. Use shallow depth of field to isolate them.",
+      "direction": "Suggest they grab a coffee, browse a unique shop, or simply relax at a vintage spot. Be discreet and observant, capturing their unposed, authentic connection amidst the quirky charm of the street.",
+      "technical": "Aperture priority, f/1.8-2.5 for beautiful bokeh, isolating the subjects. ISO auto. Use a 50mm or 85mm prime lens for flattering portraits and low light performance. Utilize natural light from storefronts or early afternoon light.",
+      "equipment": ["Mirrorless camera body", "50mm prime lens"],
+      "poses": "Couple seated at cafe, holding coffee cups, looking at each other, laughing, browsing vintage items, candid gestures.",
+      "blocking": "Couple seated or standing within a cafe or shop. Photographer positions unobtrusively to capture candid moments.",
+      "communicationCues": "Suggest they grab a coffee or browse. Be discreet, capture a genuine, unposed moment of connection."
+    }
+  ]
+}
 
 
 /**
@@ -378,10 +624,15 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
       console.log('[DEBUG] No sessions found in localStorage');
     }
     
-    // Add default session if it doesn't exist
-    if (!parsedSessions[DEFAULT_SESSION.id]) {
-      console.log('[DEBUG] Adding default session to seed the app');
-      parsedSessions[DEFAULT_SESSION.id] = DEFAULT_SESSION;
+    // Add default sessions if they don't exist
+    if (!parsedSessions[VANCOUVER_DEFAULT_SESSION.id]) {
+      console.log('[DEBUG] Adding Vancouver default session to seed the app');
+      parsedSessions[VANCOUVER_DEFAULT_SESSION.id] = VANCOUVER_DEFAULT_SESSION;
+    }
+    
+    if (!parsedSessions[TOKYO_DEFAULT_SESSION.id]) {
+      console.log('[DEBUG] Adding Tokyo default session to seed the app');
+      parsedSessions[TOKYO_DEFAULT_SESSION.id] = TOKYO_DEFAULT_SESSION;
     }
     
     setSessions(parsedSessions);
