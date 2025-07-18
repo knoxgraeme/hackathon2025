@@ -6,6 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 This is a Next.js 15.4.1 application for an AI-powered photography assistant that helps photographers plan photo shoots. The app uses the App Router architecture with TypeScript and Tailwind CSS v4, backed by Supabase for database, storage, and edge functions.
 
+
 ## Essential Commands
 
 ```bash
