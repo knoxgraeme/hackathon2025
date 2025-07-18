@@ -39,6 +39,10 @@ serve(async (req) => {
     const body = await req.json();
     console.log('📦 Received request:', JSON.stringify(body, null, 2))
     
+    // Check if debug mode is enabled
+    const debugMode = body.debug === true;
+    const debugInfo: any = debugMode ? { prompts: {}, responses: {} } : null;
+    
     // Initialize AI
     const geminiApiKey = validateEnvVar('GEMINI_API_KEY')
     const genAI = new GoogleGenerativeAI(geminiApiKey)
@@ -223,8 +227,25 @@ serve(async (req) => {
       transcript = body.transcript;
       console.log('📝 Received body.transcript:', transcript)
       console.log('📊 Transcript length:', transcript.length, 'characters')
+    } else if (body.data_collection) {
+      // Direct data collection for testing - convert to transcript format
+      console.log('📝 Received data_collection:', JSON.stringify(body.data_collection, null, 2));
+      
+      const dc = body.data_collection;
+      transcript = `agent: I'll help you plan your photo shoot. Let me gather some details.
+user: I want to do a ${dc.shootType} shoot in ${dc.location} on ${dc.date} at ${dc.startTime}. 
+The shoot will be ${dc.duration} long. 
+The mood should be ${dc.mood}.
+Primary subjects are ${dc.primarySubjects}.
+${dc.secondarySubjects ? `Secondary subjects are ${dc.secondarySubjects}.` : ''}
+I prefer ${dc.locationPreference} locations.
+${dc.mustHaveShots ? `Must-have shots: ${dc.mustHaveShots}.` : ''}
+${dc.specialRequirements ? `Special requirements: ${dc.specialRequirements}.` : ''}
+My experience level is ${dc.experience}.`;
+      
+      console.log('📝 Converted data_collection to transcript:', transcript);
     } else {
-      return createErrorResponse('Either webhook payload, conversationId, or transcript is required', 400)
+      return createErrorResponse('Either webhook payload, conversationId, transcript, or data_collection is required', 400)
     }
     
     // Extract all 12 data collection fields from conversational transcript
@@ -295,11 +316,34 @@ serve(async (req) => {
     ### Transcript
     ${transcript}`
     
-    console.log('🧠 Sending to AI model - transcript preview:', transcript.substring(0, 200) + '...')
-    console.log('🧠 Full prompt length:', contextPrompt.length, 'characters')
+    // Enhanced logging for context extraction
+    console.log('🧠 === STAGE 1: CONTEXT EXTRACTION ===')
+    console.log('📊 Transcript length:', transcript.length, 'characters')
+    console.log('📊 Full prompt length:', contextPrompt.length, 'characters')
+    console.log('📊 Schema:', JSON.stringify(contextSchema, null, 2))
+    console.log('📝 Full prompt being sent to context agent:')
+    console.log('---START CONTEXT PROMPT---')
+    console.log(contextPrompt)
+    console.log('---END CONTEXT PROMPT---')
+    
+    // Capture debug info if enabled
+    if (debugMode && debugInfo) {
+      debugInfo.prompts.context = contextPrompt;
+    }
     
     const contextResult = await contextModel.generateContent(contextPrompt)
     const contextText = contextResult.response.text()
+    
+    // Log the raw AI response
+    console.log('🤖 Raw AI response from context agent:')
+    console.log('---START CONTEXT RESPONSE---')
+    console.log(contextText)
+    console.log('---END CONTEXT RESPONSE---')
+    
+    // Capture debug info if enabled
+    if (debugMode && debugInfo) {
+      debugInfo.responses.context = contextText;
+    }
     
     try {
       const extractedData = JSON.parse(contextText)
@@ -329,7 +373,7 @@ serve(async (req) => {
     
     // STAGE 2: Generate 4-5 specific photo locations based on context
     if (result.context) {
-      console.log('📍 Generating locations')
+      console.log('📍 === STAGE 2: LOCATION GENERATION ===')
       
       const context = result.context
       const location = context.location || 'the local area'
@@ -387,8 +431,32 @@ serve(async (req) => {
     4.  For each location, provide all details as per the JSON schema, including practical notes on lighting and accessibility.
     5.  Suggest realistic backup alternatives for each primary spot.`
       
+      // Enhanced logging for location generation
+      console.log('📊 Context being used for location generation:', JSON.stringify(context, null, 2))
+      console.log('📊 Location schema:', JSON.stringify(locationSchema, null, 2))
+      console.log('📝 Full prompt being sent to location agent:')
+      console.log('---START LOCATION PROMPT---')
+      console.log(locationPrompt)
+      console.log('---END LOCATION PROMPT---')
+      
+      // Capture debug info if enabled
+      if (debugMode && debugInfo) {
+        debugInfo.prompts.location = locationPrompt;
+      }
+      
       const locationResult = await locationModel.generateContent(locationPrompt)
       const locationText = locationResult.response.text()
+      
+      // Log the raw AI response
+      console.log('🤖 Raw AI response from location agent:')
+      console.log('---START LOCATION RESPONSE---')
+      console.log(locationText)
+      console.log('---END LOCATION RESPONSE---')
+      
+      // Capture debug info if enabled
+      if (debugMode && debugInfo) {
+        debugInfo.responses.location = locationText;
+      }
       
       try {
         result.locations = JSON.parse(locationText)
@@ -406,15 +474,17 @@ serve(async (req) => {
     
     // STAGE 3: Create detailed shot list with composition and direction
     if (result.locations && result.context) {
-  console.log('🎬 Generating location-aware storyboards');
+  console.log('🎬 === STAGE 3: STORYBOARD GENERATION ===');
 
   const context = result.context;
   const locations = result.locations;
 
   // Create a formatted list of locations for the prompt
-  const locationDetails = locations.map((loc, idx) => 
+  const locationDetails = locations.map((loc: Location, idx: number) => 
     `Location ${idx + 1}: ${loc.name} - ${loc.description} (Best time: ${loc.bestTime}, Lighting: ${loc.lightingNotes})`
   ).join('\n');
+
+  console.log('📊 Locations being used for storyboard:', locationDetails);
 
   const storyboardPrompt = `You are an expert wedding, portrait, and engagement photographer and creative director with 20 years of experience. You have a master's degree in fine art photography and a deep understanding of classical art, cinema, and storytelling. Your specialty is creating emotionally resonant, timeless, and dynamic images by meticulously planning every frame. You are not just a photographer; you are a master communicator and director on set, skilled at making subjects feel comfortable and drawing out genuine emotion.
 
@@ -469,63 +539,116 @@ Your final output MUST be a raw JSON array.
     }
   });
 
+  // Enhanced logging for storyboard generation
+  console.log('📊 Context being used for storyboard:', JSON.stringify(context, null, 2));
+  console.log('📝 Full prompt being sent to storyboard agent:');
+  console.log('---START STORYBOARD PROMPT---');
+  console.log(storyboardPrompt);
+  console.log('---END STORYBOARD PROMPT---');
+  
+  // Capture debug info if enabled
+  if (debugMode && debugInfo) {
+    debugInfo.prompts.storyboard = storyboardPrompt;
+  }
+
   const storyboardResult = await storyboardModel.generateContent(storyboardPrompt);
   const storyboardText = storyboardResult.response.text();
+
+  // Log the raw AI response
+  console.log('🤖 Raw AI response from storyboard agent:');
+  console.log('---START STORYBOARD RESPONSE---');
+  console.log(storyboardText);
+  console.log('---END STORYBOARD RESPONSE---');
+  
+  // Capture debug info if enabled
+  if (debugMode && debugInfo) {
+    debugInfo.responses.storyboard = storyboardText;
+  }
 
   try {
     result.shots = parseJsonResponse(storyboardText);
     console.log(`✅ Generated ${result.shots.length} detailed shots`);
+    console.log('📊 Shots overview:', result.shots.map((s: Shot) => `Shot ${s.shotNumber}: ${s.title} at ${(s as any).location}`).join('\n'));
   } catch (error) {
     console.error('Storyboard parsing error:', error);
     return createErrorResponse('Failed to generate storyboard', 500);
   }
 }
       
-      // STAGE 4: Generate storyboard visualizations (now up to 6, in parallel)
+      // STAGE 4: Generate storyboard visualizations (up to 6, in parallel)
       if (body.generateImages && result.shots) {
-        console.log('🎨 Generating storyboard images in parallel');
+        console.log('🎨 === STAGE 4: IMAGE GENERATION ===');
+        console.log('🎨 Using optimized prompt structure with enhanced style control');
 
         const imageAI = new GoogleGenAI({ apiKey: geminiApiKey });
-        const maxImages = Math.min(6, result.shots.length); // Increased from 3 to 6
+        const maxImages = Math.min(6, result.shots.length);
+        console.log(`📊 Generating ${maxImages} images out of ${result.shots.length} total shots`);
 
-        // Create all image generation promises
-        const imagePromises = [];
+        // STAGE 3.5 (Pre-computation for consistency)
+        // Generate character description once before the loop for consistency
+        let characterDescription = '';
+        const characterGenModel = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+        const characterPrompt = `
+Based on the photo shoot context for "${result.context.subject}", create a single, concise sentence describing their key visual features (hair style/color, build, key clothing item) to ensure they look consistent across multiple images.
+Example output: "A man with short brown hair in a suit, and a woman with long blonde hair in a white dress."`;
         
-        for (let i = 0; i < maxImages; i++) {
-          const shot = result.shots[i];
-          const imagePrompt = `
-      Generate ONE SINGLE ILLUSTRATION (not a comic strip, not multiple panels) showing this exact moment:
+        try {
+          const characterResult = await characterGenModel.generateContent(characterPrompt);
+          characterDescription = characterResult.response.text().trim();
+          console.log(`✅ Character Sheet Generated: "${characterDescription}"`);
+          
+          // Capture debug info if enabled
+          if (debugMode && debugInfo) {
+            if (!debugInfo.prompts.characterGeneration) {
+              debugInfo.prompts.characterGeneration = characterPrompt;
+              debugInfo.responses.characterGeneration = characterDescription;
+            }
+          }
+        } catch (error) {
+          console.error('Character sheet generation failed, proceeding without it.', error);
+          characterDescription = 'as described in the context'; // Fallback
+        }
 
-      **SINGLE SCENE TO ILLUSTRATE:**
-      "${shot.title}"
+        // Create all image generation promises in a loop
+        const imagePromises = result.shots.slice(0, maxImages).map((shot: Shot, i: number) => {
+          // NEW OPTIMIZED PROMPT TEMPLATE
+          const imagePrompt = `You are an expert illustration artist creating a single black-and-white, hand-drawn storyboard panel.
 
-      **THIS ONE IMAGE MUST SHOW:**
-      - **Main Action:** ${shot.poses}. ${shot.blocking}
-      - **Camera Framing:** ${shot.composition}
-      - **Subject(s):** ${result.context.subject}
-      - **Setting/Location:** ${shot.location || result.context.location}
-      - **Emotional Tone:** ${result.context.mood.join(', ')}
-      - **Specific Direction:** ${shot.communicationCues || 'Follow the poses and blocking described above'}
+*STYLE GUIDE (Strictly follow):
+**Aesthetic:** Black and white line art illustration with a minimalist, sketchy, graphic novel style. Emphasize clean, defined outlines and clear forms. The style should resemble a stylized comic panel or high-contrast blueprint. Clean, graphic, and modern. Feels purposeful and designed rather than spontaneous. Avoid visual noise and excessive marks. Prioritize visual storytelling and clarity.
+**Color:** Strictly black and white. No shades of grey. Use only pure black and pure white. Shadows must be indicated with solid black shapes or stark, parallel black lines. Do not use gradients, subtle blending, or complex hatching.
+**Linework:** Lines must be clean, crisp, and consistent in thickness. Use lines to define form, not for texture. Avoid cross-hatching or stippling. All forms and elements should be outlined clearly.
+**Shading and volume:** Shading is achieved only through flat solid black fills or clean, parallel line groupings. There is no tonal range or soft shadowing.
+**Facial details:** Never use photorealistic faces. Highly simplified or omitted. Eyes are typically dots or simple curves. Noses and mouths are minimal, using single lines or shapes. Focus on silhouette and gesture over facial realism.
+**Detail Level:** Minimalist and suggestive. Architectural elements are reduced to core forms. Foliage or crowds are represented by silhouettes or simplified blocks. Backgrounds must be clean and uncluttered.
+**Subject and proportions:** Human figures should have graceful, stylized proportions. Gestures should be expressive but clear.
+**Text and arrows:** Do not include any written text in the image. You may include simple arrows only if they clarify important motion central to the scene.
 
-      **CRITICAL INSTRUCTIONS:**
-      - Create ONLY ONE SINGLE SCENE filling the entire frame
-      - DO NOT create multiple panels, frames, or a comic strip layout
-      - DO NOT divide the image into sections
-      - DO NOT include text in the image
-      - The entire image should depict ONE MOMENT from ONE VIEWPOINT
-      
+*YOUR TASK:
+Create a storyboard illustration for the following scene.
 
-     **STYLE REQUIREMENTS:**
-      - **Color:** MONOCHROME ONLY - Pure black ink on white. NO COLOR.
-      - **Aesthetic:** Simple black line illustration/sketch style. Clean defined outlines.
-      - **Shading:** Use hatching or solid black areas only. NO gradients.
-      - **Details:** Faces and backgrounds should be highly simplified or suggestive. Focus on clear forms, composition. Avoid photo-realism.
-      
-      REMEMBER: Generate a SINGLE SCENE illustration, not a multi-panel storyboard.
-    `;
+*SCENE DETAILS:
+**Title:** ${shot.title}
+**Composition & Framing:** ${(shot as any).composition || shot.composition}
+**Poses & Blocking:** ${(shot as any).poses || 'See composition'}. ${(shot as any).blocking || ''}
+**Key Elements:** The primary subject is ${result.context.subject}, who should be depicted as: "${characterDescription}". The location is ${(shot as any).location || result.context.location}. The mood is ${result.context.mood.join(', ')}.
 
-          // Create promise for this image generation
-          const imagePromise = imageAI.models.generateImages({
+Based on these scene details, generate the image now.`;
+
+          // Log the image prompt for this shot
+          console.log(`📝 Image prompt for shot ${i + 1}:`);
+          console.log(`---START IMAGE PROMPT SHOT ${i + 1}---`);
+          console.log(imagePrompt);
+          console.log(`---END IMAGE PROMPT SHOT ${i + 1}---`);
+          
+          // Capture debug info if enabled
+          if (debugMode && debugInfo) {
+            if (!debugInfo.prompts.images) debugInfo.prompts.images = [];
+            debugInfo.prompts.images.push({ shotNumber: i + 1, prompt: imagePrompt });
+          }
+
+          // Return the promise for this image generation
+          return imageAI.models.generateImages({
             model: 'models/imagen-3.0-generate-002',
             prompt: imagePrompt,
             config: {
@@ -533,35 +656,28 @@ Your final output MUST be a raw JSON array.
               outputMimeType: 'image/jpeg',
               aspectRatio: '4:3',
             },
-          }).then(async (response) => {
+          }).then(async (response: any) => {
             if (response?.generatedImages?.[0]?.image?.imageBytes) {
               const imageBase64 = response.generatedImages[0].image.imageBytes;
-              
-              // Generate unique filename
               const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
               const conversationId = body.conversationId || 'direct';
               const fileName = `storyboard-${conversationId}-shot-${i + 1}-${timestamp}.jpg`;
-              
-              // Save to Supabase Storage and get public URL
               const imageUrl = await saveImageToStorage(imageBase64, fileName);
               
               if (imageUrl) {
-                shot.storyboardImage = imageUrl;
+                shot.storyboardImage = imageUrl; // Attach URL back to the shot object
                 console.log(`✅ Generated and saved image for shot ${i + 1}: ${imageUrl}`);
-              } else {
-                console.log(`❌ Failed to save image for shot ${i + 1}, skipping`);
               }
             }
-          }).catch((error) => {
-            console.error(`Image generation error for shot ${i + 1}:`, error);
+          }).catch((error: any) => {
+            console.error(`Image generation error for shot ${i + 1}:`, error.message || error);
+            // Fail gracefully for this shot and continue with others
           });
+        });
 
-          imagePromises.push(imagePromise);
-        }
-
-        // Wait for all images to complete
+        // Wait for all image generation and saving promises to resolve
         await Promise.all(imagePromises);
-        console.log('✅ All image generation complete');
+        console.log('✅ All image generation tasks complete');
       }
     
     // Return complete photo shoot plan with all generated data
@@ -569,8 +685,18 @@ Your final output MUST be a raw JSON array.
       success: true,
       conversationId: body.conversationId || 'direct-input',
       timestamp: new Date().toISOString(),
-      ...result
+      ...result,
+      ...(debugMode && debugInfo ? { debug: debugInfo } : {})
     }
+    
+    // Final summary logging
+    console.log('=== FINAL SUMMARY ===');
+    console.log('📊 Processing complete:');
+    console.log(`  - Conversation ID: ${response.conversationId}`);
+    console.log(`  - Context extracted: ${result.context ? 'Yes' : 'No'}`);
+    console.log(`  - Locations generated: ${result.locations?.length || 0}`);
+    console.log(`  - Shots generated: ${result.shots?.length || 0}`);
+    console.log(`  - Images generated: ${result.shots?.filter((s: any) => s.storyboardImage).length || 0}`);
     
     console.log('📤 Sending response:', {
       ...response,

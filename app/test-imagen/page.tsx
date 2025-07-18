@@ -13,6 +13,21 @@ interface TestResult {
   locations?: EdgeLocation[]
   shots?: EdgeShot[]
   error?: string
+  debug?: {
+    prompts: {
+      context?: string
+      location?: string
+      storyboard?: string
+      characterGeneration?: string
+      images?: Array<{ shotNumber: number; prompt: string }>
+    }
+    responses: {
+      context?: string
+      location?: string
+      storyboard?: string
+      characterGeneration?: string
+    }
+  }
 }
 
 export default function PhotoAssistantTestPage() {
@@ -25,6 +40,7 @@ export default function PhotoAssistantTestPage() {
   const [transcript, setTranscript] = useState('')
   const [generateImages, setGenerateImages] = useState(false)
   const [imageCount, setImageCount] = useState(3)
+  const [debugMode, setDebugMode] = useState(true) // Enable by default for test page
   
   // Data collection for testing
   const [dataCollection, setDataCollection] = useState({
@@ -48,7 +64,7 @@ export default function PhotoAssistantTestPage() {
     
     try {
       // Build request body based on test mode
-      const requestBody: Record<string, unknown> = { generateImages }
+      const requestBody: Record<string, unknown> = { generateImages, debug: debugMode }
       if (generateImages) {
         requestBody.imageCount = imageCount
       }
@@ -252,6 +268,16 @@ export default function PhotoAssistantTestPage() {
                 </div>
               )}
               
+              <label className="flex items-center">
+                <input
+                  type="checkbox"
+                  checked={debugMode}
+                  onChange={(e) => setDebugMode(e.target.checked)}
+                  className="mr-2"
+                />
+                <span>Enable Debug Mode (Show Prompts)</span>
+              </label>
+              
               <button
                 onClick={runTest}
                 disabled={loading}
@@ -364,6 +390,108 @@ export default function PhotoAssistantTestPage() {
                     </div>
                   ))}
                 </div>
+              </div>
+            )}
+            
+            {/* Debug Information - Prompts & Responses */}
+            {result.debug && (
+              <div className="bg-gray-800 p-6 rounded-lg">
+                <h3 className="text-xl font-bold mb-4">🐛 Debug Information - Agent Prompts & Responses</h3>
+                
+                {/* Context Agent */}
+                <details className="mb-4 bg-gray-700 p-4 rounded">
+                  <summary className="cursor-pointer font-bold text-lg mb-2">1. Context Extraction Agent</summary>
+                  <div className="space-y-4">
+                    <div>
+                      <h4 className="font-semibold text-yellow-400">Prompt:</h4>
+                      <pre className="mt-2 text-xs overflow-auto bg-gray-900 p-4 rounded max-h-96">
+                        {result.debug.prompts.context}
+                      </pre>
+                    </div>
+                    <div>
+                      <h4 className="font-semibold text-green-400">Response:</h4>
+                      <pre className="mt-2 text-xs overflow-auto bg-gray-900 p-4 rounded max-h-96">
+                        {result.debug.responses.context}
+                      </pre>
+                    </div>
+                  </div>
+                </details>
+                
+                {/* Location Agent */}
+                <details className="mb-4 bg-gray-700 p-4 rounded">
+                  <summary className="cursor-pointer font-bold text-lg mb-2">2. Location Generation Agent</summary>
+                  <div className="space-y-4">
+                    <div>
+                      <h4 className="font-semibold text-yellow-400">Prompt:</h4>
+                      <pre className="mt-2 text-xs overflow-auto bg-gray-900 p-4 rounded max-h-96">
+                        {result.debug.prompts.location}
+                      </pre>
+                    </div>
+                    <div>
+                      <h4 className="font-semibold text-green-400">Response:</h4>
+                      <pre className="mt-2 text-xs overflow-auto bg-gray-900 p-4 rounded max-h-96">
+                        {result.debug.responses.location}
+                      </pre>
+                    </div>
+                  </div>
+                </details>
+                
+                {/* Storyboard Agent */}
+                <details className="mb-4 bg-gray-700 p-4 rounded">
+                  <summary className="cursor-pointer font-bold text-lg mb-2">3. Storyboard Generation Agent</summary>
+                  <div className="space-y-4">
+                    <div>
+                      <h4 className="font-semibold text-yellow-400">Prompt:</h4>
+                      <pre className="mt-2 text-xs overflow-auto bg-gray-900 p-4 rounded max-h-96">
+                        {result.debug.prompts.storyboard}
+                      </pre>
+                    </div>
+                    <div>
+                      <h4 className="font-semibold text-green-400">Response:</h4>
+                      <pre className="mt-2 text-xs overflow-auto bg-gray-900 p-4 rounded max-h-96">
+                        {result.debug.responses.storyboard}
+                      </pre>
+                    </div>
+                  </div>
+                </details>
+                
+                {/* Character Generation (if images were generated) */}
+                {result.debug.prompts.characterGeneration && (
+                  <details className="mb-4 bg-gray-700 p-4 rounded">
+                    <summary className="cursor-pointer font-bold text-lg mb-2">3.5. Character Description Generation</summary>
+                    <div className="space-y-4">
+                      <div>
+                        <h4 className="font-semibold text-yellow-400">Prompt:</h4>
+                        <pre className="mt-2 text-xs overflow-auto bg-gray-900 p-4 rounded max-h-96">
+                          {result.debug.prompts.characterGeneration}
+                        </pre>
+                      </div>
+                      <div>
+                        <h4 className="font-semibold text-green-400">Response:</h4>
+                        <pre className="mt-2 text-xs overflow-auto bg-gray-900 p-4 rounded max-h-96">
+                          {result.debug.responses.characterGeneration}
+                        </pre>
+                      </div>
+                    </div>
+                  </details>
+                )}
+                
+                {/* Image Generation Prompts */}
+                {result.debug.prompts.images && result.debug.prompts.images.length > 0 && (
+                  <details className="mb-4 bg-gray-700 p-4 rounded">
+                    <summary className="cursor-pointer font-bold text-lg mb-2">4. Image Generation Prompts</summary>
+                    <div className="space-y-4">
+                      {result.debug.prompts.images.map((img, idx) => (
+                        <div key={idx}>
+                          <h4 className="font-semibold text-yellow-400">Shot {img.shotNumber} Prompt:</h4>
+                          <pre className="mt-2 text-xs overflow-auto bg-gray-900 p-4 rounded max-h-96">
+                            {img.prompt}
+                          </pre>
+                        </div>
+                      ))}
+                    </div>
+                  </details>
+                )}
               </div>
             )}
             
