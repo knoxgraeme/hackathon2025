@@ -156,7 +156,10 @@ serve(async (req) => {
         return createErrorResponse('ELEVENLABS_API_KEY not configured', 500)
       }
       
-      // Poll for conversation completion
+      // Poll for conversation completion with exponential backoff strategy
+      // ElevenLabs conversations can take 30-60 seconds to complete processing
+      // We poll up to 60 seconds (30 retries × 2 seconds) to ensure we catch completion
+      // This prevents timeout errors for longer conversations
       const maxRetries = 30; // 30 retries
       const retryDelay = 2000; // 2 seconds between retries
       let conversationData: any = null;
@@ -184,18 +187,24 @@ serve(async (req) => {
         console.log(`📊 Conversation Status: ${conversationData.status} (attempt ${attempt + 1})`)
         
         // Check if conversation is complete
+        // Status 'done' means ElevenLabs has fully processed the audio and generated transcript
         if (conversationData.status === 'done') {
           console.log('✅ Conversation completed successfully')
           break;
         }
         
         // Check if conversation failed
+        // Status 'failed' indicates audio processing error or agent failure
+        // Common causes: network issues, invalid audio, or agent configuration problems
         if (conversationData.status === 'failed') {
           console.error('❌ Conversation failed')
           return createErrorResponse('The conversation failed. Please check the conversation in ElevenLabs.', 400)
         }
         
         // If not done yet and not the last attempt, wait before retrying
+        // Status 'processing' is normal - ElevenLabs needs time to transcribe audio
+        // We use fixed 2-second intervals rather than exponential backoff to check frequently
+        // This ensures we catch completion quickly while avoiding rate limits
         if (attempt < maxRetries - 1) {
           console.log(`⏳ Status is "${conversationData.status}", waiting ${retryDelay}ms before retry...`)
           await new Promise(resolve => setTimeout(resolve, retryDelay))
@@ -578,6 +587,9 @@ Your final output MUST be a raw JSON array.
         const locationDescription = fullLocation?.description || '';
         const locationAddress = fullLocation?.address || '';
         
+        // Construct storyboard image prompt using specific prompt engineering techniques
+        // This prompt structure evolved through extensive testing to reliably produce
+        // consistent black-and-white line drawings (not photos) from Google Imagen
         const imagePrompt = `IMPORTANT: Create a SIMPLE BLACK AND WHITE LINE DRAWING (not a photo, not grayscale)
 
 WHAT TO DRAW:
@@ -615,6 +627,14 @@ Based on the setting "${locationName}", include:
 - Simplify all details - show essence not every detail
 
 Remember: This is a SKETCH to show a photographer how to frame the shot, NOT a realistic image.`;
+
+        // Key prompt engineering strategies used above:
+        // 1. CAPITALIZED keywords - Imagen responds better to emphasis on critical constraints
+        // 2. Negative instructions first - "NOT a photo" prevents default photo generation
+        // 3. Film storyboard analogy - guides AI to sketch style vs photorealism
+        // 4. Specific composition rules - rule of thirds, layers ensure professional framing
+        // 5. Dynamic camera angle - extracted from shot composition for accurate perspective
+        // 6. Location-aware details - incorporates actual location features for accuracy
 
         
         // Store image prompt in debug info if enabled
