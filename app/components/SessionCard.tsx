@@ -58,11 +58,6 @@ export function SessionCard({ session }: SessionCardProps) {
             <h3 className="text-[17px] font-semibold text-[#343434] leading-[22px]">
               {session.title || `Session ${new Date(session.createdAt).toLocaleDateString()}`}
             </h3>
-            {session.status === 'complete' && (
-              <svg className="w-5 h-5 text-[#00a887] flex-shrink-0" viewBox="0 0 24 24" fill="none">
-                <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-              </svg>
-            )}
           </div>
           
           <p className="text-[13px] text-[#0000008c] leading-[18px] mb-1">

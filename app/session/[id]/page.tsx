@@ -25,6 +25,7 @@ export default function SessionPage() {
   const [showFullTextOverlay, setShowFullTextOverlay] = useState(false);
   const [fullTextContent, setFullTextContent] = useState<{title: string, content: string}>({title: '', content: ''});
   const [dynamicVariables, setDynamicVariables] = useState<Record<string, string | number | boolean>>({});
+  const [shotStates, setShotStates] = useState<Record<number, 'TODO' | 'COMPLETED' | 'SKIPPED'>>({});
 
   // Helper function to show full text overlay
   const showFullText = (title: string, content: string) => {
@@ -36,6 +37,46 @@ export default function SessionPage() {
   const truncateText = (text: string, maxLength: number = 100) => {
     if (text.length <= maxLength) return text;
     return text.substring(0, maxLength) + '...';
+  };
+
+  // Helper functions for shot state management
+  const getShotState = (shotIndex: number): 'TODO' | 'COMPLETED' | 'SKIPPED' => {
+    return shotStates[shotIndex] || 'TODO';
+  };
+
+  const updateShotState = (shotIndex: number, newState: 'TODO' | 'COMPLETED' | 'SKIPPED') => {
+    const updatedStates = { ...shotStates, [shotIndex]: newState };
+    setShotStates(updatedStates);
+    
+    // Save to localStorage
+    localStorage.setItem(`shotStates-${sessionId}`, JSON.stringify(updatedStates));
+  };
+
+  const getStateColor = (state: 'TODO' | 'COMPLETED' | 'SKIPPED') => {
+    switch (state) {
+      case 'TODO': return 'bg-amber-500';
+      case 'COMPLETED': return 'bg-[#00A887]';
+      case 'SKIPPED': return 'bg-gray-500';
+      default: return 'bg-amber-500';
+    }
+  };
+
+  const getStateLabel = (state: 'TODO' | 'COMPLETED' | 'SKIPPED') => {
+    switch (state) {
+      case 'TODO': return 'Todo';
+      case 'COMPLETED': return 'Done';
+      case 'SKIPPED': return 'Skip';
+      default: return 'Todo';
+    }
+  };
+
+  const cycleState = (currentState: 'TODO' | 'COMPLETED' | 'SKIPPED'): 'TODO' | 'COMPLETED' | 'SKIPPED' => {
+    switch (currentState) {
+      case 'TODO': return 'COMPLETED';
+      case 'COMPLETED': return 'SKIPPED';
+      case 'SKIPPED': return 'TODO';
+      default: return 'TODO';
+    }
   };
 
   // Extract URL parameters and convert to dynamic variables
@@ -64,6 +105,50 @@ export default function SessionPage() {
 
     setDynamicVariables(variables);
   }, [searchParams]);
+
+  // Initialize shot states with TODO defaults for all shots
+  const initializeShotStates = (existingStates: Record<number, 'TODO' | 'COMPLETED' | 'SKIPPED'> = {}) => {
+    if (!currentSession?.shots) return existingStates;
+    
+    const initializedStates = { ...existingStates };
+    
+    // Set all shots to TODO by default if they don't have a state
+    currentSession.shots.forEach((_, index) => {
+      if (!(index in initializedStates)) {
+        initializedStates[index] = 'TODO';
+      }
+    });
+    
+    return initializedStates;
+  };
+
+  // Load shot states from localStorage on component mount
+  useEffect(() => {
+    const loadShotStates = () => {
+      let loadedStates: Record<number, 'TODO' | 'COMPLETED' | 'SKIPPED'> = {};
+      
+      // Load from localStorage
+      const savedStates = localStorage.getItem(`shotStates-${sessionId}`);
+      if (savedStates) {
+        try {
+          loadedStates = JSON.parse(savedStates);
+        } catch (error) {
+          console.error('Error parsing saved shot states:', error);
+        }
+      }
+      
+      // Initialize with TODO defaults for any missing shots
+      const initializedStates = initializeShotStates(loadedStates);
+      setShotStates(initializedStates);
+      
+      // Update localStorage with the initialized states
+      localStorage.setItem(`shotStates-${sessionId}`, JSON.stringify(initializedStates));
+    };
+
+    if (sessionId && currentSession?.shots) {
+      loadShotStates();
+    }
+  }, [sessionId, currentSession?.shots]);
 
   // Handle conversation completion
   const handleConversationComplete = async (conversationId: string) => {
@@ -320,6 +405,11 @@ export default function SessionPage() {
                             fill
                             className="object-cover cursor-pointer"
                           />
+                          
+                          {/* State indicator badge */}
+                          <div className={`absolute top-2 right-2 px-4 py-2 rounded-full text-xs font-medium ${getStateColor(getShotState(idx))}`}>
+                            <span className="text-white">{getStateLabel(getShotState(idx))}</span>
+                          </div>
                         </div>
                       </div>
                     )
@@ -415,6 +505,16 @@ export default function SessionPage() {
                 fill
                 className="object-cover rounded-lg"
               />
+              
+              {/* State Filter Pill */}
+              <div className="absolute top-3 right-3 z-10">
+                <button
+                  onClick={() => updateShotState(selectedShotIndex, cycleState(getShotState(selectedShotIndex)))}
+                  className={`w-16 px-3 py-1.5 rounded-full text-sm font-medium text-center transition-all shadow-lg ${getStateColor(getShotState(selectedShotIndex))} text-white hover:scale-105 active:scale-95`}
+                >
+                  {getStateLabel(getShotState(selectedShotIndex))}
+                </button>
+              </div>
             </div>
           </div>
 
