@@ -36,7 +36,7 @@ export function SessionCard({ session }: SessionCardProps) {
       <div className="rounded overflow-hidden border border-[#dedede] hover:border-[#00a887] transition-colors">
         {/* Cover Image */}
         {coverImage ? (
-          <div className="h-[135px] w-full relative bg-gray-200">
+          <div className="h-[150px] w-full relative bg-gray-200">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img 
               src={coverImage} 

@@ -88,7 +88,7 @@ export default function Home() {
         <div className="flex-1 flex flex-col items-center justify-center px-4 pb-24">
           <div className="max-w-[290px] text-center">
             <h2 className="text-[33px] leading-[36px] text-[#343434] font-normal">
-              Create your new photo session with <span className="font-semibold">PixieDirector</span>.
+              Discuss your new photo session with <span className="font-semibold">PixieDirector</span>.
             </h2>
           </div>
         </div>
