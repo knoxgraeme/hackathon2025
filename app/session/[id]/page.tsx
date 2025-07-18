@@ -56,7 +56,7 @@ export default function SessionPage() {
     switch (state) {
       case 'TODO': return 'bg-[#EEBB55]';
       case 'COMPLETED': return 'bg-[#00A887]';
-      case 'SKIPPED': return 'bg-[#999999]';
+      case 'SKIPPED': return 'bg-[#808080]';
       default: return 'bg-amber-500';
     }
   };
