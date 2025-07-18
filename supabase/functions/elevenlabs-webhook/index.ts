@@ -34,14 +34,23 @@ import {
 import type { PhotoShootContext, Location, Shot } from "../_shared/types.ts"
 
 // OPTIMIZED: Concise style guide for consistent image generation
-const STORYBOARD_STYLE_GUIDE = `STYLE: Professional black & white storyboard illustration
-TECHNIQUE: Clean line art with minimal hatching, no shading
-HUMAN FIGURES: Simplified forms with basic body shapes and clothing silhouettes
-FACES: Blank or minimal - no ethnic features, eyes, nose, or mouth details
-CLOTHING: Simple outlines showing garment shape only (dress, suit, etc.)
-ENVIRONMENT: Clear architectural and landscape elements with clean lines
-PERSPECTIVE: Professional composition with proper depth and scale
-OUTPUT: Single cohesive scene like a film storyboard frame`;
+const STORYBOARD_STYLE_GUIDE = `### VISUAL STYLE
+Medium: HIGH-CONTRAST BLACK & WHITE ILLUSTRATION
+Technique: Bold clean lines, solid black fills for suits/dark clothing, minimal hatching
+Style: Professional editorial illustration, like New Yorker magazine
+
+### HUMAN REPRESENTATION
+- Simplified figures with clear silhouettes and proper proportions
+- Faces: MINIMAL FEATURES - just simple lines for profile/nose, no detailed eyes or lips
+- No ethnic or racial identifiers - keep features universal and simplified
+- Hair: Solid shapes or simple outlines
+- Clothing: Clear shapes with solid fills (black suits, white dresses)
+
+### CRITICAL RULES
+- NO TEXT, LABELS, OR WRITING anywhere in the image
+- Use strong contrast - solid blacks and whites with minimal gray
+- Focus on clear composition and dynamic poses
+- Single cohesive scene from one viewpoint`;
 
 // Cache for bucket existence check
 let bucketExists: boolean | null = null;
@@ -647,24 +656,30 @@ Output: JSON array only, starting '[' ending ']'`;
         // OPTIMIZED: More concise image prompt with professional storyboard aesthetic
         const imagePrompt = `${STORYBOARD_STYLE_GUIDE}
 
-Create a professional storyboard frame for: "${shot.title}"
+### SCENE TO ILLUSTRATE
+Create a storyboard frame showing this moment:
 
-SCENE DETAILS:
+Title: "${shot.title}"
 Location: ${locationName}
-Composition: ${shot.composition}
-Visual Elements: ${visualKeywords}
-Subject Positioning: ${poses}
-Mood: ${result.context.mood.join(', ')}
+Shot Type: ${result.context.shootType} photography
 
-CRITICAL REQUIREMENTS:
-- Draw people as simplified figures with basic body shapes
-- Faces must be blank or extremely minimal (no features)
-- Show clothing as simple silhouettes (wedding dress, suit, etc.)
-- Include environmental context with clean architectural lines
-- Professional film storyboard quality with proper perspective
-- Black and white line art only
+### COMPOSITION
+${shot.composition}
 
-Focus on clear composition, depth, and spatial relationships.`;
+### VISUAL ELEMENTS
+- Setting: ${visualKeywords}
+- Subjects: ${result.context.subject}
+- Positioning: ${poses}
+- Mood: ${result.context.mood.join(', ')}
+
+### REMEMBER
+- This is a PROFESSIONAL ILLUSTRATION, not a photo
+- NO text, labels, or captions in the image
+- Faces should have MINIMAL features (simple profile lines only)
+- Use high contrast - solid blacks for suits, clean whites
+- Show the scene from a single clear viewpoint
+
+Create ONE cohesive black & white line art illustration.`;
 
         debugLog(`🎨 Generating image ${i + 1}/${maxImages} for shot: "${shot.title}"`);
         
