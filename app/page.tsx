@@ -66,7 +66,11 @@ export default function Home() {
     <>
       {showSplash && <SplashScreen onComplete={handleSplashComplete} />}
 
-      <div className="min-h-screen bg-white flex flex-col relative">
+      <div className="min-h-screen bg-white flex flex-col relative" style={{ 
+        overscrollBehavior: 'none',
+        touchAction: 'pan-x pan-y',
+        WebkitOverflowScrolling: 'touch'
+      }}>
       {/* Header - Mobile app style - Only show when sessions exist */}
       {sessionsWithProgress.length > 0 && (
         <header className="bg-white">
