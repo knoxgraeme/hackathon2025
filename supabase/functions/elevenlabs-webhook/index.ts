@@ -29,42 +29,6 @@ import {
 } from "../_shared/helpers.ts"
 import type { PhotoShootContext, Location, Shot } from "../_shared/types.ts"
 
-// UPDATED: Centralized style guide for consistent image generation
-const STORYBOARD_STYLE_GUIDE = `### VISUAL STYLE
-Medium: BLACK & WHITE PHOTOGRAPHY STORYBOARD SKETCH
-Technique: Clean sketch lines with selective solid blacks for contrast
-Style: Professional photography planning frames - clear compositional reference
-
-### PHOTOGRAPHIC COMPOSITION RULES
-- Apply RULE OF THIRDS - place subjects on intersection points
-- Show DEPTH LAYERS: clear foreground, middle ground, background elements
-- Include LEADING LINES that guide eye to subjects (paths, railings, architecture)
-- Use NATURAL FRAMING when available (archways, branches, windows)
-- Show NEGATIVE SPACE intentionally for visual breathing room
-- Indicate CAMERA HEIGHT: eye level, low angle, or high angle perspective
-
-### SUBJECT REPRESENTATION
-- Sketch subjects with enough detail to show:
-  - Body positioning and interaction
-  - Direction they're facing
-  - Gesture and posture
-  - Relative scale to environment
-- Use solid black for key elements (hair, dark clothing) for contrast
-- Keep faces simple but show profile direction
-
-### ENVIRONMENTAL ELEMENTS
-- Include KEY LOCATION IDENTIFIERS (landmark features, architectural elements)
-- Show DEPTH CUES: overlapping elements, size variation
-- Indicate LIGHTING DIRECTION with simple shadow placement
-- Include elements that affect the shot (trees for framing, benches for posing, etc.)
-
-### CRITICAL RULES
-- NO TEXT, LABELS, OR WRITING anywhere
-- Frame like a PHOTOGRAPHER would compose the shot
-- Show WHERE to position camera relative to subjects
-- Include enough environment to guide the photographer
-- Think "photographer's viewfinder sketch" not "illustration"`;
-
 serve(async (req) => {
   // Handle CORS
   const corsResponse = handleCors(req);
@@ -636,8 +600,7 @@ Your final output MUST be a raw JSON array.
       for (let i = 0; i < maxImages; i++) {
         const shot = result.shots[i];
 
-        // Simplified and more structured image prompt
-        const visualKeywords = shot.visual_Keywords || shot.imagePrompt || '';
+        // Get shot details
         const poses = shot.poses || (shot.composition ? shot.composition.split('.')[0] : '');
         const blocking = shot.blocking || '';
         
@@ -648,30 +611,44 @@ Your final output MUST be a raw JSON array.
         const locationDescription = fullLocation?.description || '';
         const locationAddress = fullLocation?.address || '';
         
-        const imagePrompt = `${STORYBOARD_STYLE_GUIDE}
+        const imagePrompt = `Create a PHOTOGRAPHY STORYBOARD SKETCH for this shot:
 
-### SCENE TO ILLUSTRATE
-Create a minimalist illustration of this moment:
+SHOT: "${shot.title}"
+LOCATION: ${locationName} (${locationAddress})
+SETTING: ${locationDescription}
+SUBJECTS: ${result.context.subject}
+ACTION: ${poses}
+${blocking ? `BLOCKING/MOVEMENT: ${blocking}` : ''}
 
-Title: "${shot.title}"
-ACTUAL LOCATION: ${locationName}
-ADDRESS: ${locationAddress}
-LOCATION DETAILS: ${locationDescription}
+COMPOSITION REQUIREMENTS:
+1. Frame like looking through a camera viewfinder
+2. Apply RULE OF THIRDS - place subjects on intersection points (not centered)
+3. Subjects should fill 40-60% of the frame while ${poses}
+4. Create DEPTH with three layers:
+   - Foreground: Element in front (branch, railing, etc.)
+   - Middle: The subjects performing the action
+   - Background: Location identifiers visible but not dominant
+5. Include LEADING LINES that guide eye to subjects (paths, shorelines, architecture)
+6. Show clear CAMERA POSITION:
+   - Height: eye level, low angle, or high angle
+   - Distance: close intimate, medium full body, or wide environmental
+7. Use NATURAL FRAMING if available (archways, trees, structures)
 
-### CRITICAL COMPOSITION REQUIREMENTS
-- Make the SUBJECTS (${result.context.subject}) fill 40-60% of frame
-- Show them ${poses}
-- Include ONLY essential location elements from the description above
-- NO repetitive background elements
-- MINIMAL environment - just enough to identify the location
+LOCATION SPECIFICS TO SHOW:
+- Key features that identify this exact location
+- Interactive elements (benches, railings, water edge)
+- Lighting direction (where shadows fall)
+- Unique architectural or natural elements mentioned above
 
-### STYLE REMINDERS
-- PURE BLACK AND WHITE ONLY (no grays)
-- Subjects in foreground, simplified background
-- Focus on the PEOPLE and their interaction
-- Location should be recognizable but not overwhelming
+SKETCH TECHNIQUE:
+- BLACK & WHITE ONLY - use clean lines with selective solid blacks
+- NO GRAYSCALE, NO SHADING - only line work and solid fills
+- Professional storyboard aesthetic - clear and readable
+- Use solid black for: dark hair, dark clothing, strong shadows
+- Keep faces simple - just profile lines and basic features
+- NO TEXT, LABELS, or WRITING anywhere in the image
 
-Create ONE clean, high-contrast illustration focusing on the subjects.`;
+OUTPUT: One clear sketch showing a photographer EXACTLY how to compose this shot at this location.`;
 
         console.log(`🎨 Generating image ${i + 1}/${maxImages} for shot: "${shot.title}"`);
         

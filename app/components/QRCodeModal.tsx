@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import Image from 'next/image';
 
 interface QRCodeModalProps {
   isOpen: boolean;
@@ -59,7 +60,7 @@ export function QRCodeModal({ isOpen, onClose, sessionId, sessionTitle }: QRCode
       await navigator.clipboard.writeText(shareUrl);
       // You could add a toast notification here
       alert('Link copied to clipboard!');
-    } catch (err) {
+    } catch {
       // Fallback for older browsers
       const textArea = document.createElement('textarea');
       textArea.value = shareUrl;
@@ -112,9 +113,11 @@ export function QRCodeModal({ isOpen, onClose, sessionId, sessionTitle }: QRCode
         <div className="flex justify-center mb-6">
           <div className="p-4 bg-white rounded-xl shadow-sm border border-gray-200">
             {qrCodeUrl && (
-              <img 
+              <Image 
                 src={qrCodeUrl} 
                 alt="QR Code for session sharing" 
+                width={192}
+                height={192}
                 className="w-48 h-48"
               />
             )}

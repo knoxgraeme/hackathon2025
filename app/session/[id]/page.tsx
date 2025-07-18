@@ -23,21 +23,10 @@ export default function SessionPage() {
   const [selectedShotIndex, setSelectedShotIndex] = useState<number | null>(null);
   const [showQRModal, setShowQRModal] = useState(false);
   const [showFullTextOverlay, setShowFullTextOverlay] = useState(false);
-  const [fullTextContent, setFullTextContent] = useState<{title: string, content: string}>({title: '', content: ''});
+  const [fullTextContent] = useState<{title: string, content: string}>({title: '', content: ''});
   const [dynamicVariables, setDynamicVariables] = useState<Record<string, string | number | boolean>>({});
   const [shotStates, setShotStates] = useState<Record<number, 'TODO' | 'COMPLETED' | 'SKIPPED'>>({});
 
-  // Helper function to show full text overlay
-  const showFullText = (title: string, content: string) => {
-    setFullTextContent({title, content});
-    setShowFullTextOverlay(true);
-  };
-
-  // Helper function to truncate text
-  const truncateText = (text: string, maxLength: number = 100) => {
-    if (text.length <= maxLength) return text;
-    return text.substring(0, maxLength) + '...';
-  };
 
   // Helper functions for shot state management
   const getShotState = (shotIndex: number): 'TODO' | 'COMPLETED' | 'SKIPPED' => {
@@ -106,24 +95,24 @@ export default function SessionPage() {
     setDynamicVariables(variables);
   }, [searchParams]);
 
-  // Initialize shot states with TODO defaults for all shots
-  const initializeShotStates = (existingStates: Record<number, 'TODO' | 'COMPLETED' | 'SKIPPED'> = {}) => {
-    if (!currentSession?.shots) return existingStates;
-    
-    const initializedStates = { ...existingStates };
-    
-    // Set all shots to TODO by default if they don't have a state
-    currentSession.shots.forEach((_, index) => {
-      if (!(index in initializedStates)) {
-        initializedStates[index] = 'TODO';
-      }
-    });
-    
-    return initializedStates;
-  };
-
   // Load shot states from localStorage on component mount
   useEffect(() => {
+    // Initialize shot states with TODO defaults for all shots
+    const initializeShotStates = (existingStates: Record<number, 'TODO' | 'COMPLETED' | 'SKIPPED'> = {}) => {
+      if (!currentSession?.shots) return existingStates;
+      
+      const initializedStates = { ...existingStates };
+      
+      // Set all shots to TODO by default if they don't have a state
+      currentSession.shots.forEach((_, index) => {
+        if (!(index in initializedStates)) {
+          initializedStates[index] = 'TODO';
+        }
+      });
+      
+      return initializedStates;
+    };
+
     const loadShotStates = () => {
       let loadedStates: Record<number, 'TODO' | 'COMPLETED' | 'SKIPPED'> = {};
       

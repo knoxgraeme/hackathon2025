@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
-import { StoryboardView } from '../../components/StoryboardView';
 
 import Image from 'next/image';
 import { EdgeLocation, EdgeShot } from '../../types/photo-session';
