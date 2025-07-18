@@ -570,7 +570,7 @@ Your final output MUST be a raw JSON array.
       console.log('🎯 STAGE 5: Generating storyboard images in parallel');
 
       const imageAI = new GoogleGenAI({ apiKey: geminiApiKey });
-      const maxImages = Math.min(6, result.shots.length);
+      const maxImages = Math.min(3, result.shots.length);
       const imagePromises = [];
       
       for (let i = 0; i < maxImages; i++) {
@@ -646,7 +646,7 @@ Remember: This is a SKETCH to show a photographer how to frame the shot, NOT a r
         }
 
         const imagePromise = imageAI.models.generateImages({
-          model: 'models/imagen-4.0-generate-preview-06-06',
+          model: 'models/imagen-3.0-generate-002',
           prompt: imagePrompt,
           config: {
             numberOfImages: 1,
