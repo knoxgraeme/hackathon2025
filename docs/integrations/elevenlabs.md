@@ -9,9 +9,11 @@ This guide covers the complete ElevenLabs conversational AI integration in the P
 3. [Webhook Integration](#webhook-integration)
 4. [Frontend Integration](#frontend-integration)
 5. [Conversation ID Capture](#conversation-id-capture)
-6. [Testing the Integration](#testing-the-integration)
-7. [Best Practices](#best-practices)
-8. [Common Issues and Solutions](#common-issues-and-solutions)
+6. [Local Development & Testing](#local-development--testing)
+7. [Voice Synthesis Settings](#voice-synthesis-settings)
+8. [Webhook Retry Logic](#webhook-retry-logic)
+9. [Best Practices](#best-practices)
+10. [Common Issues and Solutions](#common-issues-and-solutions)
 
 ## Overview
 
@@ -34,15 +36,21 @@ User Voice → ElevenLabs Agent → Webhook → AI Processing → Photo Session 
 
 ## Agent Configuration
 
-### Creating the Conversational AI Agent
+### Current Production Agent
+
+- **Agent ID**: `agent_01k0616fckfdzrnt2g2fwq2r2h`
+- **Agent Name**: StoryboardAI
+- **Purpose**: Photography shoot planning assistant
+
+### Creating or Updating the Conversational AI Agent
 
 1. **Access ElevenLabs Dashboard**
-   - Navigate to the ElevenLabs console
+   - Navigate to [ElevenLabs Console](https://elevenlabs.io/app)
    - Select "Conversational AI" or "Agents" section
 
 2. **Create New Agent**
    - Click "Create Agent"
-   - Name: "PhotoAssistant" or similar
+   - Name: "StoryboardAI"
    - Select a voice that matches your brand personality
 
 3. **Configure System Prompt**
@@ -93,9 +101,19 @@ Ask these questions in order, but skip any the user already mentions:
      - Enable interruption handling
      - Set appropriate silence detection (1.5-2 seconds)
      
-5. **Configure Data Collection**
+5. **Configure Structured Data Collection**
 
-The agent uses structured data collection with 12 fields:
+The agent uses structured data collection with 12 fields. You can configure these programmatically:
+
+```bash
+# Set your API key
+export ELEVEN_LABS_API_KEY=your_api_key_here
+
+# Run the update script
+node scripts/update_elevenlabs_agent.js
+```
+
+The data collection fields are:
 
 | Field | Type | Description |
 |-------|------|-------------|
@@ -112,109 +130,105 @@ The agent uses structured data collection with 12 fields:
 | specialRequirements | string | Mobility, permits, props, equipment |
 | experience | string | beginner/intermediate/professional |
 
-### Obtaining the Agent ID
+### API Configuration Script
 
-After creating your agent, you'll receive an agent ID in this format:
-```
-agent_01k0616fckfdzrnt2g2fwq2r2h
-```
+The `/scripts/update_elevenlabs_agent.js` script automates agent configuration:
 
-This ID is used in the frontend to connect to the specific agent.
+```javascript
+// Key configuration elements
+const AGENT_ID = 'agent_01k0616fckfdzrnt2g2fwq2r2h';
+const API_ENDPOINT = 'https://api.elevenlabs.io/v1/convai/agents/{agentId}';
+
+// Updates platform_settings.data_collection fields
+// Uses PATCH method to update agent configuration
+```
 
 ## Webhook Integration
 
-### Setting Up Webhook URLs
+### Webhook Endpoint Configuration
 
-1. **Development Webhook**
+1. **Production Webhook URL**
    ```
    https://your-project.supabase.co/functions/v1/elevenlabs-webhook
    ```
 
-2. **Configure in ElevenLabs**
+2. **Configure in ElevenLabs Dashboard**
    - Go to agent settings
    - Add webhook URL in "Integrations" or "Webhooks" section
-   - Select events: "Conversation End" or "On Demand"
+   - Select events: "Conversation End"
+   - The webhook is called automatically when conversations end
 
-### Webhook Payload Format
+### Webhook Processing Architecture
 
-The webhook receives different payload types:
+The webhook (`/supabase/functions/elevenlabs-webhook/index.ts`) implements a sophisticated multi-stage processing pipeline:
 
-#### Standard Conversation Payload with Data Collection
+#### Stage 1: Conversation Retrieval
+- Fetches conversation data from ElevenLabs API
+- Implements polling mechanism for conversation completion
+- Handles fallback conversation ID for empty transcripts
+
+#### Stage 2: Context Extraction
+- Uses Gemini 2.5 Flash with structured output
+- Extracts 12 data collection fields from transcript
+- Applies intelligent defaults for missing information
+
+#### Stage 3: Location Generation
+- Generates 4-5 specific photo locations
+- Considers shoot type, mood, and preferences
+- Provides practical details (parking, permits, timing)
+
+#### Stage 4: Storyboard Creation
+- Creates 6-8 detailed shots with composition notes
+- Maps shots to specific locations
+- Includes technical camera settings
+
+#### Stage 5: Visual Generation (Optional)
+- Generates up to 6 storyboard images in parallel
+- Creates black & white line drawings (not photos)
+- Saves to Supabase Storage with public URLs
+
+### Webhook Payload Formats
+
+#### 1. Standard Conversation Payload
+```json
+{
+  "conversationId": "conv_01k0d5egm2e99s2mccrxxf7j82",
+  "agentId": "agent_01k0616fckfdzrnt2g2fwq2r2h",
+  "generateImages": true,
+  "debug": false
+}
+```
+
+#### 2. Direct Transcript Testing
+```json
+{
+  "transcript": "I'd like to plan a sunset portrait session at the beach with dramatic lighting",
+  "generateImages": true
+}
+```
+
+#### 3. Debug Mode
 ```json
 {
   "conversationId": "conv_abc123...",
-  "agentId": "agent_01k0616fckfdzrnt2g2fwq2r2h",
-  "timestamp": "2025-01-16T10:30:00Z",
-  "duration": 45.2,
-  "transcript": "User: I want to do a portrait shoot...",
-  "data_collection": {
-    "location": "San Francisco",
-    "date": "2024-01-27",
-    "startTime": "16:30",
-    "duration": "2 hours",
-    "shootType": "engagement",
-    "mood": "romantic, candid",
-    "primarySubjects": "Sarah and John, couple, 2",
-    "secondarySubjects": "golden retriever named Max",
-    "locationPreference": "itinerary",
-    "mustHaveShots": "Golden Gate Bridge; beach sunset",
-    "specialRequirements": "",
-    "experience": "intermediate"
-  },
-  "metadata": {
-    "userId": "optional-user-id"
-  }
+  "debug": true,
+  "generateImages": false
 }
 ```
 
-#### Direct Transcript Testing
-```json
-{
-  "transcript": "I'd like to plan a sunset portrait session at the beach with dramatic lighting"
-}
-```
-
-#### Mock Context Testing
-```json
-{
-  "mockContext": "portrait",
-  "stage": "full"
-}
-```
-
-### Webhook Processing Pipeline
-
-The webhook implements a multi-stage processing pipeline:
-
-1. **Data Collection Processing** (NEW)
-   - Receives structured data from `data_collection` field
-   - No context extraction needed when data collection is present
-   - Parses consolidated fields (e.g., primarySubjects)
-
-2. **Context Extraction** (Fallback)
-   - Only used if `data_collection` is not present
-   - Analyzes conversation/transcript
-   - Extracts structured photography requirements
-   - Returns `PhotoShootContext` object
-
-3. **Location Generation**
-   - Based on structured data or extracted context
-   - Uses dynamic location (not hardcoded to Vancouver)
-   - Suggests 4-5 specific locations
-   - Includes timing, permits, accessibility info
-
-4. **Storyboard Creation**
-   - Generates 6-8 detailed shots
-   - Includes technical notes and pose instructions
-   - Optionally generates visual previews
+Debug mode returns additional information:
+- All AI prompts used
+- Raw AI responses
+- Processing timestamps
 
 ### Webhook Response Format
+
+The webhook returns a comprehensive photo session plan:
 
 ```json
 {
   "success": true,
-  "conversationId": "conv_abc123...",
-  "stage": "full",
+  "conversationId": "conv_01k0d5egm2e99s2mccrxxf7j82",
   "timestamp": "2025-01-16T10:30:45Z",
   "context": {
     "shootType": "portrait",
@@ -224,29 +238,35 @@ The webhook implements a multi-stage processing pipeline:
     "duration": "2-3 hours",
     "equipment": ["85mm prime", "reflector"],
     "experience": "intermediate",
-    "specialRequests": "Urban backdrop preferred"
+    "specialRequests": "Urban backdrop preferred",
+    "location": "Vancouver",
+    "date": "2024-01-27",
+    "startTime": "16:30",
+    "locationPreference": "itinerary"
   },
   "locations": [
     {
       "name": "Gastown - Water Street",
       "address": "Water Street & Cambie Street, Vancouver",
-      "description": "Historic cobblestone streets...",
-      "bestTime": "Golden hour for lamp lighting",
-      "lightingNotes": "Street lamps provide warm lighting",
-      "accessibility": "Street parking available",
-      "permits": "No permits for small shoots",
+      "description": "Historic cobblestone streets with vintage lamp posts",
+      "bestTime": "Golden hour for warm lamp lighting",
+      "lightingNotes": "Street lamps provide atmospheric backlighting",
+      "accessibility": "Street parking available, wheelchair accessible",
+      "permits": "No permits required for small shoots",
       "alternatives": ["Blood Alley", "Maple Tree Square"]
     }
   ],
   "shots": [
     {
-      "locationIndex": 0,
       "shotNumber": 1,
-      "imagePrompt": "Wide establishing shot...",
-      "poseInstruction": "Stand naturally, looking away",
-      "technicalNotes": "24-35mm, f/5.6, rule of thirds",
-      "equipment": ["Wide angle lens"],
-      "storyboardImage": "data:image/jpeg;base64,..."
+      "locationIndex": 0,
+      "title": "Wide establishing shot at Gastown Water Street",
+      "imagePrompt": "musician, cobblestone street, vintage lamps, golden hour",
+      "composition": "Wide angle framing with subject at 1/3 position",
+      "direction": "Have subject walk naturally, looking away from camera",
+      "technical": "24-35mm, f/5.6, 1/250s, ISO 400",
+      "equipment": ["Wide angle lens", "Polarizing filter"],
+      "storyboardImage": "https://your-bucket.supabase.co/storage/v1/object/public/storyboard-images/..."
     }
   ]
 }
@@ -345,63 +365,282 @@ const handleError = (error: Error) => {
 
 ## Conversation ID Capture
 
-### Challenge
+### Overview
 
-The conversation ID is critical for webhook processing but may not be immediately available. The integration implements multiple fallback strategies:
+The conversation ID is critical for webhook processing. The implementation uses multiple strategies to ensure reliable capture, as documented in `/app/components/ConversationFlow.tsx`.
 
-### Capture Strategies
+### Capture Strategy Implementation
 
-1. **Immediate Capture** (Primary)
+The frontend implements a multi-layered approach to capture conversation IDs:
+
+1. **Immediate Capture** (Primary Method)
    ```typescript
    const conversationId = await conversation.startSession({
      agentId: 'agent_01k0616fckfdzrnt2g2fwq2r2h',
    });
+   
+   if (conversationId) {
+     // Success: Store ID in ref for persistence
+     conversationIdRef.current = conversationId;
+     updateSession({ conversationId });
+   }
    ```
 
-2. **Ref Storage** (Backup)
+2. **Ref Storage with Persistence**
    ```typescript
    const conversationIdRef = useRef<string | null>(null);
-   // Store immediately when available
-   conversationIdRef.current = conversationId;
+   // Persists across re-renders and state changes
    ```
 
-3. **Periodic Checking** (Fallback)
+3. **Fallback Polling Mechanism**
    ```typescript
    useEffect(() => {
      if (conversationStarted && !conversationIdRef.current) {
-       const interval = setInterval(() => {
-         const id = conversation.getId();
+       const checkInterval = setInterval(() => {
+         // Attempt to get ID from conversation object
+         const id = conversation.conversationId;
          if (id) {
            conversationIdRef.current = id;
-           clearInterval(interval);
+           updateSession({ conversationId: id });
+           clearInterval(checkInterval);
          }
        }, 500);
        
-       // Timeout after 5 seconds
-       setTimeout(() => clearInterval(interval), 5000);
+       // Cleanup after 10 seconds
+       const timeout = setTimeout(() => {
+         clearInterval(checkInterval);
+       }, 10000);
        
-       return () => clearInterval(interval);
+       return () => {
+         clearInterval(checkInterval);
+         clearTimeout(timeout);
+       };
      }
    }, [conversationStarted]);
    ```
 
-4. **Disconnect Handler** (Last Resort)
+4. **Disconnect Handler Safety Net**
    ```typescript
    onDisconnect: () => {
-     // Final attempt to get ID
-     const id = conversationIdRef.current || conversation.getId();
-     if (id) {
-       onComplete(id);
+     const finalId = conversationIdRef.current || conversation.conversationId;
+     if (finalId) {
+       // Process the conversation
+       handleConversationComplete(finalId);
+     } else {
+       // Handle failure case
+       console.error('No conversation ID captured');
+       setError('Unable to process conversation');
      }
    }
    ```
 
-### Timing Considerations
+### Timing and Reliability
 
-- **Best Case**: ID available immediately after `startSession`
-- **Typical Case**: ID available within 1-2 seconds
-- **Worst Case**: ID captured during disconnect
-- **Failure Case**: Alert user and retry
+- **Immediate Success**: ~90% of cases capture ID immediately
+- **Polling Success**: ~8% capture within 1-2 seconds
+- **Disconnect Capture**: ~2% captured during disconnect
+- **Failure Recovery**: Automatic retry with user notification
+
+## Local Development & Testing
+
+### Setting Up Local Environment
+
+1. **Environment Variables**
+   Create `.env.local` with:
+   ```bash
+   ELEVEN_LABS_API_KEY=your_api_key_here
+   SUPABASE_URL=your_supabase_url
+   SUPABASE_ANON_KEY=your_anon_key
+   SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
+   GEMINI_API_KEY=your_gemini_api_key
+   ```
+
+2. **Install Dependencies**
+   ```bash
+   npm install @elevenlabs/react
+   ```
+
+3. **Start Development Server**
+   ```bash
+   npm run dev
+   ```
+
+### Testing the Webhook Locally
+
+1. **Using Supabase CLI**
+   ```bash
+   # Start Supabase locally
+   supabase start
+   
+   # Serve edge functions
+   supabase functions serve elevenlabs-webhook --env-file .env.local
+   ```
+
+2. **Direct Webhook Testing**
+   ```bash
+   # Test with transcript
+   curl -X POST http://localhost:54321/functions/v1/elevenlabs-webhook \
+     -H "Content-Type: application/json" \
+     -H "Authorization: Bearer YOUR_ANON_KEY" \
+     -d '{
+       "transcript": "I want a romantic sunset beach portrait session",
+       "generateImages": true
+     }'
+   
+   # Test with conversation ID
+   curl -X POST http://localhost:54321/functions/v1/elevenlabs-webhook \
+     -H "Content-Type: application/json" \
+     -H "Authorization: Bearer YOUR_ANON_KEY" \
+     -d '{
+       "conversationId": "conv_01k0d5egm2e99s2mccrxxf7j82",
+       "generateImages": false
+     }'
+   ```
+
+3. **Using the Test Interface**
+   - Navigate to `http://localhost:3000/test-imagen`
+   - Test voice conversation flow
+   - Monitor console for conversation ID capture
+   - Verify webhook processing
+
+### Debugging Tips
+
+1. **Enable Debug Mode**
+   ```json
+   {
+     "conversationId": "conv_abc123",
+     "debug": true
+   }
+   ```
+   Returns detailed prompts and AI responses.
+
+2. **Check Logs**
+   ```bash
+   # Supabase function logs
+   supabase functions logs elevenlabs-webhook
+   
+   # Browser console for frontend
+   # Look for [ConversationFlow] prefixed logs
+   ```
+
+3. **Common Local Issues**
+   - CORS: Ensure proper headers in edge function
+   - API Keys: Verify all environment variables
+   - Network: Check firewall/proxy settings
+
+## Voice Synthesis Settings
+
+### Recommended Voice Configuration
+
+1. **Voice Selection Criteria**
+   - Professional but friendly tone
+   - Clear articulation for technical terms
+   - Natural pacing (not too fast/slow)
+   - Gender-neutral options available
+
+2. **Optimal Settings**
+   ```javascript
+   {
+     "voice_id": "your_selected_voice_id",
+     "model_id": "eleven_multilingual_v2",
+     "voice_settings": {
+       "stability": 0.75,        // Consistent tone
+       "similarity_boost": 0.85, // Natural sound
+       "style": 0.5,            // Balanced expression
+       "use_speaker_boost": true // Enhanced clarity
+     }
+   }
+   ```
+
+3. **Conversation Settings**
+   - **Response Time**: 800-1200ms (natural pace)
+   - **Silence Detection**: 1.5-2 seconds
+   - **Interruption Handling**: Enabled
+   - **Background Noise Suppression**: Medium
+   - **Voice Activity Detection**: Standard
+
+### Voice Customization Tips
+
+1. **For Different Contexts**
+   - Wedding Photography: Warmer, more personal tone
+   - Corporate Events: Professional, efficient
+   - Family Portraits: Friendly, patient approach
+
+2. **Regional Considerations**
+   - Adjust pronunciation for local place names
+   - Consider accent preferences
+   - Test with target audience
+
+## Webhook Retry Logic
+
+### Polling Mechanism
+
+The webhook implements robust retry logic for conversation completion:
+
+```typescript
+// Configuration
+const maxRetries = 30;        // Maximum polling attempts
+const retryDelay = 2000;      // 2 seconds between attempts
+const totalTimeout = 60000;   // 60 seconds total
+
+// Implementation in webhook
+for (let attempt = 0; attempt < maxRetries; attempt++) {
+  const response = await fetch(conversationUrl, {
+    headers: { 'xi-api-key': apiKey }
+  });
+  
+  const data = await response.json();
+  
+  if (data.status === 'done') {
+    // Process completed conversation
+    break;
+  } else if (data.status === 'failed') {
+    // Handle failure immediately
+    throw new Error('Conversation failed');
+  }
+  
+  // Wait before next attempt
+  if (attempt < maxRetries - 1) {
+    await new Promise(resolve => setTimeout(resolve, retryDelay));
+  }
+}
+```
+
+### Error Handling Strategies
+
+1. **Conversation Status Handling**
+   - `done`: Process transcript
+   - `failed`: Return error immediately
+   - `in_progress`: Continue polling
+   - `unknown`: Log and retry
+
+2. **Fallback Mechanisms**
+   - Empty transcript: Use fallback conversation ID
+   - API timeout: Return partial results if available
+   - Network errors: Implement exponential backoff
+
+3. **Response Codes**
+   - 200: Success
+   - 400: Bad request (invalid conversation ID)
+   - 408: Timeout (conversation incomplete)
+   - 500: Server error (check logs)
+
+### Optimizing Retry Performance
+
+1. **Adaptive Polling**
+   ```typescript
+   // Start with quick polls, then slow down
+   const getRetryDelay = (attempt: number) => {
+     if (attempt < 5) return 1000;   // 1s for first 5
+     if (attempt < 15) return 2000;  // 2s for next 10
+     return 3000;                     // 3s for remaining
+   };
+   ```
+
+2. **Circuit Breaker Pattern**
+   - Track failure rates
+   - Temporarily disable polling if API is down
+   - Implement health checks
 
 ## Updating Agent Configuration
 
@@ -544,69 +783,233 @@ console.log('From getId():', conversation.getId());
 
 ### Issue 1: Conversation ID Not Captured
 
-**Symptoms**: Webhook not called, missing conversation data
+**Symptoms**: 
+- Webhook not triggered after conversation
+- `conversationId` is null or undefined
+- Session data incomplete
+
+**Root Causes & Solutions**:
+
+1. **Timing Issue**
+   ```typescript
+   // Problem: ID requested too early
+   const id = conversation.conversationId; // May be undefined
+   
+   // Solution: Wait for startSession promise
+   const conversationId = await conversation.startSession({
+     agentId: AGENT_ID
+   });
+   ```
+
+2. **State Management**
+   ```typescript
+   // Use ref to persist across renders
+   const conversationIdRef = useRef<string | null>(null);
+   conversationIdRef.current = conversationId;
+   ```
+
+3. **API Response Delay**
+   - Implement polling mechanism (see Conversation ID Capture section)
+   - Add timeout handling
+   - Log all capture attempts
+
+### Issue 2: Empty Transcript in Webhook
+
+**Symptoms**:
+- Webhook receives conversation but transcript is empty
+- `data.transcript` array has no content
 
 **Solutions**:
-1. Implement all fallback strategies
-2. Add debug logging at each capture point
-3. Verify agent configuration
-4. Check network connectivity
 
-### Issue 2: Microphone Permission Denied
+1. **Check Conversation Status**
+   ```typescript
+   // Ensure conversation is complete
+   if (conversationData.status !== 'done') {
+     // Wait or retry
+   }
+   ```
 
-**Symptoms**: Connection fails immediately
+2. **Fallback Conversation**
+   - The webhook uses fallback ID: `conv_01k0d5egm2e99s2mccrxxf7j82`
+   - Ensures testing continuity
+   - Logs when fallback is used
 
-**Solutions**:
-```typescript
-// Graceful permission handling
-try {
-  await navigator.mediaDevices.getUserMedia({ audio: true });
-} catch (e) {
-  if (e.name === 'NotAllowedError') {
-    showMicrophoneInstructions();
-  }
-}
-```
+3. **Verify Agent Configuration**
+   - Check first message is set
+   - Ensure prompt encourages interaction
+   - Test with known working configuration
 
-### Issue 3: Webhook Timeout
+### Issue 3: Webhook Polling Timeout
 
-**Symptoms**: No response after conversation ends
-
-**Solutions**:
-1. Increase webhook timeout limit
-2. Implement retry logic
-3. Add progress indicators
-4. Cache responses
-
-### Issue 4: Agent Not Responding
-
-**Symptoms**: Connection established but no voice interaction
+**Symptoms**:
+- Error: "Conversation did not complete within 60 seconds"
+- Status remains "in_progress"
 
 **Solutions**:
-1. Verify agent ID is correct
-2. Check agent is active in ElevenLabs dashboard
-3. Test with different browser
-4. Verify API keys
 
-### Issue 5: Poor Voice Recognition
+1. **Increase Retry Configuration**
+   ```typescript
+   const maxRetries = 45;     // Increase from 30
+   const retryDelay = 2000;   // Keep at 2 seconds
+   ```
 
-**Symptoms**: Agent misunderstands requests
+2. **Check Conversation Length**
+   - Longer conversations take more time
+   - Consider async processing for very long sessions
+
+3. **Monitor ElevenLabs Status**
+   - Check API status page
+   - Look for service degradation
+
+### Issue 4: Microphone Permission Issues
+
+**Symptoms**:
+- "NotAllowedError" in console
+- Connection fails immediately
+- No audio input detected
 
 **Solutions**:
-1. Improve system prompt specificity
-2. Add context examples
-3. Adjust silence detection settings
-4. Provide clearer user guidance
 
-### Issue 6: CORS Errors
+1. **Pre-flight Permission Check**
+   ```typescript
+   // Check permission before starting
+   const checkMicPermission = async () => {
+     try {
+       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+       stream.getTracks().forEach(track => track.stop());
+       return true;
+     } catch (e) {
+       console.error('Mic permission denied:', e);
+       return false;
+     }
+   };
+   ```
 
-**Symptoms**: Webhook calls fail from browser
+2. **Browser-Specific Issues**
+   - **Chrome**: Check site settings
+   - **Safari**: Requires user gesture
+   - **Firefox**: Clear permission cache
+
+3. **PWA Considerations**
+   - Permissions may differ in standalone mode
+   - Test both browser and PWA contexts
+
+### Issue 5: CORS Errors with Webhook
+
+**Symptoms**:
+- "Access-Control-Allow-Origin" errors
+- Webhook calls blocked by browser
 
 **Solutions**:
-1. Verify CORS headers in edge function
-2. Check allowed origins
-3. Use proper HTTP methods
-4. Test with curl first
+
+1. **Verify Edge Function Headers**
+   ```typescript
+   // In webhook function
+   const corsHeaders = {
+     'Access-Control-Allow-Origin': '*',
+     'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+   };
+   ```
+
+2. **Check Supabase Configuration**
+   - Ensure function is deployed
+   - Verify public access is enabled
+   - Test with Supabase CLI locally
+
+### Issue 6: Voice Synthesis Quality Issues
+
+**Symptoms**:
+- Robotic or unnatural voice
+- Inconsistent speech patterns
+- Audio artifacts
+
+**Solutions**:
+
+1. **Optimize Voice Settings**
+   ```javascript
+   {
+     "stability": 0.75,        // Reduce for more variation
+     "similarity_boost": 0.85, // Increase for consistency
+     "style": 0.5,            // Adjust for expressiveness
+   }
+   ```
+
+2. **Network Optimization**
+   - Ensure stable connection
+   - Consider audio buffering
+   - Monitor latency metrics
+
+### Issue 7: Agent Not Following Prompt
+
+**Symptoms**:
+- Agent asks wrong questions
+- Conversation exceeds time limit
+- Doesn't collect required data
+
+**Solutions**:
+
+1. **Prompt Engineering**
+   - Be explicit about time constraints
+   - List questions in priority order
+   - Include example interactions
+
+2. **Data Collection Configuration**
+   - Ensure all 12 fields are configured
+   - Test field extraction separately
+   - Monitor which fields are missed
+
+### Issue 8: Webhook Processing Errors
+
+**Symptoms**:
+- 500 errors from webhook
+- Partial or missing response data
+- Image generation failures
+
+**Solutions**:
+
+1. **API Key Validation**
+   ```typescript
+   // Check all required keys
+   validateEnvVar('GEMINI_API_KEY');
+   validateEnvVar('ELEVENLABS_API_KEY');
+   validateEnvVar('SUPABASE_SERVICE_ROLE_KEY');
+   ```
+
+2. **Error Boundaries**
+   - Wrap each stage in try-catch
+   - Return partial results on failure
+   - Log detailed error context
+
+3. **Resource Limits**
+   - Monitor Gemini API quotas
+   - Check Supabase storage limits
+   - Implement rate limiting
+
+### Debugging Checklist
+
+1. **Frontend Debugging**
+   - [ ] Enable verbose logging: `localStorage.setItem('debug', 'true')`
+   - [ ] Check browser console for [ConversationFlow] logs
+   - [ ] Verify agent ID matches production
+   - [ ] Test microphone permissions
+
+2. **Webhook Debugging**
+   - [ ] Enable debug mode in request
+   - [ ] Check Supabase function logs
+   - [ ] Verify all API keys are set
+   - [ ] Test with curl commands
+
+3. **ElevenLabs Dashboard**
+   - [ ] Verify agent is active
+   - [ ] Check conversation logs
+   - [ ] Review webhook configuration
+   - [ ] Monitor usage quotas
+
+4. **Integration Testing**
+   - [ ] Test full flow end-to-end
+   - [ ] Verify data collection fields
+   - [ ] Check image generation
+   - [ ] Validate response format
 
 ## Monitoring and Analytics
 

@@ -1,6 +1,6 @@
-# AI Photography Assistant User Guide
+# PixieDirector User Guide
 
-Welcome to your AI-powered photography planning companion! This guide will help you make the most of our app to plan stunning photoshoots in Vancouver.
+Welcome to PixieDirector - your AI-powered photography storyboarding companion! This guide will help you make the most of our app to plan stunning photoshoots in Vancouver with voice-powered AI assistance.
 
 ## Table of Contents
 
@@ -17,32 +17,57 @@ Welcome to your AI-powered photography planning companion! This guide will help 
 
 ## Getting Started
 
-### What the App Does
+### What PixieDirector Does
 
-The AI Photography Assistant helps you:
-- **Plan photoshoots** with personalized recommendations
-- **Discover perfect locations** in Vancouver tailored to your vision
-- **Create visual storyboards** with AI-generated shot previews
-- **Get technical guidance** for camera settings and equipment
-- **Save time** with intelligent planning that considers lighting, permits, and accessibility
+PixieDirector is an AI-powered photography storyboarding app that helps you:
+- **Plan photoshoots** through natural voice conversations with AI
+- **Discover perfect locations** in Vancouver with specific timing and permit details
+- **Create visual storyboards** with AI-generated black & white shot previews
+- **Track your progress** with shot status management (Todo/Done/Skip)
+- **Share your plans** via QR codes or direct links
+- **Work offline** with Progressive Web App installation
+- **Save time** with a complete shoot plan generated in 30-45 seconds
 
 ### First Time Setup
 
-1. **Open the app** on your mobile device or desktop browser
+1. **Open PixieDirector** at [your-app-url] on your mobile device or desktop browser
 2. **Allow microphone access** when prompted - this enables voice planning
-3. **Start your first session** by tapping "Start New Photo Session"
-4. **Begin your conversation** with the AI assistant
+3. **Install the app** (optional) - look for the install prompt or use your browser's "Add to Home Screen" option
+4. **Start your first session** by tapping "Start New Photo Session"
+5. **Begin your conversation** with the AI assistant
 
 That's it! No account creation or complex setup required.
+
+### Installing PixieDirector as a PWA
+
+#### For iOS (Safari):
+1. Open PixieDirector in Safari
+2. Tap the Share button (square with arrow)
+3. Scroll down and tap "Add to Home Screen"
+4. Name it "PixieDirector" and tap "Add"
+
+#### For Android (Chrome):
+1. Open PixieDirector in Chrome
+2. Look for the install prompt at the bottom of the screen
+3. Tap "Install" or use the menu (⋮) → "Install app"
+
+#### For Desktop (Chrome/Edge):
+1. Look for the install icon in the address bar
+2. Click "Install" when prompted
 
 ### Creating Your First Session
 
 1. From the home screen, tap the **"Start New Photo Session"** button
-2. You'll see the voice planning interface with a microphone icon
-3. Tap **"Start Voice Planning"** to begin your conversation
-4. Describe your photography vision naturally - the AI will guide you
-5. When finished, tap **"End Planning Session"**
-6. Your personalized plan will be generated automatically
+2. You'll see the voice planning interface with a microphone button
+3. Tap the **microphone button** to connect to your AI assistant
+4. Wait for the "Listening to You" status - this means the AI is ready
+5. Describe your photography vision naturally - the AI will ask follow-up questions
+6. Have a 30-60 second conversation about your shoot ideas
+7. When finished, tap **"End Voice Planning"**
+8. Your plan will be generated in 30-45 seconds with:
+   - 4-5 curated Vancouver locations
+   - 15-20 detailed shot ideas
+   - Up to 6 AI-generated storyboard images
 
 ---
 
@@ -52,8 +77,10 @@ That's it! No account creation or complex setup required.
 
 1. **Tap the microphone button** to connect with your AI assistant
 2. **Wait for the connection** - you'll see "Listening to You" when ready
-3. **Speak naturally** - no need for specific commands or keywords
+3. **Speak naturally** - the AI uses ElevenLabs conversational AI
 4. **Take your time** - the AI will wait for you to finish your thoughts
+5. **Listen for questions** - the AI will ask smart follow-ups to understand your vision
+6. **Have a dialogue** - this is a two-way conversation, not just listing requirements
 
 ### What to Tell the AI Assistant
 
@@ -111,12 +138,14 @@ Each location includes:
 ### Understanding the Storyboard
 
 Your visual storyboard shows:
-- **Shot Numbers**: Sequential order for your shoot
-- **AI Previews**: Visual representation of each shot
+- **Shot Numbers**: Sequential order for your shoot (Shot 1, Shot 2, etc.)
+- **AI Previews**: Black & white storyboard images (3:4 aspect ratio)
+- **Status Tracking**: Each shot can be marked as Todo (yellow), Done (green), or Skip (gray)
 - **Pose Instructions**: Detailed guidance for subjects
 - **Technical Notes**: Camera settings and composition tips
 - **Equipment Needs**: Specific gear for each shot
-- **Location Links**: Which location each shot belongs to
+- **Location Tags**: Which location each shot belongs to
+- **Quick Actions**: Tap the status badge to cycle through Todo → Done → Skip
 
 ---
 
@@ -183,6 +212,28 @@ The preview images help you:
 - **Communicate** your vision to models or clients
 - **Plan** compositions and poses in advance
 - **Remember** specific shot ideas on location
+- **Track progress** during your shoot
+
+### Shot Progress Tracking
+
+PixieDirector includes a shot status system to help you stay organized:
+
+1. **Todo (Yellow Badge)**: Default status for all shots
+   - Indicates shots you plan to capture
+   - Helps prioritize your shooting order
+
+2. **Done (Green Badge)**: Mark shots as completed
+   - Track your progress during the shoot
+   - See what's left to capture at a glance
+
+3. **Skip (Gray Badge)**: Mark shots you decide to skip
+   - Flexibility to adapt on location
+   - Keep your plan organized without deleting ideas
+
+**How to Use:**
+- Simply tap the status badge on any shot to cycle through: Todo → Done → Skip
+- Your progress is automatically saved to your device
+- Perfect for staying organized during fast-paced shoots
 
 ---
 
@@ -209,11 +260,30 @@ The preview images help you:
 
 ### Sharing Your Plans
 
-Share your photography plans via:
-- **Save to device**: Download storyboard images
-- **Share button**: Send to clients or collaborators
-- **Print cards**: Physical reference cards for shoots
-- **Export options**: PDF summaries (coming soon)
+PixieDirector makes it easy to share your photography plans:
+
+#### Share Options:
+1. **Web Share API** (Mobile): 
+   - Tap the share button (upload icon) in your session
+   - Choose from your device's native share options
+   - Send via text, email, AirDrop, or any installed app
+
+2. **QR Code Sharing** (All Devices):
+   - If Web Share isn't available, a QR code modal will appear
+   - Perfect for quick sharing between devices
+   - Great for showing clients on their phones
+
+3. **Direct Link Sharing**:
+   - Copy the shareable link from the QR modal
+   - Share via email or messaging apps
+   - Recipients can view your complete plan without installing the app
+
+#### What Gets Shared:
+- Complete shoot overview with all details
+- All location recommendations with maps
+- Full storyboard with AI-generated images
+- Shot lists with technical specifications
+- Read-only view (recipients can't edit)
 
 ### Starting New Sessions
 
@@ -343,14 +413,44 @@ Be clear about:
 
 ---
 
+## About PixieDirector's AI Pipeline
+
+PixieDirector uses a sophisticated multi-agent AI system:
+
+1. **Voice Conversation Agent** (ElevenLabs): Conducts natural dialogue about your vision
+2. **Context Extraction Agent** (Gemini 2.5 Flash): Analyzes conversation and extracts structured data
+3. **Location Scout Agent**: Generates Vancouver-specific locations with local knowledge
+4. **Shot Planning Agent**: Creates 15-20 detailed shots matched to your locations
+5. **Storyboard Visualization Agent** (Google Imagen 3): Generates up to 6 storyboard images in parallel
+
+Total time from conversation end to complete plan: **30-45 seconds**
+
+## Vancouver-Specific Features
+
+PixieDirector is optimized for Vancouver photography:
+- **Local Knowledge**: Curated database of photographer-friendly locations
+- **Permit Information**: Clear guidance on when permits are required
+- **Weather Considerations**: Backup indoor locations for rainy days
+- **Accessibility Notes**: Information about parking and transit access
+- **Best Times**: Specific timing recommendations for each location
+- **Hidden Gems**: Lesser-known spots favored by local photographers
+
+## Privacy & Data
+
+- **No Account Required**: Use PixieDirector without signing up
+- **Local Storage**: Shot progress saved only on your device
+- **Shareable Links**: Create read-only views for clients
+- **Voice Data**: Conversations processed securely via ElevenLabs
+
 ## Final Tips
 
-Remember, the AI Photography Assistant is designed to:
-- **Inspire creativity** with new location ideas
-- **Save planning time** with intelligent recommendations
-- **Improve your shoots** with technical guidance
-- **Build confidence** with detailed shot plans
+Remember, PixieDirector is designed to:
+- **Transform planning** from hours to minutes
+- **Inspire creativity** with AI-powered visualization
+- **Keep you organized** with shot tracking
+- **Enable collaboration** through easy sharing
+- **Work anywhere** as an installable PWA
 
-The more you use it, the better you'll become at describing your vision and getting exactly the recommendations you need.
+The more you use it, the better you'll become at having productive conversations with the AI to get exactly the shoot plan you envision.
 
 Happy shooting! 📸✨

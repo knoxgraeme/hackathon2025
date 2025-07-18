@@ -92,8 +92,8 @@ export function PWAInstallPrompt() {
             </h3>
             <p className="text-sm text-gray-600 mt-1">
               To install: tap the share button <span className="inline-flex items-center mx-1 text-[#007AFF]">
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.5 12.5L12 9m0 0l3.5 3.5M12 9v10M7.5 5h9m-9 0L12 2.5m-4.5 2.5L12 2.5m0 0L16.5 5" />
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3-3m0 0l-3 3m3-3v12" />
                 </svg>
               </span> then &quot;Add to Home Screen&quot;
             </p>

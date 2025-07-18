@@ -2,6 +2,33 @@
 
 This guide walks you through setting up the development environment for the AI Photo Assistant project.
 
+## Quick Start (Experienced Developers)
+
+```bash
+# Prerequisites: Node.js 18.17+, Docker, ngrok account
+
+# 1. Clone and install
+git clone <repository-url> && cd hackathon2025
+npm install
+
+# 2. Install tools
+brew install supabase/tap/supabase ngrok/ngrok/ngrok  # macOS
+supabase init
+
+# 3. Setup environment
+cp .env.example .env.local  # Edit with your keys
+mkdir -p supabase/functions && echo "GEMINI_API_KEY=your_key" > supabase/functions/.env
+
+# 4. Start services
+supabase start
+npm run dev
+ngrok http 54321  # For webhooks
+
+# 5. Configure ElevenLabs webhook with ngrok URL
+```
+
+For detailed instructions, continue reading below.
+
 ## Prerequisites
 
 Before you begin, ensure you have the following installed:
@@ -11,6 +38,7 @@ Before you begin, ensure you have the following installed:
 - **Supabase CLI**: Latest version (installation instructions below)
 - **Git**: For version control
 - **A code editor**: VS Code recommended
+- **ngrok**: For testing webhooks locally (installation instructions below)
 
 ## Step 1: Clone the Repository
 
@@ -27,6 +55,8 @@ npm install
 
 ## Step 3: Install Supabase CLI
 
+The Supabase CLI is essential for local development and testing of Edge Functions.
+
 ### macOS (using Homebrew)
 ```bash
 brew install supabase/tap/supabase
@@ -38,18 +68,68 @@ scoop bucket add supabase https://github.com/supabase/scoop-bucket.git
 scoop install supabase
 ```
 
-### Linux/Manual Installation
+### Linux
 ```bash
-# Download the latest release from https://github.com/supabase/cli/releases
-# Extract and add to PATH
+# For Ubuntu/Debian
+wget -qO- https://github.com/supabase/cli/releases/download/v1.142.2/supabase_1.142.2_linux_amd64.deb -O supabase.deb
+sudo dpkg -i supabase.deb
+
+# For other Linux distributions, download from:
+# https://github.com/supabase/cli/releases
+```
+
+### npm/npx Alternative
+```bash
+npx supabase --version
 ```
 
 Verify installation:
 ```bash
 supabase --version
+# Should output: 1.142.2 or higher
 ```
 
-## Step 4: Environment Variables Configuration
+## Step 4: Install ngrok for Local Webhook Testing
+
+ngrok creates secure tunnels to your localhost, essential for testing webhooks from external services like ElevenLabs.
+
+### macOS (using Homebrew)
+```bash
+brew install ngrok/ngrok/ngrok
+```
+
+### Windows (using Chocolatey)
+```bash
+choco install ngrok
+```
+
+### Linux/Manual Installation
+```bash
+# Download from https://ngrok.com/download
+# For Ubuntu/Debian:
+curl -s https://ngrok-agent.s3.amazonaws.com/ngrok.asc | sudo tee /etc/apt/trusted.gpg.d/ngrok.asc >/dev/null
+echo "deb https://ngrok-agent.s3.amazonaws.com buster main" | sudo tee /etc/apt/sources.list.d/ngrok.list
+sudo apt update && sudo apt install ngrok
+```
+
+### Configuration
+1. Sign up for a free account at [ngrok.com](https://ngrok.com)
+2. Get your authtoken from the dashboard
+3. Configure ngrok:
+```bash
+ngrok config add-authtoken YOUR_AUTH_TOKEN
+```
+
+### Usage for Webhook Testing
+```bash
+# Expose your local Supabase Edge Functions
+ngrok http 54321
+
+# You'll get a URL like: https://abc123.ngrok-free.app
+# Use this URL for webhooks: https://abc123.ngrok-free.app/functions/v1/elevenlabs-webhook
+```
+
+## Step 5: Environment Variables Configuration
 
 Create a `.env.local` file in the project root:
 
@@ -60,15 +140,21 @@ touch .env.local
 Add the following environment variables:
 
 ```env
-# Supabase Configuration
+# Supabase Configuration (Required)
 NEXT_PUBLIC_SUPABASE_URL=your_supabase_project_url
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
 
-# ElevenLabs Configuration
+# ElevenLabs Configuration (Required)
 NEXT_PUBLIC_ELEVENLABS_WEBHOOK_URL=your_elevenlabs_webhook_url
-
-# Optional: For direct ElevenLabs API calls
 ELEVENLABS_API_KEY=your_elevenlabs_api_key
+
+# Google AI Configuration (Required for Edge Functions)
+# Add to supabase/functions/.env
+GEMINI_API_KEY=your_gemini_api_key
+
+# Optional: Additional Services
+# OPENAI_API_KEY=your_openai_api_key
+# ANTHROPIC_API_KEY=your_anthropic_api_key
 ```
 
 ### Getting Supabase Credentials
@@ -145,9 +231,26 @@ ELEVENLABS_API_KEY=your_elevenlabs_api_key
 
 1. In your agent settings, find **Webhook Configuration**
 2. Set the webhook URL to your edge function endpoint:
-   - Local: `http://localhost:54321/functions/v1/elevenlabs-webhook`
-   - Production: `https://your-project.supabase.co/functions/v1/elevenlabs-webhook`
+   
+   **For Local Development with ngrok:**
+   ```bash
+   # First, start your Supabase functions
+   supabase functions serve elevenlabs-webhook --env-file supabase/functions/.env
+   
+   # In another terminal, create ngrok tunnel
+   ngrok http 54321
+   
+   # Use the ngrok URL in ElevenLabs:
+   # https://your-ngrok-subdomain.ngrok-free.app/functions/v1/elevenlabs-webhook
+   ```
+   
+   **For Production:**
+   ```
+   https://your-project.supabase.co/functions/v1/elevenlabs-webhook
+   ```
+
 3. Enable webhook for all conversation events
+4. Configure webhook headers if needed (e.g., for authentication)
 
 ### Configure Agent Prompt
 
@@ -230,7 +333,120 @@ The edge function should process conversation data through Gemini. Check Supabas
 supabase functions logs elevenlabs-webhook
 ```
 
-## Step 9: Common Setup Issues and Solutions
+## Step 9: PWA Testing for Mobile Development
+
+### Testing PWA Features Locally
+
+1. **Enable HTTPS for Local Development**
+
+PWA features require HTTPS. Use one of these methods:
+
+```bash
+# Method 1: Using Next.js HTTPS
+npm run dev -- --experimental-https
+
+# Method 2: Using ngrok
+ngrok http 3000
+# Use the HTTPS URL provided by ngrok
+```
+
+2. **Test PWA Installation**
+
+- Open Chrome DevTools → Application tab
+- Check "Manifest" section for any errors
+- Look for "Install" prompt in the address bar
+- Verify service worker registration
+
+3. **Mobile Device Testing**
+
+**Option 1: Using ngrok (Recommended)**
+```bash
+# Start your dev server
+npm run dev
+
+# In another terminal, expose it via ngrok
+ngrok http 3000
+
+# Access the ngrok URL on your mobile device
+```
+
+**Option 2: Local Network**
+```bash
+# Find your local IP
+# macOS/Linux:
+ifconfig | grep "inet " | grep -v 127.0.0.1
+
+# Windows:
+ipconfig
+
+# Start dev server on all interfaces
+npm run dev -- --hostname 0.0.0.0
+
+# Access via: https://YOUR_LOCAL_IP:3000
+```
+
+4. **PWA Checklist**
+
+Before testing, ensure:
+- [ ] `manifest.json` is properly configured
+- [ ] Service worker is registered
+- [ ] Icons are provided in required sizes (192x192, 512x512)
+- [ ] App has responsive design
+- [ ] HTTPS is enabled
+- [ ] Offline functionality works
+
+5. **Debug PWA on Mobile**
+
+**Android Chrome:**
+1. Enable Developer Mode on device
+2. Connect via USB
+3. Open `chrome://inspect` on desktop
+4. Select your device and inspect
+
+**iOS Safari:**
+1. Enable Web Inspector in Safari settings
+2. Connect iPhone to Mac
+3. Open Safari → Develop → [Your Device]
+4. Select the page to inspect
+
+### Testing Offline Functionality
+
+1. **Simulate Offline Mode**
+```bash
+# In Chrome DevTools
+# Network tab → Throttling → Offline
+```
+
+2. **Test Service Worker Caching**
+```javascript
+// Check cached resources in DevTools
+// Application → Cache Storage
+```
+
+3. **Verify Offline Pages**
+- Disconnect network
+- Navigate through app
+- Ensure critical pages load
+- Check for proper error messages
+
+### PWA Performance Testing
+
+1. **Lighthouse Audit**
+```bash
+# In Chrome DevTools
+# Lighthouse tab → Generate report
+# Check PWA score
+```
+
+2. **Key Metrics to Monitor**
+- First Contentful Paint (FCP)
+- Time to Interactive (TTI)
+- Offline capability
+- HTTPS usage
+- Valid manifest
+- Service worker registration
+
+## Step 10: Common Setup Issues and Solutions
 
 ### Issue: Supabase Connection Failed
 
@@ -239,8 +455,10 @@ supabase functions logs elevenlabs-webhook
 **Solutions**:
 - Verify environment variables are set correctly
 - Check if `.env.local` file is in the root directory
-- Ensure no typos in variable names
+- Ensure no typos in variable names (common: SUPABASE vs SUPABASE)
 - Restart the development server after changing env vars
+- Check browser console for specific error messages
+- Verify Supabase project is not paused
 
 ### Issue: Edge Function Not Responding
 
@@ -251,6 +469,8 @@ supabase functions logs elevenlabs-webhook
 - Check if function is served: `supabase functions serve`
 - Verify function name matches the URL
 - Check for TypeScript errors in function code
+- Ensure Docker is running (required for Supabase CLI)
+- Try resetting Supabase: `supabase stop` then `supabase start`
 
 ### Issue: ElevenLabs Webhook Not Triggering
 
@@ -261,6 +481,8 @@ supabase functions logs elevenlabs-webhook
 - Check if your local environment is accessible (use ngrok for local testing)
 - Ensure agent is properly configured
 - Check ElevenLabs dashboard for error logs
+- Verify webhook secret/authentication if configured
+- Test webhook manually with curl to isolate issues
 
 ### Issue: Gemini API Errors
 
@@ -271,6 +493,8 @@ supabase functions logs elevenlabs-webhook
 - Check if Vertex AI API is enabled in Google Cloud
 - Ensure billing is set up for your Google Cloud project
 - Verify API key restrictions
+- Check quota limits haven't been exceeded
+- Try regenerating the API key
 
 ### Issue: CORS Errors
 
@@ -280,8 +504,66 @@ supabase functions logs elevenlabs-webhook
 - Check edge function CORS headers
 - Verify Supabase project URL settings
 - For local development, ensure proper proxy configuration
+- Add your domain to Supabase allowed origins
+- Check if preflight OPTIONS requests are handled
 
-## Step 10: Development Workflow Tips
+### Issue: PWA Not Installing
+
+**Symptoms**: No install prompt or installation fails
+
+**Solutions**:
+- Ensure HTTPS is enabled (use ngrok for local testing)
+- Verify manifest.json is valid (check DevTools → Application)
+- Ensure all required manifest fields are present
+- Check that service worker is registered
+- Clear browser cache and retry
+- Test in incognito mode to rule out extensions
+
+### Issue: ngrok Connection Issues
+
+**Symptoms**: ngrok tunnel not working or unstable
+
+**Solutions**:
+- Ensure you've authenticated: `ngrok config add-authtoken YOUR_TOKEN`
+- Check firewall settings
+- Try a different port if 3000 is blocked
+- Use a paid ngrok plan for stable URLs
+- Consider alternatives like localtunnel or serveo
+
+### Issue: Node Version Conflicts
+
+**Symptoms**: Package installation failures or runtime errors
+
+**Solutions**:
+- Verify Node version: `node --version` (should be 18.17+)
+- Use nvm to manage versions: `nvm use 18`
+- Clear npm cache: `npm cache clean --force`
+- Delete node_modules and package-lock.json, then reinstall
+- Check for global package conflicts
+
+### Issue: TypeScript Errors
+
+**Symptoms**: Red squiggles in editor or build failures
+
+**Solutions**:
+- Run `npm run lint` to see all errors
+- Ensure TypeScript version matches: `npm ls typescript`
+- Restart TypeScript server in VS Code: Cmd+Shift+P → "Restart TS Server"
+- Check tsconfig.json for misconfigurations
+- Verify all type definitions are installed
+
+### Issue: Hot Reload Not Working
+
+**Symptoms**: Changes not reflecting without manual refresh
+
+**Solutions**:
+- Check if file watching is enabled
+- On WSL2, may need to increase watchers: `echo fs.inotify.max_user_watches=524288 | sudo tee -a /etc/sysctl.conf`
+- Clear .next folder: `rm -rf .next`
+- Disable antivirus scanning on project folder
+- Use polling mode if on network drive
+
+## Step 11: Development Workflow Tips
 
 ### Hot Reloading
 
@@ -394,4 +676,4 @@ If you encounter issues not covered in this guide:
 
 ---
 
-Last updated: January 2025
+Last updated: July 2025

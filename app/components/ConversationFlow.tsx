@@ -4,7 +4,6 @@
 import { useConversation } from '@elevenlabs/react';
 import { useCallback, useState, useEffect, useRef } from 'react';
 import { useSession } from '../providers/SessionProvider';
-import { DebugPanel } from './DebugPanel';
 
 // Type for navigator.standalone (iOS specific)
 declare global {
@@ -495,9 +494,6 @@ export default function ConversationFlow({ onComplete, sessionId, dynamicVariabl
           )}
         </button>
       </div>
-
-      {/* Debug Panel for PWA */}
-      <DebugPanel />
     </div>
   );
 }
