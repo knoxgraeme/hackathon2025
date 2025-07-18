@@ -17,7 +17,7 @@ export function PWAInstallPrompt() {
     // Check if app is running in standalone mode
     const checkStandalone = () => {
       const standalone = window.matchMedia('(display-mode: standalone)').matches || 
-                        (window.navigator as any).standalone || 
+                        ('standalone' in window.navigator && (window.navigator as typeof window.navigator & { standalone: boolean }).standalone) || 
                         document.referrer.includes('android-app://');
       setIsStandalone(standalone);
     };
@@ -25,7 +25,7 @@ export function PWAInstallPrompt() {
     checkStandalone();
 
     // Check if iOS Safari
-    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream;
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !('MSStream' in window);
     const isSafari = /Safari/.test(navigator.userAgent) && !/Chrome/.test(navigator.userAgent);
     
     if (isIOS && isSafari && !isStandalone) {
@@ -96,9 +96,9 @@ export function PWAInstallPrompt() {
             <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
               To install: tap the share button <span className="inline-flex items-center mx-1">
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.5 12.5L12 9m0 0l3.5 3.5M12 9v10M7.5 5h9m-9 0L12 2.5m-4.5 2.5L12 2.5m0 0L16.5 5" />
                 </svg>
-              </span> then "Add to Home Screen"
+              </span> then &quot;Add to Home Screen&quot;
             </p>
             <div className="flex space-x-2 mt-3">
               <Button

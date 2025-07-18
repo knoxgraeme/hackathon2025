@@ -4,6 +4,7 @@
 import { useConversation } from '@elevenlabs/react';
 import { useCallback, useState, useEffect, useRef } from 'react';
 import { useSession } from '../providers/SessionProvider';
+import { DebugPanel } from './DebugPanel';
 
 // Type for navigator.standalone (iOS specific)
 declare global {
@@ -169,6 +170,8 @@ export default function ConversationFlow({ onComplete, sessionId, dynamicVariabl
    */
   const startConversation = useCallback(async () => {
     console.log('[ConversationFlow] startConversation called');
+    // Uncomment for PWA debugging:
+    // alert('Starting conversation...');
     try {
       // Detect if running as PWA and on iOS
       const isStandalone = window.matchMedia('(display-mode: standalone)').matches ||
@@ -493,6 +496,8 @@ export default function ConversationFlow({ onComplete, sessionId, dynamicVariabl
         </button>
       </div>
 
+      {/* Debug Panel for PWA */}
+      <DebugPanel />
     </div>
   );
 }
