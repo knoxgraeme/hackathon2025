@@ -173,11 +173,12 @@ export default function ConversationFlow({ onComplete, sessionId, dynamicVariabl
     // alert('Starting conversation...');
     try {
       // Detect if running as PWA and on iOS
-      const isStandalone = window.matchMedia('(display-mode: standalone)').matches ||
-                          window.navigator.standalone === true; // iOS specific
-      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+      // Detect if running as PWA (variables used in error handling)
+      // const isStandalone = window.matchMedia('(display-mode: standalone)').matches ||
+      //                     window.navigator.standalone === true; // iOS specific
+      // const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
       
-      console.log('[ConversationFlow] Environment:', { isStandalone, isIOS });
+      // console.log('[ConversationFlow] Environment:', { isStandalone, isIOS });
 
       // Request wake lock to prevent screen sleep (iOS 18.4+ PWA support)
       if ('wakeLock' in navigator) {
@@ -210,31 +211,19 @@ export default function ConversationFlow({ onComplete, sessionId, dynamicVariabl
         throw new Error('No audio track available or track is disabled');
       }
 
-      // For iOS PWA, ensure audio session is properly activated
-      if (isIOS && isStandalone) {
-        console.log('[ConversationFlow] Activating iOS audio session...');
-        // Create a silent audio element to activate iOS audio session
-        const audio = new Audio();
-        audio.src = 'data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAAAAAAAA';
-        await audio.play().catch(() => {
-          // Silent audio might fail but that's okay
-          console.log('[ConversationFlow] Silent audio playback failed (expected on some devices)');
-        });
-      }
-      
-      // IMPORTANT: DO NOT stop the audio stream here in PWA mode
-      // Keeping the stream active maintains the microphone permission
-      // ElevenLabs will handle its own audio stream management
-      console.log('[ConversationFlow] Keeping audio stream active for ElevenLabs...');
-      
-      // Only stop the stream if we're NOT in PWA mode to prevent desktop conflicts
-      if (!isStandalone) {
-        console.log('[ConversationFlow] Not in PWA mode, releasing test audio stream...');
-        stream.getTracks().forEach(track => {
-          track.stop();
-        });
-        mediaStreamRef.current = null;
-      }
+      // Test audio levels to ensure mic is actually capturing
+      const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+      const analyser = audioContext.createAnalyser();
+      const microphone = audioContext.createMediaStreamSource(stream);
+      microphone.connect(analyser);
+
+      // Quick audio level check
+      const dataArray = new Uint8Array(analyser.frequencyBinCount);
+      analyser.getByteFrequencyData(dataArray);
+
+      // Clean up test audio context
+      microphone.disconnect();
+      audioContext.close();
 
       // PRIMARY CAPTURE STRATEGY: Get conversation ID from startSession return value
       const sessionConfig: Record<string, string | Record<string, string | number | boolean>> = {
