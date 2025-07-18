@@ -17,6 +17,47 @@ This guide helps you resolve common issues with the AI Photography Assistant app
 
 ## Common Issues
 
+### PWA Installation Issues
+
+**Symptoms:**
+- Install button doesn't appear
+- "Add to Home Screen" not working
+- App doesn't open in standalone mode after installation
+
+**Solutions:**
+
+**iOS Installation:**
+1. **Safari only:**
+   - PWAs can only be installed from Safari on iOS
+   - Open the app in Safari (not Chrome or other browsers)
+   - Tap the Share button → "Add to Home Screen"
+
+2. **iOS version requirements:**
+   - Requires iOS 11.3 or later
+   - For best experience, use iOS 16.4+
+   - Check Settings → General → Software Update
+
+**Android Installation:**
+1. **Chrome browser:**
+   - Open in Chrome browser
+   - Look for install prompt banner
+   - Or tap menu (3 dots) → "Install app"
+
+2. **Enable notifications:**
+   ```
+   Settings → Apps → Chrome → Notifications → Allow
+   ```
+
+**Desktop Installation:**
+1. **Chrome/Edge:**
+   - Look for install icon in address bar
+   - Or menu → "Install AI Photography Assistant"
+
+2. **Requirements not met:**
+   - Ensure HTTPS connection (or localhost)
+   - Check manifest.json is loading
+   - Verify service worker registration
+
 ### Microphone not working
 
 **Symptoms:**
@@ -117,6 +158,36 @@ This guide helps you resolve common issues with the AI Photography Assistant app
    - Clear old browser data if storage is full
    - Developer Tools → Application → Clear Storage
 
+### localStorage quota exceeded
+
+**Symptoms:**
+- "QuotaExceededError" in console
+- Sessions fail to save
+- App becomes unresponsive
+
+**Solutions:**
+1. **Clear old sessions:**
+   ```javascript
+   // Sessions are limited to 10 most recent
+   const sessions = JSON.parse(localStorage.getItem('sessions') || '[]');
+   const recentSessions = sessions.slice(-10);
+   localStorage.setItem('sessions', JSON.stringify(recentSessions));
+   ```
+
+2. **Check storage usage:**
+   ```javascript
+   // Check total localStorage size
+   let totalSize = 0;
+   for (let key in localStorage) {
+     totalSize += localStorage[key].length + key.length;
+   }
+   console.log('Total localStorage:', (totalSize / 1024).toFixed(2), 'KB');
+   ```
+
+3. **Clear specific data:**
+   - Keep only essential session data
+   - Remove base64 images if stored locally
+
 ---
 
 ## Connection Issues
@@ -182,6 +253,34 @@ This guide helps you resolve common issues with the AI Photography Assistant app
    { stage: 'context' }
    { stage: 'locations' }
    { stage: 'storyboard' }
+   ```
+
+### Webhook timeout issues
+
+**Symptoms:**
+- "Webhook processing timeout" error
+- Conversation completes but no results
+- Stuck on "Processing your vision..."
+
+**Solutions:**
+1. **Check webhook logs:**
+   ```bash
+   npx supabase functions logs elevenlabs-webhook --tail
+   ```
+
+2. **Verify webhook URL:**
+   - Ensure `NEXT_PUBLIC_ELEVENLABS_WEBHOOK_URL` is correct
+   - For local dev, use ngrok URL
+   - For production, use Supabase edge function URL
+
+3. **Debug webhook payload:**
+   ```javascript
+   // Add to webhook for debugging
+   console.log('Webhook received:', {
+     hasTranscript: !!data.transcript,
+     conversationId: data.conversation_id,
+     timestamp: new Date().toISOString()
+   });
    ```
 
 ---
@@ -296,6 +395,18 @@ This guide helps you resolve common issues with the AI Photography Assistant app
    - Limit to 1-2 key shots
    - Focus on text descriptions
 
+3. **Check Imagen API limits:**
+   - Rate limit: 120 requests per minute
+   - Daily quota may be exceeded
+   - Verify `GEMINI_API_KEY` includes Imagen access
+
+4. **Debug image prompts:**
+   ```javascript
+   // Enable debug mode to see prompts
+   { debug: true }
+   // Check console for "Image prompt:" logs
+   ```
+
 ---
 
 ## Browser Compatibility
@@ -393,6 +504,29 @@ Settings → Privacy & Security → Permissions → Microphone
    npx supabase db reset
    npx supabase start
    ```
+
+### Supabase CORS errors
+
+**Error:** `CORS policy: No 'Access-Control-Allow-Origin' header`
+
+**Solutions:**
+1. **Check edge function CORS:**
+   ```typescript
+   // Ensure CORS headers in edge function
+   const corsHeaders = {
+     'Access-Control-Allow-Origin': '*',
+     'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+   };
+   ```
+
+2. **Verify Supabase URL:**
+   - Use correct project URL format
+   - Don't add trailing slashes
+   - Check `.env.local` matches Supabase dashboard
+
+3. **Local development:**
+   - Use `http://localhost:3000` consistently
+   - Not `127.0.0.1` or custom domains
 
 ### API key errors
 
