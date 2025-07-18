@@ -222,13 +222,19 @@ export default function ConversationFlow({ onComplete, sessionId, dynamicVariabl
         });
       }
       
-      // Stop the test stream tracks before starting ElevenLabs
-      // This prevents conflicts with ElevenLabs trying to access the microphone
-      console.log('[ConversationFlow] Releasing test audio stream...');
-      stream.getTracks().forEach(track => {
-        track.stop();
-      });
-      mediaStreamRef.current = null;
+      // IMPORTANT: DO NOT stop the audio stream here in PWA mode
+      // Keeping the stream active maintains the microphone permission
+      // ElevenLabs will handle its own audio stream management
+      console.log('[ConversationFlow] Keeping audio stream active for ElevenLabs...');
+      
+      // Only stop the stream if we're NOT in PWA mode to prevent desktop conflicts
+      if (!isStandalone) {
+        console.log('[ConversationFlow] Not in PWA mode, releasing test audio stream...');
+        stream.getTracks().forEach(track => {
+          track.stop();
+        });
+        mediaStreamRef.current = null;
+      }
 
       // PRIMARY CAPTURE STRATEGY: Get conversation ID from startSession return value
       const sessionConfig: Record<string, string | Record<string, string | number | boolean>> = {
