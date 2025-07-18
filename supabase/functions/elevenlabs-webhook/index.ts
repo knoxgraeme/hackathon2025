@@ -646,7 +646,7 @@ Remember: This is a SKETCH to show a photographer how to frame the shot, NOT a r
         }
 
         const imagePromise = imageAI.models.generateImages({
-          model: 'models/imagen-4.0-ultra-generate-preview-06-06',
+          model: 'models/imagen-4.0-generate-preview-06-06',
           prompt: imagePrompt,
           config: {
             numberOfImages: 1,
