@@ -2,6 +2,7 @@
 
 ## Overview
 
+
 This project implements a **dual type system** approach to handle the separation between frontend application logic and edge function processing. The type system is designed to maintain clear boundaries between client-side UI requirements and server-side AI processing while ensuring type safety across the entire application.
 
 ### Key Design Principles
