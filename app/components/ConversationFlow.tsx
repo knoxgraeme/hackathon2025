@@ -470,28 +470,19 @@ export default function ConversationFlow({ onComplete, sessionId, dynamicVariabl
       {/* Control Button */}
       <div className="fixed bottom-0 left-0 right-0 bg-white px-6 pt-4" style={{ paddingBottom: `max(32px, env(safe-area-inset-bottom))` }}>
         <button
-          onClick={conversationStarted ? stopConversation : startConversation}
-          className="w-full bg-[#00a887] text-white flex items-center justify-center gap-3 px-8 py-[13px] rounded active:scale-95 transition-transform"
-          aria-label={conversationStarted ? "End call" : "Start call"}
+          disabled={!conversationStarted}
+          className="w-full bg-gray-300 text-gray-500 flex items-center justify-center gap-3 px-8 py-[13px] rounded cursor-not-allowed opacity-60"
+          aria-label="Disabled"
         >
-          {conversationStarted ? (
-            <>
-              <svg className="w-[22px] h-[22px]" viewBox="0 0 24 24" fill="none">
-                <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-              </svg>
-              <span className="text-[17px] font-semibold leading-[22px]">End Call</span>
-            </>
-          ) : (
-            <>
-              <svg className="w-[22px] h-[22px]" viewBox="0 0 24 24" fill="none">
-                <path d="M12 2C11.4477 2 11 2.44772 11 3V11C11 11.5523 11.4477 12 12 12C12.5523 12 13 11.5523 13 11V3C13 2.44772 12.5523 2 12 2Z" fill="white"/>
-                <path d="M7 9C7 6.23858 9.23858 4 12 4C14.7614 4 17 6.23858 17 9V11C17 13.7614 14.7614 16 12 16C9.23858 16 7 13.7614 7 11V9Z" stroke="white" strokeWidth="2"/>
-                <path d="M12 16V20M12 20H8M12 20H16" stroke="white" strokeWidth="2" strokeLinecap="round"/>
-                <path d="M5 11C5 11 5 14.5 12 14.5C19 14.5 19 11 19 11" stroke="white" strokeWidth="2" strokeLinecap="round"/>
-              </svg>
-              <span className="text-[17px] font-semibold leading-[22px]">Start Call</span>
-            </>
-          )}
+          <>
+            <svg className="w-[22px] h-[22px]" viewBox="0 0 24 24" fill="none">
+              <path d="M12 2C11.4477 2 11 2.44772 11 3V11C11 11.5523 11.4477 12 12 12C12.5523 12 13 11.5523 13 11V3C13 2.44772 12.5523 2 12 2Z" fill="currentColor"/>
+              <path d="M7 9C7 6.23858 9.23858 4 12 4C14.7614 4 17 6.23858 17 9V11C17 13.7614 14.7614 16 12 16C9.23858 16 7 13.7614 7 11V9Z" stroke="currentColor" strokeWidth="2"/>
+              <path d="M12 16V20M12 20H8M12 20H16" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+              <path d="M5 11C5 11 5 14.5 12 14.5C19 14.5 19 11 19 11" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+            </svg>
+            <span className="text-[17px] font-semibold leading-[22px]">Disabled</span>
+          </>
         </button>
       </div>
     </div>
