@@ -72,22 +72,14 @@ export function PWAInstallPrompt() {
   // Show iOS-specific prompt
   if (showIOSPrompt) {
     return (
-      <div className="fixed bottom-20 left-4 right-4 z-50 bg-white rounded-lg shadow-lg border border-gray-200 p-4">
+      <div className="fixed bottom-4 left-4 right-4 z-50 bg-white rounded-lg shadow-lg border border-gray-200 p-4">
         <div className="flex items-start space-x-3">
           <div className="flex-shrink-0">
-            <svg
-              className="w-6 h-6 text-[#00a887]"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m9.032 4.026a9 9 0 10-13.432 0m13.432 0A9 9 0 0112 21m0 0a9 9 0 01-5.432-1.828m5.432 1.828A9 9 0 0117.432 19.174m-11.864 0a9 9 0 01-3.118-5.239"
-              />
-            </svg>
+            <img
+              src="/icon.png"
+              alt="PixieDirector"
+              className="w-12 h-12 rounded-lg"
+            />
           </div>
           <div className="flex-1">
             <h3 className="text-sm font-semibold text-gray-900">
@@ -100,16 +92,6 @@ export function PWAInstallPrompt() {
                 </svg>
               </span> then &quot;Add to Home Screen&quot;
             </p>
-            <div className="flex space-x-2 mt-3">
-              <Button
-                onClick={handleIOSDismiss}
-                variant="ghost"
-                size="sm"
-                className="text-xs"
-              >
-                Got it
-              </Button>
-            </div>
           </div>
           <button
             onClick={handleIOSDismiss}
@@ -130,22 +112,14 @@ export function PWAInstallPrompt() {
   }
 
   return (
-    <div className="fixed bottom-20 left-4 right-4 z-50 bg-white rounded-lg shadow-lg border border-gray-200 p-4">
+    <div className="fixed bottom-4 left-4 right-4 z-50 bg-white rounded-lg shadow-lg border border-gray-200 p-4">
       <div className="flex items-start space-x-3">
         <div className="flex-shrink-0">
-          <svg
-            className="w-6 h-6 text-[#00a887]"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10"
-            />
-          </svg>
+          <img
+            src="/icon.png"
+            alt="PixieDirector"
+            className="w-12 h-12 rounded-lg"
+          />
         </div>
         <div className="flex-1">
           <h3 className="text-sm font-semibold text-gray-900">
@@ -161,14 +135,6 @@ export function PWAInstallPrompt() {
               className="text-xs bg-[#00a887] hover:bg-[#009876] active:bg-[#008765] text-white"
             >
               Install
-            </Button>
-            <Button
-              onClick={() => setDeferredPrompt(null)}
-              variant="ghost"
-              size="sm"
-              className="text-xs"
-            >
-              Not now
             </Button>
           </div>
         </div>
