@@ -294,7 +294,8 @@ export default function SessionPage() {
 
                     {/* Location Stops */}
                     {currentSession.locations && currentSession.locations.map((location, idx) => (
-                      <div key={idx} className="mt-4">
+                      <div key={idx} className={idx === 0 ? "mt-4" : "mt-8"}>
+                        {idx > 0 && <hr className="border-gray-200 mb-6" />}
                         <h4 className="font-semibold mb-2">Stop {idx + 1}: {location.name}</h4>
 
                         {/* Shot thumbnails for this location */}

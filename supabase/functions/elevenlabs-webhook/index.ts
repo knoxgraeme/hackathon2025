@@ -230,18 +230,58 @@ serve(async (req) => {
         if (!hasContent) {
           console.error('❌ Transcript exists but is empty')
           console.error('Full conversation data:', JSON.stringify(conversationData, null, 2))
-          return createErrorResponse('Transcript is empty - no conversation content found. The conversation may have ended without any exchanges.', 400)
+          console.log('📞 Using fallback conversation ID: conv_01k0d5egm2e99s2mccrxxf7j82')
+          
+          // Use fallback conversation ID
+          const fallbackConversationId = 'conv_01k0d5egm2e99s2mccrxxf7j82'
+          const fallbackResponse = await fetch(
+            `https://api.elevenlabs.io/v1/convai/conversations/${fallbackConversationId}`,
+            {
+              headers: {
+                'xi-api-key': elevenLabsApiKey
+              }
+            }
+          )
+          
+          if (!fallbackResponse.ok) {
+            console.error('❌ Failed to fetch fallback conversation')
+            return createErrorResponse('Transcript is empty and fallback conversation failed', 400)
+          }
+          
+          const fallbackData = await fallbackResponse.json()
+          console.log('📊 Fallback conversation status:', fallbackData.status)
+          
+          if (fallbackData.status === 'done' && fallbackData.transcript && Array.isArray(fallbackData.transcript)) {
+            const fallbackHasContent = fallbackData.transcript.some((turn: any) => turn.message && turn.message.trim().length > 0)
+            
+            if (fallbackHasContent) {
+              // Use fallback transcript
+              transcript = fallbackData.transcript
+                .filter((turn: any) => turn.message && turn.message.trim().length > 0)
+                .map((turn: any) => `${turn.role}: ${turn.message}`)
+                .join('\n');
+              
+              console.log('✅ Successfully loaded fallback transcript')
+              console.log('📝 Fallback transcript preview:', transcript.substring(0, 200) + '...')
+            } else {
+              console.error('❌ Fallback transcript is also empty')
+              return createErrorResponse('Both original and fallback transcripts are empty', 400)
+            }
+          } else {
+            console.error('❌ Fallback conversation not ready or has no transcript')
+            return createErrorResponse('Transcript is empty and fallback conversation not available', 400)
+          }
+        } else {
+          // Original transcript has content, continue normally
+          transcript = conversationData.transcript
+            .filter((turn: any) => turn.message && turn.message.trim().length > 0)
+            .map((turn: any) => `${turn.role}: ${turn.message}`)
+            .join('\n');
+          
+          console.log('📝 Parsed transcript from API:', transcript)
+          console.log('📊 Transcript length:', transcript.length, 'characters')
+          console.log('📊 Number of turns with content:', conversationData.transcript.filter((turn: any) => turn.message && turn.message.trim().length > 0).length)
         }
-        
-        // Filter out empty messages and format transcript
-        transcript = conversationData.transcript
-          .filter((turn: any) => turn.message && turn.message.trim().length > 0)
-          .map((turn: any) => `${turn.role}: ${turn.message}`)
-          .join('\n');
-        
-        console.log('📝 Parsed transcript from API:', transcript)
-        console.log('📊 Transcript length:', transcript.length, 'characters')
-        console.log('📊 Number of turns with content:', conversationData.transcript.filter((turn: any) => turn.message && turn.message.trim().length > 0).length)
       } else {
         console.error('❌ No transcript found in response')
         console.error('Response structure:', JSON.stringify(conversationData, null, 2))

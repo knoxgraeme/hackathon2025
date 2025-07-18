@@ -72,11 +72,11 @@ export function PWAInstallPrompt() {
   // Show iOS-specific prompt
   if (showIOSPrompt) {
     return (
-      <div className="fixed bottom-20 left-4 right-4 z-50 bg-white dark:bg-gray-900 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 p-4">
+      <div className="fixed bottom-20 left-4 right-4 z-50 bg-white rounded-lg shadow-lg border border-gray-200 p-4">
         <div className="flex items-start space-x-3">
           <div className="flex-shrink-0">
             <svg
-              className="w-6 h-6 text-blue-600"
+              className="w-6 h-6 text-[#00a887]"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -90,11 +90,11 @@ export function PWAInstallPrompt() {
             </svg>
           </div>
           <div className="flex-1">
-            <h3 className="text-sm font-medium text-gray-900 dark:text-gray-100">
+            <h3 className="text-sm font-semibold text-gray-900">
               Install PixieDirector
             </h3>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-              To install: tap the share button <span className="inline-flex items-center mx-1">
+            <p className="text-sm text-gray-600 mt-1">
+              To install: tap the share button <span className="inline-flex items-center mx-1 text-[#007AFF]">
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.5 12.5L12 9m0 0l3.5 3.5M12 9v10M7.5 5h9m-9 0L12 2.5m-4.5 2.5L12 2.5m0 0L16.5 5" />
                 </svg>
@@ -113,7 +113,7 @@ export function PWAInstallPrompt() {
           </div>
           <button
             onClick={handleIOSDismiss}
-            className="flex-shrink-0 p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+            className="flex-shrink-0 p-1 text-gray-400 hover:text-gray-600 transition-colors"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -130,11 +130,11 @@ export function PWAInstallPrompt() {
   }
 
   return (
-    <div className="fixed bottom-20 left-4 right-4 z-50 bg-white dark:bg-gray-900 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 p-4">
+    <div className="fixed bottom-20 left-4 right-4 z-50 bg-white rounded-lg shadow-lg border border-gray-200 p-4">
       <div className="flex items-start space-x-3">
         <div className="flex-shrink-0">
           <svg
-            className="w-6 h-6 text-blue-600"
+            className="w-6 h-6 text-[#00a887]"
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -148,17 +148,17 @@ export function PWAInstallPrompt() {
           </svg>
         </div>
         <div className="flex-1">
-          <h3 className="text-sm font-medium text-gray-900 dark:text-gray-100">
-            Install App
+          <h3 className="text-sm font-semibold text-gray-900">
+            Install PixieDirector
           </h3>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-            Add AI Photography Assistant to your home screen for quick access
+          <p className="text-sm text-gray-600 mt-1">
+            Add to your home screen for quick access and offline features
           </p>
           <div className="flex space-x-2 mt-3">
             <Button
               onClick={handleInstall}
               size="sm"
-              className="text-xs"
+              className="text-xs bg-[#00a887] hover:bg-[#009876] active:bg-[#008765] text-white"
             >
               Install
             </Button>
@@ -174,7 +174,7 @@ export function PWAInstallPrompt() {
         </div>
         <button
           onClick={() => setDeferredPrompt(null)}
-          className="flex-shrink-0 p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+          className="flex-shrink-0 p-1 text-gray-400 hover:text-gray-600 transition-colors"
         >
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
