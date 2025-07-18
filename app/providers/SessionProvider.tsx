@@ -11,248 +11,244 @@ import { supabase } from '../lib/supabase';
  * This provides users with a comprehensive example to explore
  */
 const DEFAULT_SESSION: Session = {
-  "id": "session-1752799733148-pjn54wqsi",
-  "status": "complete",
-  "createdAt": "2025-01-15T14:30:00.000Z",
-  "title": "Vancouver Portrait Session",
-  "conversationId": "conv_01k0dg2vntezta8wk9r4k6r4qx",
-  "context": {
-    "shootType": "portrait",
-    "mood": [
-      "neutral",
-      "focused"
-    ],
-    "timeOfDay": "flexible",
-    "subject": "unspecified",
-    "duration": "2 hours",
-    "equipment": [],
-    "experience": "intermediate",
-    "specialRequests": "",
-    "location": "Mount Pleasant, Vancouver",
-    "date": "flexible",
-    "startTime": "flexible",
-    "locationPreference": "clustered"
+  id: "session-1752857576488-g7nfrr622",
+  status: "complete",
+  createdAt: "2025-07-18T16:52:56.488Z",
+  title: "Stanley Park, Vancouver Wedding",
+  conversationId: "conv_01k0f784k9ec5vvxy7cgajgath",
+  context: {
+    shootType: "wedding",
+    mood: ["joyful", "candid"],
+    timeOfDay: "flexible",
+    subject: "wedding", 
+    duration: "2 hours",
+    equipment: [],
+    experience: "intermediate",
+    specialRequests: "",
+    location: "Stanley Park, Vancouver",
+    date: "flexible",
+    startTime: "flexible",
+    locationPreference: "clustered"
   },
-  "locations": [
+  locations: [
     {
-      "accessibility": "Fully wheelchair accessible with ramps, elevators, and wide pathways. Easily accessible by public transit (Expo/Millennium Skytrain lines, various bus routes). Street parking available but can be limited.",
-      "address": "520 East 1st Ave, Vancouver, BC V5T 0H2",
-      "alternatives": [
-        "Centre for Digital Media (685 Great Northern Way)",
-        "Vancouver Community College (Broadway Campus, 1155 E Broadway)"
+      accessibility: "Paved and gravel paths, generally wheelchair accessible. Some grassy areas may be uneven.",
+      address: "610 Pipeline Rd, Vancouver, BC V6G 1Z4 (specific section within)",
+      alternatives: [
+        "Ted and Mary Greig Rhododendron Garden (within Stanley Park, seasonal bloom)",
+        "VanDusen Botanical Garden (requires admission/permits)",
+        "Queen Elizabeth Park Bloedel Conservatory gardens (requires admission/permits)"
       ],
-      "bestTime": "Overcast days for soft, even light. Late afternoon/early morning on sunny days for dramatic light and shadow play on the architectural features.",
-      "description": "Modern, minimalist architecture featuring large concrete walls, glass facades, and open public courtyards. The clean lines and muted colour palette (grey concrete, glass, metal) provide an excellent neutral and focused backdrop for portraits, emphasizing the subject without distraction.",
-      "lightingNotes": "Large overhangs and recessed areas offer natural shade and diffused light. Reflective surfaces (glass, polished concrete) can provide interesting bounce light. Avoid harsh midday sun directly in open areas.",
-      "name": "Emily Carr University of Art + Design (Exterior Public Spaces)",
-      "permits": "No permit typically required for small, non-disruptive portrait shoots in exterior public spaces. Avoid blocking entrances or disturbing students/staff."
+      bestTime: "Morning (9-11 AM) for soft, directional light and fewer crowds. Late afternoon (4-6 PM) for golden hour, but expect more people.",
+      description: "A beautiful, well-maintained rose garden with various species, featuring elegant arched pergolas covered in climbing roses and winding paths. Ideal for classic, romantic, and joyful shots.",
+      lightingNotes: "Open sky can be harsh midday; seek shade under trees or pergolas for softer light. Dappled light filtering through rose bushes and arches is lovely.",
+      name: "Stanley Park Rose Garden - Arched Pergola & Secluded Paths",
+      permits: "Generally no permit required for casual photography. Large commercial setups might need one."
     },
     {
-      "accessibility": "Generally flat, paved surfaces but can be uneven in spots. Accessible by foot. Limited street parking nearby.",
-      "address": "Various alleys, e.g., laneway between Main St & Quebec St, accessible from E 10th or E 11th Ave, Vancouver, BC",
-      "alternatives": [
-        "Alleys off Broadway between Main St and Cambie St",
-        "Commercial laneways in Gastown (though more busy and distinct aesthetic)"
+      accessibility: "Uneven dirt path, potential for roots. Not wheelchair accessible. Moderate mobility required.",
+      address: "Off Pipeline Rd, just past the Rose Garden/Pavilion, Vancouver, BC V6G 1Z4",
+      alternatives: [
+        "Bridle Path (deeper within Stanley Park)",
+        "Seva Street forest trails (South Vancouver)"
       ],
-      "bestTime": "Overcast days for soft, even light that highlights textures. Late afternoon for interesting shadow play and golden hour glow on brickwork.",
-      "description": "These utilitarian back lanes offer a raw, urban aesthetic with textured brick walls, loading docks, metal fire escapes, and service doors. The muted tones of concrete, brick, and industrial elements provide a gritty yet neutral canvas, perfect for a focused, character-driven portrait without ornate backgrounds.",
-      "lightingNotes": "Can be tricky with direct sun leading to harsh shadows. Look for areas with natural overhead coverage or use fill light. Cloudy days are ideal for uniform lighting on textured walls.",
-      "name": "Back Alleys off Main Street (between E 10th Ave and E 12th Ave)",
-      "permits": "No permits required for public back alleys. Be mindful of private property, delivery vehicles, and general public activity."
+      bestTime: "Mid-morning to early afternoon (10 AM - 3 PM) for beautiful dappled light filtering through the canopy.",
+      description: "A less-trafficked natural dirt path winding through tall, dense trees at the edge of the forest near Malkin Bowl. Offers a contrasting natural, secluded, and intimate feel for candid moments.",
+      lightingNotes: "Excellent for soft, natural light, especially on sunny days creating beautiful light patterns and bokeh. Overcast days provide diffused, even light.",
+      name: "Malkin Bowl Forest Edge Path",
+      permits: "No permit required for casual photography."
     },
     {
-      "accessibility": "Excellent. Wide, flat paved pathways. Easily accessible by Skytrain (Great Northern Way-Emily Carr station) and bus. Some street parking.",
-      "address": "Around 685 Great Northern Way, Vancouver, BC V5T 0G7",
-      "alternatives": [
-        "False Creek Seawall (near Olympic Village)"
+      accessibility: "Paved pathways around the lagoon are wheelchair accessible. The pedestrian bridge has ramps.",
+      address: "Stanley Park Drive (near Georgia St entrance), Vancouver, BC V6G 1Z4",
+      alternatives: [
+        "Beaver Lake (within Stanley Park, more secluded)",
+        "Jericho Beach Pond (further away, West Vancouver)"
       ],
-      "bestTime": "Overcast days for diffused light. Morning or late afternoon for clean shadows and reflections on glass surfaces.",
-      "description": "This developing tech and innovation hub features contemporary office buildings with sleek glass, metal, and concrete facades. The wide public walkways and minimalist landscaping create a clean, modern, and neutral environment. It offers a more corporate/futuristic take on the focused aesthetic.",
-      "lightingNotes": "Large glass surfaces can create strong reflections or interesting light patterns. Open spaces mean direct sun can be harsh; seek shaded areas or use diffusers.",
-      "name": "Great Northern Way Campus - Public Walkways & Building Exteriors (Innovation Boulevard area)",
-      "permits": "No permit typically required for small, non-disruptive shoots in public areas. Be respectful of businesses and private property."
+      bestTime: "Early morning (sunrise to 9 AM) for mist and calm waters, or late afternoon/sunset for golden hour reflections and a serene mood.",
+      description: "The tranquil waters of Lost Lagoon, featuring a charming pedestrian bridge and often a small gazebo or reflective spots. Provides calm water reflections and a serene, open feel, great for joyful strolling shots.",
+      lightingNotes: "Open water means bright reflections. Position subjects with the sun behind them (backlit) or during softer light hours to avoid harsh shadows. Look for reflections on the water's surface.",
+      name: "Lost Lagoon Pedestrian Bridge & Gazebo Area",
+      permits: "No permit required for casual photography."
     },
     {
-      "accessibility": "Flat, paved sidewalk under the bridge. Easily accessible by foot or bike. Limited street parking in the vicinity.",
-      "address": "W 8th Ave under the Cambie Street Bridge, Vancouver, BC V5Y 1B8",
-      "alternatives": [
-        "Other underpasses (e.g., Broadway under the Canada Line)"
+      accessibility: "Paved, flat Seawall path, fully wheelchair accessible.",
+      address: "Stanley Park Dr, Vancouver, BC V6G 1Z4 (near Lumberman's Arch)",
+      alternatives: [
+        "Seawall near Siwash Rock (further west, more rugged coast)",
+        "Coal Harbour Seawall (downtown Vancouver, more urban skyline)",
+        "Jericho Beach (West Vancouver, sandy beach views)"
       ],
-      "bestTime": "Any time of day, as the overhead structure provides consistent shade. Even on sunny days, the light filtering through can create interesting patterns. Best for moodier, focused portraits.",
-      "description": "This underpass offers a unique, sheltered, and somewhat moody urban environment. The concrete pillars, stark lighting (or lack thereof), and muted colours of the bridge structure provide a very neutral and highly focused backdrop. It's an often-overlooked spot that can create dramatic, clean portraits.",
-      "lightingNotes": "Low natural light requires higher ISO or off-camera lighting. The concrete surfaces can bounce light effectively. Unique shadows and strong directional light can be found.",
-      "name": "West 8th Avenue Underpass (between Ontario St and Manitoba St)",
-      "permits": "No permit required for public underpasses. Ensure safety and awareness of traffic and pedestrians."
-    },
-    {
-      "accessibility": "Flat sidewalks, easy access. Street parking generally available.",
-      "address": "E.g., 200 block to 500 block of Manitoba St, Vancouver, BC",
-      "alternatives": [
-        "Industrial areas along Clark Drive (further east but similar aesthetic)",
-        "Specific commercial blocks in Strathcona for similar raw textures"
-      ],
-      "bestTime": "Overcast days for even light. Late afternoon for softer shadows and diffused light on textured surfaces.",
-      "description": "This stretch of Manitoba Street features a mix of older, utilitarian commercial and light industrial buildings. Many have plain, unadorned walls (brick, concrete, metal siding), roll-down doors, and simple loading bays. These elements provide exceptionally neutral and understated backgrounds, allowing the subject to truly stand out.",
-      "lightingNotes": "Can vary significantly depending on the building's orientation. Look for facades that are not in direct, harsh sunlight. Textured walls respond well to directional light.",
-      "name": "Small Industrial/Commercial Fronts on Manitoba Street (around 7th to 10th Ave)",
-      "permits": "No permits needed for public sidewalks. Be respectful of businesses and their operations."
+      bestTime: "Late afternoon for beautiful light on the North Shore mountains and water, or early morning for fewer crowds and soft, expansive light.",
+      description: "A scenic stretch of the famous Stanley Park Seawall, offering expansive views of the Burrard Inlet, distant North Shore mountains, and passing boats. Great for iconic Vancouver backdrops and a sense of open freedom.",
+      lightingNotes: "Open and can be very bright. Utilize open shade if available or shoot away from direct sun. Overcast days provide excellent diffused light for the wide-open views and water.",
+      name: "Stanley Park Seawall - Lumberman's Arch Stretch",
+      permits: "No permit required for casual photography."
     }
   ],
-  "shots": [
+  shots: [
     {
-      "shotNumber": 1,
-      "title": "Architectural Embrace at Emily Carr University",
-      "location": "Emily Carr University of Art + Design (Exterior Public Spaces)",
-      "idealLighting": "Overcast day for soft, even light across the concrete, or late afternoon sun creating dramatic light and shadow play on the architectural features. Focus on diffused light from large overhangs.",
-      "composition": "Wide shot (full body). Subject positioned against a large, clean concrete wall, using the minimalist lines and geometric forms of the architecture to frame and emphasize the subject without distraction. Utilize leading lines from pathways or building edges.",
-      "poses": "Standing tall and confident, with a relaxed posture. Hands can be in pockets, gently clasped in front, or resting casually at the sides. Gaze slightly off-camera with a calm, contemplative, or resolute expression.",
-      "blocking": "Subject stands centered or slightly off-center against a large, unadorned concrete wall, allowing the architectural scale to underscore their presence. Minimal interaction, letting the clean lines of the environment create a strong, focused backdrop.",
-      "communicationCues": "Alright, let's feel the strength of this architecture. Stand tall, shoulders back, but keep your body relaxed. Imagine you're presenting your most authentic self. Good, now a calm, steady gaze just off to your left.",
-      "storyboardImage": "https://akukmblllfqvoibrvrie.supabase.co/storage/v1/object/public/storyboard-images/storyboard-conv_01k0dg2vntezta8wk9r4k6r4qx-shot-1-2025-07-18T00-51-09-159Z.jpg"
+      shotNumber: 1,
+      locationIndex: 0,
+      title: "Rose Garden Pergola Embrace - Stanley Park Rose Garden",
+      imagePrompt: "Joyful, romantic, embrace, rose garden, pergola, soft light",
+      composition: "Medium shot of the couple under an arched pergola, surrounded by climbing roses. They are embracing, looking into each other's eyes, a soft smile on their faces. The pergola frames them, and the background is softly blurred with rose blooms.",
+      direction: "Encourage the couple to embrace naturally. Ask them to look at each other and share a quiet, joyful moment. Remind them to breathe and enjoy the space. Direct slight head tilts for optimal light.",
+      technical: "Aperture: f/2.0-2.8 for soft background bokeh. Shutter Speed: 1/250s+. ISO: 100-400. Lens: 50mm or 85mm prime lens. Lighting: Utilize the soft, filtered light under the pergola. Position subjects to avoid harsh shadows, possibly backlit slightly by the sun filtering through.",
+      equipment: [
+        "Full-frame DSLR/Mirrorless camera",
+        "50mm f/1.4 or 85mm f/1.4 prime lens",
+        "Reflector (silver/white side for fill, if needed)",
+        "Lens hood"
+      ],
+      visual_Keywords: "Joyful, romantic, embrace, rose garden, pergola, soft light",
+      poses: "Embracing, looking into each other's eyes, soft smiles, relaxed posture.",
+      blocking: "Couple centered under the archway, facing each other, with one slightly turning into the other's embrace. Minimal movement.",
+      communicationCues: "Engage, connect, embrace, breathe, share a quiet moment.",
+      storyboardImage: "https://akukmblllfqvoibrvrie.supabase.co/storage/v1/object/public/storyboard-images/storyboard-conv_01k0f784k9ec5vvxy7cgajgath-shot-1-2025-07-18T16-54-09-098Z.jpg"
     },
     {
-      "shotNumber": 2,
-      "title": "Glass Reflection Portrait at Emily Carr University",
-      "location": "Emily Carr University of Art + Design (Exterior Public Spaces)",
-      "idealLighting": "Late afternoon on a sunny day to capture strong, defined reflections on the glass facades, or an overcast day for a more diffused and ethereal reflection. Utilize interesting bounce light from polished concrete.",
-      "composition": "Medium shot (waist up). Subject positioned near a large glass facade, capturing their direct portrait alongside a subtle, artistic reflection of themselves or the surrounding modern architecture. Play with the grid lines of the glass for subtle visual interest. Adaptable for two subjects, one looking at the other's reflection.",
-      "poses": "A subtle turn of the head, one hand gently resting near the face or lightly touching the glass. An expressive, thoughtful gaze. For two subjects, one could be looking directly, the other at a reflection.",
-      "blocking": "Subject stands a few feet from the glass, allowing for a distinct reflection without being pressed against the surface. Can subtly lean into the reflection, creating depth and a sense of connection with the environment.",
-      "communicationCues": "Let's work with these incredible reflections. Stand here, and subtly glance at your own reflection. Can you give me a thoughtful, introspective look? Just breathe, and let your thoughts be visible."
+      shotNumber: 2,
+      locationIndex: 0,
+      title: "Candid Stroll on Secluded Rose Path - Stanley Park Rose Garden",
+      imagePrompt: "Candid, joyful, strolling, rose path, laughter, movement",
+      composition: "Full shot of the couple walking hand-in-hand down a winding, secluded path through the rose garden. Their backs are slightly turned as they walk away, looking back over their shoulders at the camera with genuine laughter. The path leads into soft focus roses.",
+      direction: "Ask the couple to walk naturally, chatting and laughing. Encourage them to interact with each other. Provide prompts like 'Tell each other your favorite memory from today!' to elicit genuine reactions. Shoot in bursts to capture peak expressions.",
+      technical: "Aperture: f/3.2-4.0 for a bit more environmental context. Shutter Speed: 1/500s+ to freeze motion. ISO: Auto. Lens: 35mm or 50mm prime. Lighting: Seek dappled light filtering through trees or even diffused light on an overcast day. Position subjects so the light catches their faces as they look back.",
+      equipment: [
+        "Full-frame DSLR/Mirrorless camera",
+        "35mm f/1.4 or 50mm f/1.4 prime lens",
+        "Speedlight (off-camera, if needed for fill in challenging light)",
+        "Wireless trigger"
+      ],
+      visual_Keywords: "Candid, joyful, strolling, rose path, laughter, movement",
+      poses: "Walking hand-in-hand, looking back over shoulder, genuine laughter, relaxed body language.",
+      blocking: "Couple walks slowly away from camera down the path, then turns heads back towards camera.",
+      communicationCues: "Walk naturally, chat, laugh, 'Look back at me!', 'Share a secret!'",
+      storyboardImage: "https://akukmblllfqvoibrvrie.supabase.co/storage/v1/object/public/storyboard-images/storyboard-conv_01k0f784k9ec5vvxy7cgajgath-shot-2-2025-07-18T16-54-04-016Z.jpg"
     },
     {
-      "shotNumber": 3,
-      "title": "Concrete Corridor Close-up at Emily Carr University",
-      "location": "Emily Carr University of Art + Design (Exterior Public Spaces)",
-      "idealLighting": "Diffused light from a recessed area or large overhang for soft, even illumination on the subject's face. Avoid direct, harsh sunlight to maintain the clean, muted aesthetic.",
-      "composition": "Tight close-up (headshot/upper chest). Subject framed by the clean, minimalist lines of a concrete corridor or a recessed entryway, using the muted tones and uniform texture to emphasize facial features and expression without distraction. Can be adapted for a very intimate two-subject shot with faces close.",
-      "poses": "Soft, contemplative expression, eyes conveying depth. Hands can be out of frame, or subtly brought up to frame the face or touch the hair. Focus on genuine emotion.",
-      "blocking": "Subject positioned within a concrete recess or against a plain, unadorned section of a wall, minimizing background elements. The shallow depth of field will further isolate the subject's face.",
-      "communicationCues": "This light is absolutely beautiful on your face. Let's get really intimate here. Relax your shoulders, soften your gaze. Just breathe and think of something that brings you a quiet sense of peace. That's perfect."
+      shotNumber: 3,
+      locationIndex: 1,
+      title: "Intimate Forest Edge Embrace - Malkin Bowl Forest Edge Path",
+      imagePrompt: "Intimate, secluded, soft, forest, embrace, dappled light",
+      composition: "Medium close-up of the couple standing intimately amidst the tall, dense trees. One partner is gently holding the other's face, or they are in a soft embrace, eyes closed or gazing at each other. Focus on their connection, with the beautiful dappled light creating patterns on them and the background providing natural bokeh.",
+      direction: "Create a sense of quiet intimacy. Ask the couple to connect without words, just through touch and gaze. Guide them into a soft, gentle embrace. Point out the beautiful light and encourage them to feel the peacefulness of the forest. 'Just be yourselves, in this beautiful quiet moment.'",
+      technical: "Aperture: f/1.8-2.5 for strong subject separation and creamy bokeh. Shutter Speed: 1/200s+. ISO: 200-800, adjusting for light. Lens: 85mm or 105mm prime lens. Lighting: Utilize the beautiful dappled light filtering through the canopy. Position subjects to catch soft pools of light on their faces, or use backlight for rim lighting.",
+      equipment: [
+        "Full-frame DSLR/Mirrorless camera",
+        "85mm f/1.4 or 105mm f/1.4 prime lens",
+        "Reflector (small, for subtle fill, if necessary)",
+        "Lens hood"
+      ],
+      visual_Keywords: "Intimate, secluded, soft, forest, embrace, dappled light",
+      poses: "Soft embrace, hands on face/waist, eyes closed or gazing, relaxed and tender.",
+      blocking: "Couple standing close together, slightly off-center in the frame, surrounded by trees. Minimal movement.",
+      communicationCues: "Connect, be present, gentle touch, feel the quiet, 'Just you two'.",
+      storyboardImage: "https://akukmblllfqvoibrvrie.supabase.co/storage/v1/object/public/storyboard-images/storyboard-conv_01k0f784k9ec5vvxy7cgajgath-shot-3-2025-07-18T16-54-07-828Z.jpg"
     },
     {
-      "shotNumber": 4,
-      "title": "Boulevard Stride at Great Northern Way Campus",
-      "location": "Great Northern Way Campus - Public Walkways & Building Exteriors (Innovation Boulevard area)",
-      "idealLighting": "Overcast day for diffused, even light across the wide walkways, or early morning/late afternoon for long, clean shadows that emphasize the lines of the environment. Avoid harsh midday sun.",
-      "composition": "Wide shot, capturing the subject mid-stride on a wide, minimalist public walkway, with the sleek, contemporary building facades creating a clean and expansive background. Emphasize scale and the modern, innovative atmosphere. Can be adapted for two subjects walking side-by-side or slightly staggered.",
-      "poses": "Natural walking motion, looking forward or slightly to the side with purpose. Confident, purposeful stride, as if on a mission. Hands relaxed at sides or holding a small bag/briefcase.",
-      "blocking": "Subject walks away from or towards the camera, utilizing the length and breadth of the wide walkway. Use the clean, straight lines of the pavement and building architecture to create strong leading lines and depth.",
-      "communicationCues": "Alright, let's capture that purposeful stride. Just walk naturally towards me, like you're heading to an important meeting or deep in thought. Good, keep your chin up, eyes straight ahead."
+      shotNumber: 4,
+      locationIndex: 1,
+      title: "Candid Forest Walk with Dappled Light - Malkin Bowl Forest Edge Path",
+      imagePrompt: "Candid, walking, forest path, genuine, joyful, dappled light",
+      composition: "Full body shot of the couple walking away from the camera along the winding dirt path, hands clasped. They are looking back at each other and smiling or laughing. The path recedes into the soft focus of the forest, with streaks of dappled sunlight creating a magical atmosphere.",
+      direction: "Instruct the couple to walk as if they're on a leisurely stroll. Encourage natural conversation and laughter. 'Pretend I'm not here, just enjoy your walk together!' Capture motion with a slightly faster shutter speed. Look for moments where the light hits them perfectly.",
+      technical: "Aperture: f/2.8-4.0 to capture more of the path and light patterns. Shutter Speed: 1/400s+ to freeze motion while maintaining some fluidity. ISO: Auto. Lens: 35mm or 50mm prime. Lighting: Leverage the natural dappled light; position subjects so they walk through patches of light and shadow, highlighting their movement and interaction.",
+      equipment: [
+        "Full-frame DSLR/Mirrorless camera",
+        "35mm f/1.4 or 50mm f/1.4 prime lens",
+        "Monopod (optional, for stability in lower light)",
+        "Lens hood"
+      ],
+      visual_Keywords: "Candid, walking, forest path, genuine, joyful, dappled light",
+      poses: "Walking hand-in-hand, looking at each other, genuine smiles/laughter, relaxed stride.",
+      blocking: "Couple walks away from the camera along the path, looking back at each other.",
+      communicationCues: "Walk naturally, chat, laugh together, 'Just enjoy your walk'.",
+      storyboardImage: "https://akukmblllfqvoibrvrie.supabase.co/storage/v1/object/public/storyboard-images/storyboard-conv_01k0f784k9ec5vvxy7cgajgath-shot-4-2025-07-18T16-54-05-933Z.jpg"
     },
     {
-      "shotNumber": 5,
-      "title": "Reflection & Architecture at Great Northern Way Campus",
-      "location": "Great Northern Way Campus - Public Walkways & Building Exteriors (Innovation Boulevard area)",
-      "idealLighting": "Morning or late afternoon to capture strong, clean reflections on the large glass surfaces of the buildings, or an overcast day for softer, diffused reflections and abstract patterns.",
-      "composition": "Medium shot (upper body to waist). Subject standing near a reflective glass building, with their form and the building's sleek lines subtly reflected in the glass. Play with abstract light patterns and the interplay between reality and reflection. Ideal for one subject, or two subjects interacting with the reflection or each other.",
-      "poses": "Leaning slightly against the glass, or standing upright looking at their reflection. Can be thoughtful and introspective, or direct and confident. Consider hand placement lightly on the glass.",
-      "blocking": "Subject positioned close enough to the glass to create a strong, discernible reflection, utilizing the building's angularity and height to complement the pose and framing. Experiment with distance for different reflection intensities.",
-      "communicationCues": "The light on this building is incredible. Let's use that reflection. Stand here, and let's see you interact with your own reflection – maybe a thoughtful glance, or just a powerful, calm stance. Find your connection to the space.",
-      "storyboardImage": "https://akukmblllfqvoibrvrie.supabase.co/storage/v1/object/public/storyboard-images/storyboard-conv_01k0dg2vntezta8wk9r4k6r4qx-shot-5-2025-07-18T00-51-10-015Z.jpg"
+      shotNumber: 5,
+      locationIndex: 2,
+      title: "Joyful Stroll on Lost Lagoon Bridge - Lost Lagoon Pedestrian Bridge",
+      imagePrompt: "Joyful, strolling, bridge, Lost Lagoon, reflection, serene",
+      composition: "Full shot of the couple playfully walking across the pedestrian bridge. They could be skipping, doing a little dance, or simply walking hand-in-hand, looking out at the lagoon. The serene waters of Lost Lagoon are in the background, offering soft reflections of the sky and trees.",
+      direction: "Encourage joyful movement and interaction. 'Let's see your happiest walk across the bridge!' 'Look at each other, soak in this moment!' Position them to have the best reflections in the water behind them. Aim for clean lines of the bridge railing leading the eye to them.",
+      technical: "Aperture: f/4.0-5.6 for more depth of field, showcasing the bridge and reflections. Shutter Speed: 1/320s+ to capture joyful movement. ISO: 100-400. Lens: 24-70mm f/2.8 zoom or 35mm prime. Lighting: Early morning or late afternoon for soft, diffused light or golden hour reflections. Backlight if shooting towards the sun, or even light on overcast days.",
+      equipment: [
+        "Full-frame DSLR/Mirrorless camera",
+        "24-70mm f/2.8 zoom lens",
+        "Circular Polarizer (CPL) filter (to enhance reflections or reduce glare)",
+        "Tripod (for potential longer exposure on water, not for this shot)"
+      ],
+      visual_Keywords: "Joyful, strolling, bridge, Lost Lagoon, reflection, serene",
+      poses: "Walking hand-in-hand, skipping, dancing, looking at each other or out at the water, joyful expressions.",
+      blocking: "Couple walks from one end of the bridge to the other, away from or towards the camera.",
+      communicationCues: "Playful, joyful, skip, dance, 'Look out at the water!', 'Enjoy this view!'",
+      storyboardImage: "https://akukmblllfqvoibrvrie.supabase.co/storage/v1/object/public/storyboard-images/storyboard-conv_01k0f784k9ec5vvxy7cgajgath-shot-5-2025-07-18T16-54-06-688Z.jpg"
     },
     {
-      "shotNumber": 6,
-      "title": "Minimalist Bench Portrait at Great Northern Way Campus",
-      "location": "Great Northern Way Campus - Public Walkways & Building Exteriors (Innovation Boulevard area)",
-      "idealLighting": "Overcast for soft, even light, or late afternoon sun if a portion of the bench is in soft, diffused shade. Focus on even light to highlight facial features and maintain the clean aesthetic.",
-      "composition": "Medium shot (seated). Subject seated on one of the minimalist public benches, with the clean lines of the building or the expansive walkway as a simple, uncluttered, and neutral background. Emphasize stillness and contemplation.",
-      "poses": "Relaxed seated pose, one leg casually crossed, or hands clasped loosely in their lap. Gaze directed slightly off-camera, or a thoughtful, introspective look. Can be adapted for two subjects sharing the bench, looking at each other or contemplatively forward.",
-      "blocking": "Subject seated comfortably on the bench, using the bench's clean, geometric lines to frame the lower half of the shot. Emphasize a moment of quiet strength or reflection within the modern environment.",
-      "communicationCues": "Take a seat here, make yourself comfortable. We're going for a moment of quiet strength and contemplation. Relax your shoulders, let your mind wander a bit. Good, just hold that feeling."
+      shotNumber: 6,
+      locationIndex: 2,
+      title: "Serene Gazebo Reflection - Lost Lagoon Gazebo Area",
+      imagePrompt: "Serene, intimate, reflection, gazebo, Lost Lagoon, calm water",
+      composition: "Medium wide shot of the couple standing within or near the small gazebo, with the tranquil waters of Lost Lagoon prominently featured in the foreground and background, showing clear reflections. They are in a quiet embrace or standing side-by-side, gazing out at the water, creating a peaceful, contemplative mood.",
+      direction: "Set a calm and peaceful mood. 'Take a deep breath, just enjoy the stillness of the water.' Guide them into a gentle, natural pose looking out. Wait for perfectly calm water for the best reflections. Emphasize the serene atmosphere.",
+      technical: "Aperture: f/2.8-4.0 for subject separation but still showing environment. Shutter Speed: 1/160s+. ISO: 100-400. Lens: 50mm or 35mm prime. Lighting: Look for soft, even light. If backlighting, use a reflector or fill flash to expose faces. Early morning for mist or late afternoon for golden hour reflections are ideal.",
+      equipment: [
+        "Full-frame DSLR/Mirrorless camera",
+        "50mm f/1.4 or 35mm f/1.4 prime lens",
+        "Reflector (silver/white)",
+        "Lens hood"
+      ],
+      visual_Keywords: "Serene, intimate, reflection, gazebo, Lost Lagoon, calm water",
+      poses: "Gentle embrace, standing side-by-side looking out, contemplative, relaxed.",
+      blocking: "Couple positioned within or immediately next to the gazebo, facing the water.",
+      communicationCues: "Peaceful, calm, 'Look out at the water', 'Feel the tranquility'.",
+      storyboardImage: "https://akukmblllfqvoibrvrie.supabase.co/storage/v1/object/public/storyboard-images/storyboard-conv_01k0f784k9ec5vvxy7cgajgath-shot-6-2025-07-18T16-54-06-502Z.jpg"
     },
     {
-      "shotNumber": 7,
-      "title": "Roll-Up Door Texture on Manitoba Street",
-      "location": "Small Industrial/Commercial Fronts on Manitoba Street (around 7th to 10th Ave)",
-      "idealLighting": "Overcast day for very even, soft light that highlights the subtle textures and lines of the roll-down door without creating harsh shadows. Late afternoon for diffused, gentle light.",
-      "composition": "Medium shot (waist up or full body). Subject standing against a plain, textured roll-down door. Emphasize the industrial lines and muted, often faded, colors of the door as a neutral yet characterful backdrop, allowing the subject to stand out.",
-      "poses": "Leaning casually against the door, or standing upright with a confident posture. Hands can be in pockets or arms loosely crossed. Approachable yet strong expression.",
-      "blocking": "Subject positioned directly in front of the door, using its width as a simple, repetitive backdrop. Minimal interaction, allowing the distinct texture of the door to complement the subject without distraction.",
-      "communicationCues": "I love the subtle texture of this door. Lean back casually against it for me. Arms relaxed, maybe one hand in your pocket. Give me a confident, natural look – a slight smile, or a direct gaze."
+      shotNumber: 7,
+      locationIndex: 3,
+      title: "Iconic Seawall Vista - Stanley Park Seawall",
+      imagePrompt: "Expansive, iconic, seawall, mountains, Burrard Inlet, freedom",
+      composition: "Wide-angle shot of the couple standing on the Stanley Park Seawall, with an expansive view of the Burrard Inlet and the North Shore mountains in the background. The couple can be holding hands, looking out at the view, appearing small in the frame to emphasize the grandeur of the landscape.",
+      direction: "Position the couple to make the most of the iconic Vancouver backdrop. Encourage them to take in the view, 'Imagine this is your future, vast and beautiful.' Use leading lines of the seawall. Wait for a moment with interesting boat traffic or cloud formations if possible.",
+      technical: "Aperture: f/8.0-11.0 for maximum depth of field, ensuring mountains and water are sharp. Shutter Speed: 1/250s+. ISO: 100-200. Lens: 16-35mm wide-angle zoom. Lighting: Late afternoon for warm light on mountains. Overcast days provide excellent diffused light for wide views. Position subjects with sun behind them for dramatic effect or seek open shade.",
+      equipment: [
+        "Full-frame DSLR/Mirrorless camera",
+        "16-35mm f/2.8 wide-angle zoom lens",
+        "ND filter (if shooting during bright midday sun to reduce glare)",
+        "Circular Polarizer (CPL) filter"
+      ],
+      visual_Keywords: "Expansive, iconic, seawall, mountains, Burrard Inlet, freedom",
+      poses: "Standing side-by-side, holding hands, looking out at the view, arms around each other.",
+      blocking: "Couple positioned towards the edge of the seawall, facing out towards the water and mountains.",
+      communicationCues: "Take in the view, 'Imagine your future', feel the freedom, 'Soak it all in'."
     },
     {
-      "shotNumber": 8,
-      "title": "Concrete Wall Study on Manitoba Street",
-      "location": "Small Industrial/Commercial Fronts on Manitoba Street (around 7th to 10th Ave)",
-      "idealLighting": "Overcast for uniform light that reveals subtle textures, or late afternoon for soft, raking light that emphasizes the concrete's imperfections. Look for building facades not in direct, harsh sunlight.",
-      "composition": "Close-up (headshot/upper chest). Subject framed tightly against a plain concrete wall, highlighting the subtle imperfections, marks, and grit of the surface as a raw, characterful, yet neutral background for the face. Focus on expression and connection.",
-      "poses": "Expressive facial portrait, looking directly at the camera or slightly off to the side. Can bring a hand up near the face in a thoughtful gesture, or keep hands out of frame for maximum focus on the expression. Intimate and focused.",
-      "blocking": "Subject positioned very close to the concrete wall, creating a shallow depth of field to keep the focus sharply on their face while subtly showcasing the unique texture of the wall.",
-      "communicationCues": "This wall has so much subtle character, just like you. Let's get really close. Give me a moment of genuine thought, a soft smile, or powerful, direct eye contact. Let your eyes tell the story."
-    },
-    {
-      "shotNumber": 9,
-      "title": "Loading Bay Silhouette on Manitoba Street",
-      "location": "Small Industrial/Commercial Fronts on Manitoba Street (around 7th to 10th Ave)",
-      "idealLighting": "Late afternoon as the sun dips lower, creating a strong backlight effect through a loading bay opening, or using controlled off-camera flash for a dramatic, defined silhouette against a brighter background. Aim for strong contrast.",
-      "composition": "Wide shot (full body). Subject positioned within or at the threshold of a loading bay, creating a subtle or strong silhouette against the brighter light from within or behind. Emphasize the geometry and depth of the loading bay structure. Can be two subjects standing side-by-side or one slightly behind the other, creating layers.",
-      "poses": "Standing tall and still, creating a strong profile, or looking directly out from the darker area towards the light. Arms relaxed at sides or hands in pockets.",
-      "blocking": "Subject framed by the rectangular opening of the loading bay, utilizing the strong lines of the structure to create a natural frame and sense of depth. The contrast of light defines the form.",
-      "communicationCues": "Let's use this incredible shape and light. Stand right in the middle of this opening. I want to capture your silhouette against the light. Give me a strong, thoughtful profile, or just look straight out with power."
-    },
-    {
-      "shotNumber": 10,
-      "title": "Brick Texture Portrait in Back Alleys off Main Street",
-      "location": "Back Alleys off Main Street (between E 10th Ave and E 12th Ave)",
-      "idealLighting": "Overcast day for soft, even light that exquisitely highlights the texture and character of the brick wall without harsh shadows. Late afternoon for a warm, golden hour glow on the brickwork.",
-      "composition": "Medium shot (upper body to waist). Subject positioned against a rich, textured brick wall, utilizing the patterns, varying tones, and weathered surface of the brick as a raw, characterful yet neutral backdrop that emphasizes the subject.",
-      "poses": "Casual and relaxed, perhaps slightly leaning against the wall, or standing confidently. Hands can be in pockets, loosely crossed, or one arm resting against the wall. A genuine, relaxed smile or a focused, direct gaze.",
-      "blocking": "Subject standing comfortably and naturally against the brick wall, allowing the texture to be a prominent part of the background without distracting from the subject's expression and form.",
-      "communicationCues": "This brick wall has such great character. Lean back a little, really feel that texture behind you. Let's go for a relaxed, natural smile, or a strong, direct look right into the lens."
-    },
-    {
-      "shotNumber": 11,
-      "title": "Fire Escape Drama in Back Alleys off Main Street",
-      "location": "Back Alleys off Main Street (between E 10th Ave and E 12th Ave)",
-      "idealLighting": "Overcast for diffused light that avoids harsh, distracting shadows from the metal structure, or late afternoon for interesting, elongated shadow play through the fire escape's grates.",
-      "composition": "Wide shot (full body or slightly wider). Subject positioned on or near a metal fire escape, using its industrial lines, repetitive patterns, and shadows to create dynamic and edgy framing. Can be one subject ascending/descending, or two subjects interacting on different levels or steps.",
-      "poses": "Action-oriented poses like hands on railing, looking up or down the steps, or sitting casually on a step. Alternatively, a strong, standing pose leaning against the metalwork. Focus on conveying a sense of urban narrative.",
-      "blocking": "Subject interacts with the fire escape – leaning on a railing, sitting on a step, or standing below it using its strong lines as a backdrop. Consider leading lines and depth created by the structure.",
-      "communicationCues": "Let's use these amazing industrial lines. Try stepping onto the first landing, or just stand here and lean against the railing. Imagine you're just pausing for a moment, looking out at the city, or planning your next move."
-    },
-    {
-      "shotNumber": 12,
-      "title": "Service Door Vignette in Back Alleys off Main Street",
-      "location": "Back Alleys off Main Street (between E 10th Ave and E 12th Ave)",
-      "idealLighting": "Overcast for soft, even light across the entire door surface, or late afternoon for gentle, diffused shadows that define the door's features without being harsh. Look for areas with natural overhead coverage to soften light.",
-      "composition": "Medium shot (full body or waist up). Subject framed by an old service door, utilizing its faded paint, simple hardware, and muted tones as a strong, neutral, and intimate background. The rectangular shape of the door creates a natural vignette.",
-      "poses": "Standing directly in front of the door, perhaps one hand casually on the doorframe or knob, as if in contemplation. A thoughtful, quiet, or subtly expressive expression.",
-      "blocking": "Subject positioned centrally or slightly off-center in front of a service door, allowing its distinct rectangular shape and textured surface to frame them effectively. Emphasize a sense of stillness.",
-      "communicationCues": "This door tells a quiet story. Stand here, almost like you're about to open it, or just leaning against it in thought. Give me a reflective, quiet moment – like you're pausing before a decision."
-    },
-    {
-      "shotNumber": 13,
-      "title": "Concrete Pillars & Light Play at West 8th Avenue Underpass",
-      "location": "West 8th Avenue Underpass (between Ontario St and Manitoba St)",
-      "idealLighting": "Any time of day, leveraging the consistent shade provided by the overhead structure. Focus on potential for dramatic light filtering through openings or creating interesting patterns. Low natural light will require higher ISO or subtle off-camera lighting.",
-      "composition": "Wide shot, capturing the subject amidst the repetitive concrete pillars, using the strong vertical lines and starkness of the environment to create a powerful, minimalist frame. Emphasize depth and mood. Can be two subjects separated by a pillar, or standing together, looking into the distance.",
-      "poses": "Standing tall and still, or walking slowly through the pillars. Can lean casually against a pillar, or sit on a concrete ledge if available. Powerful, contemplative, or resolute expressions.",
-      "blocking": "Subject positioned between or in front of several pillars, using their imposing vertical lines to create a structured and dynamic composition. Play with the shadows and any natural light patterns filtering into the underpass.",
-      "communicationCues": "This space has such a dramatic mood. Find a pillar, lean against it, or just stand tall between them. Imagine you're lost in thought, or just taking in the raw power of this place. Let the environment amplify your presence."
-    },
-    {
-      "shotNumber": 14,
-      "title": "Moody Close-up at West 8th Avenue Underpass",
-      "location": "West 8th Avenue Underpass (between Ontario St and Manitoba St)",
-      "idealLighting": "The consistent low light under the underpass, using any available ambient light or a subtle off-camera light source to create a focused, moody illumination on the subject's face. The concrete surfaces can bounce light effectively, adding dimension.",
-      "composition": "Tight close-up (headshot/upper chest). Subject's face emerging from the muted, shadowy background of the underpass, emphasizing intense expression and focus. The textural concrete provides a unique, raw backdrop.",
-      "poses": "Intense, thoughtful, serene, or slightly pensive expression. Minimal body movement, focus entirely on facial nuances and eye contact (or lack thereof).",
-      "blocking": "Subject positioned precisely where the ambient light is most flattering on their face, allowing the concrete background to recede into a soft, textured blur or distinct, muted tones. Emphasize emotional depth.",
-      "communicationCues": "Let the shadows work with us here. Really feel the mood of this space. Give me a deep, contemplative look. Almost like you're lost in thought, but aware of the moment. Just let your eyes tell the story."
-    },
-    {
-      "shotNumber": 15,
-      "title": "Underpass Exit at West 8th Avenue Underpass",
-      "location": "West 8th Avenue Underpass (between Ontario St and Manitoba St)",
-      "idealLighting": "Framing the exit of the underpass towards brighter light, creating a natural vignette effect. Utilize backlight from the outside world, or side light catching the subject as they approach the transition.",
-      "composition": "Medium to wide shot. Subject walking towards or standing at the edge of the underpass opening, with the brighter outside world as a subtle focal point in the background. Emphasize transition, journey, or emergence. Two subjects walking out together, or one reaching for another, symbolizing a shared journey.",
-      "poses": "Walking with purpose towards the light, looking towards the exit with anticipation, or pausing at the threshold, taking a final look back or ready to step out. Confident and strong.",
-      "blocking": "Subject positioned to capture the dramatic contrast between the dark underpass and the brighter world beyond. Use the underpass structure to frame the subject and the light.",
-      "communicationCues": "Imagine you're stepping out into something new, a new chapter. Walk towards that light, slowly. Let your expression show that sense of transition, anticipation, or renewed focus."
+      shotNumber: 8,
+      locationIndex: 3,
+      title: "Joyful Seawall Stroll - Stanley Park Seawall",
+      imagePrompt: "Joyful, candid, strolling, seawall, wind, laughter",
+      composition: "Medium to full shot of the couple walking along the seawall, perhaps arm in arm or with hands linked, laughing and enjoying the fresh air. Capture movement and interaction, with the water and distant mountains blurring slightly in the background. The wind catching hair adds to the candid feel.",
+      direction: "Encourage natural interaction and movement. 'Just walk and chat as if you're on a morning walk together.' 'Let the wind play with your hair!' Capture genuine expressions of joy and ease. Shoot in continuous mode to get the perfect moment.",
+      technical: "Aperture: f/4.0-5.6 for a balance of subject and environment. Shutter Speed: 1/500s+ to freeze motion. ISO: 100-400. Lens: 35mm or 50mm prime. Lighting: Open, bright light. Use open shade if available, or shoot with subjects back to the sun for rim light, using a reflector for fill. Overcast is ideal for even light.",
+      equipment: [
+        "Full-frame DSLR/Mirrorless camera",
+        "35mm f/1.4 or 50mm f/1.4 prime lens",
+        "Reflector (white/silver)",
+        "Lens hood"
+      ],
+      visual_Keywords: "Joyful, candid, strolling, seawall, wind, laughter",
+      poses: "Walking arm-in-arm, hands linked, looking at each other or out, laughing, relaxed stride.",
+      blocking: "Couple walks along the seawall, either towards, away, or parallel to the camera.",
+      communicationCues: "Walk naturally, chat, laugh, 'Feel the breeze', 'Enjoy this moment together'."
     }
   ]
-};
+}
+
+
 
 /**
  * Represents a photo shoot session with its complete lifecycle state.
