@@ -90,6 +90,8 @@ const DEFAULT_SESSION: Session = {
     {
       shotNumber: 1,
       locationIndex: 0,
+      location: "Stanley Park Rose Garden - Arched Pergola & Secluded Paths",
+      idealLighting: "Morning (9-11 AM) or late afternoon (4-6 PM) for soft, directional light",
       title: "Rose Garden Pergola Embrace - Stanley Park Rose Garden",
       imagePrompt: "Joyful, romantic, embrace, rose garden, pergola, soft light",
       composition: "Medium shot of the couple under an arched pergola, surrounded by climbing roses. They are embracing, looking into each other's eyes, a soft smile on their faces. The pergola frames them, and the background is softly blurred with rose blooms.",
@@ -101,7 +103,6 @@ const DEFAULT_SESSION: Session = {
         "Reflector (silver/white side for fill, if needed)",
         "Lens hood"
       ],
-      visual_Keywords: "Joyful, romantic, embrace, rose garden, pergola, soft light",
       poses: "Embracing, looking into each other's eyes, soft smiles, relaxed posture.",
       blocking: "Couple centered under the archway, facing each other, with one slightly turning into the other's embrace. Minimal movement.",
       communicationCues: "Engage, connect, embrace, breathe, share a quiet moment.",
@@ -110,6 +111,8 @@ const DEFAULT_SESSION: Session = {
     {
       shotNumber: 2,
       locationIndex: 0,
+      location: "Stanley Park Rose Garden - Arched Pergola & Secluded Paths",
+      idealLighting: "Morning (9-11 AM) or late afternoon (4-6 PM) for soft, directional light",
       title: "Candid Stroll on Secluded Rose Path - Stanley Park Rose Garden",
       imagePrompt: "Candid, joyful, strolling, rose path, laughter, movement",
       composition: "Full shot of the couple walking hand-in-hand down a winding, secluded path through the rose garden. Their backs are slightly turned as they walk away, looking back over their shoulders at the camera with genuine laughter. The path leads into soft focus roses.",
@@ -121,7 +124,6 @@ const DEFAULT_SESSION: Session = {
         "Speedlight (off-camera, if needed for fill in challenging light)",
         "Wireless trigger"
       ],
-      visual_Keywords: "Candid, joyful, strolling, rose path, laughter, movement",
       poses: "Walking hand-in-hand, looking back over shoulder, genuine laughter, relaxed body language.",
       blocking: "Couple walks slowly away from camera down the path, then turns heads back towards camera.",
       communicationCues: "Walk naturally, chat, laugh, 'Look back at me!', 'Share a secret!'",
@@ -130,6 +132,8 @@ const DEFAULT_SESSION: Session = {
     {
       shotNumber: 3,
       locationIndex: 1,
+      location: "Malkin Bowl Forest Edge Path",
+      idealLighting: "Mid-morning to early afternoon (10 AM - 3 PM) for dappled light",
       title: "Intimate Forest Edge Embrace - Malkin Bowl Forest Edge Path",
       imagePrompt: "Intimate, secluded, soft, forest, embrace, dappled light",
       composition: "Medium close-up of the couple standing intimately amidst the tall, dense trees. One partner is gently holding the other's face, or they are in a soft embrace, eyes closed or gazing at each other. Focus on their connection, with the beautiful dappled light creating patterns on them and the background providing natural bokeh.",
@@ -141,7 +145,6 @@ const DEFAULT_SESSION: Session = {
         "Reflector (small, for subtle fill, if necessary)",
         "Lens hood"
       ],
-      visual_Keywords: "Intimate, secluded, soft, forest, embrace, dappled light",
       poses: "Soft embrace, hands on face/waist, eyes closed or gazing, relaxed and tender.",
       blocking: "Couple standing close together, slightly off-center in the frame, surrounded by trees. Minimal movement.",
       communicationCues: "Connect, be present, gentle touch, feel the quiet, 'Just you two'.",
@@ -150,6 +153,8 @@ const DEFAULT_SESSION: Session = {
     {
       shotNumber: 4,
       locationIndex: 1,
+      location: "Malkin Bowl Forest Edge Path",
+      idealLighting: "Mid-morning to early afternoon (10 AM - 3 PM) for dappled light",
       title: "Candid Forest Walk with Dappled Light - Malkin Bowl Forest Edge Path",
       imagePrompt: "Candid, walking, forest path, genuine, joyful, dappled light",
       composition: "Full body shot of the couple walking away from the camera along the winding dirt path, hands clasped. They are looking back at each other and smiling or laughing. The path recedes into the soft focus of the forest, with streaks of dappled sunlight creating a magical atmosphere.",
@@ -161,7 +166,6 @@ const DEFAULT_SESSION: Session = {
         "Monopod (optional, for stability in lower light)",
         "Lens hood"
       ],
-      visual_Keywords: "Candid, walking, forest path, genuine, joyful, dappled light",
       poses: "Walking hand-in-hand, looking at each other, genuine smiles/laughter, relaxed stride.",
       blocking: "Couple walks away from the camera along the path, looking back at each other.",
       communicationCues: "Walk naturally, chat, laugh together, 'Just enjoy your walk'.",
@@ -170,6 +174,8 @@ const DEFAULT_SESSION: Session = {
     {
       shotNumber: 5,
       locationIndex: 2,
+      location: "Lost Lagoon Pedestrian Bridge & Gazebo Area",
+      idealLighting: "Early morning (sunrise to 9 AM) or late afternoon/sunset for golden hour",
       title: "Joyful Stroll on Lost Lagoon Bridge - Lost Lagoon Pedestrian Bridge",
       imagePrompt: "Joyful, strolling, bridge, Lost Lagoon, reflection, serene",
       composition: "Full shot of the couple playfully walking across the pedestrian bridge. They could be skipping, doing a little dance, or simply walking hand-in-hand, looking out at the lagoon. The serene waters of Lost Lagoon are in the background, offering soft reflections of the sky and trees.",
@@ -181,7 +187,6 @@ const DEFAULT_SESSION: Session = {
         "Circular Polarizer (CPL) filter (to enhance reflections or reduce glare)",
         "Tripod (for potential longer exposure on water, not for this shot)"
       ],
-      visual_Keywords: "Joyful, strolling, bridge, Lost Lagoon, reflection, serene",
       poses: "Walking hand-in-hand, skipping, dancing, looking at each other or out at the water, joyful expressions.",
       blocking: "Couple walks from one end of the bridge to the other, away from or towards the camera.",
       communicationCues: "Playful, joyful, skip, dance, 'Look out at the water!', 'Enjoy this view!'",
@@ -190,6 +195,8 @@ const DEFAULT_SESSION: Session = {
     {
       shotNumber: 6,
       locationIndex: 2,
+      location: "Lost Lagoon Pedestrian Bridge & Gazebo Area",
+      idealLighting: "Early morning (sunrise to 9 AM) or late afternoon/sunset for golden hour",
       title: "Serene Gazebo Reflection - Lost Lagoon Gazebo Area",
       imagePrompt: "Serene, intimate, reflection, gazebo, Lost Lagoon, calm water",
       composition: "Medium wide shot of the couple standing within or near the small gazebo, with the tranquil waters of Lost Lagoon prominently featured in the foreground and background, showing clear reflections. They are in a quiet embrace or standing side-by-side, gazing out at the water, creating a peaceful, contemplative mood.",
@@ -201,7 +208,6 @@ const DEFAULT_SESSION: Session = {
         "Reflector (silver/white)",
         "Lens hood"
       ],
-      visual_Keywords: "Serene, intimate, reflection, gazebo, Lost Lagoon, calm water",
       poses: "Gentle embrace, standing side-by-side looking out, contemplative, relaxed.",
       blocking: "Couple positioned within or immediately next to the gazebo, facing the water.",
       communicationCues: "Peaceful, calm, 'Look out at the water', 'Feel the tranquility'.",
@@ -210,6 +216,8 @@ const DEFAULT_SESSION: Session = {
     {
       shotNumber: 7,
       locationIndex: 3,
+      location: "Stanley Park Seawall - Lumberman's Arch Stretch",
+      idealLighting: "Late afternoon or early morning for best light on mountains and water",
       title: "Iconic Seawall Vista - Stanley Park Seawall",
       imagePrompt: "Expansive, iconic, seawall, mountains, Burrard Inlet, freedom",
       composition: "Wide-angle shot of the couple standing on the Stanley Park Seawall, with an expansive view of the Burrard Inlet and the North Shore mountains in the background. The couple can be holding hands, looking out at the view, appearing small in the frame to emphasize the grandeur of the landscape.",
@@ -221,7 +229,6 @@ const DEFAULT_SESSION: Session = {
         "ND filter (if shooting during bright midday sun to reduce glare)",
         "Circular Polarizer (CPL) filter"
       ],
-      visual_Keywords: "Expansive, iconic, seawall, mountains, Burrard Inlet, freedom",
       poses: "Standing side-by-side, holding hands, looking out at the view, arms around each other.",
       blocking: "Couple positioned towards the edge of the seawall, facing out towards the water and mountains.",
       communicationCues: "Take in the view, 'Imagine your future', feel the freedom, 'Soak it all in'."
@@ -229,6 +236,8 @@ const DEFAULT_SESSION: Session = {
     {
       shotNumber: 8,
       locationIndex: 3,
+      location: "Stanley Park Seawall - Lumberman's Arch Stretch",
+      idealLighting: "Late afternoon or early morning for best light on mountains and water",
       title: "Joyful Seawall Stroll - Stanley Park Seawall",
       imagePrompt: "Joyful, candid, strolling, seawall, wind, laughter",
       composition: "Medium to full shot of the couple walking along the seawall, perhaps arm in arm or with hands linked, laughing and enjoying the fresh air. Capture movement and interaction, with the water and distant mountains blurring slightly in the background. The wind catching hair adds to the candid feel.",
@@ -240,7 +249,6 @@ const DEFAULT_SESSION: Session = {
         "Reflector (white/silver)",
         "Lens hood"
       ],
-      visual_Keywords: "Joyful, candid, strolling, seawall, wind, laughter",
       poses: "Walking arm-in-arm, hands linked, looking at each other or out, laughing, relaxed stride.",
       blocking: "Couple walks along the seawall, either towards, away, or parallel to the camera.",
       communicationCues: "Walk naturally, chat, laugh, 'Feel the breeze', 'Enjoy this moment together'."
