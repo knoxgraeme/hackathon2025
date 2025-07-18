@@ -1,11 +1,7 @@
 /**
- * Photography Session Planning Edge Function (OPTIMIZED VERSION)
+ * Photography Session Planning Edge Function
  * 
- * Optimizations applied:
- * - Exponential backoff for ElevenLabs polling (500ms -> 3s max)
- * - Reduced prompt verbosity while maintaining quality
- * - Cached bucket existence checks
- * - Optional: Can switch to gemini-2.0-flash-exp for faster responses
+ * Processes ElevenLabs conversation transcripts to generate complete photo shoot plans.
  * 
  * Input: 
  * - conversationId: Fetches transcript from ElevenLabs API
@@ -33,14 +29,17 @@ import {
 } from "../_shared/helpers.ts"
 import type { PhotoShootContext, Location, Shot } from "../_shared/types.ts"
 
-// OPTIMIZED: Concise style guide for consistent image generation
-const STORYBOARD_STYLE_GUIDE = `STYLE: Monochrome black & white ink sketch
-TECHNIQUE: Clean line art with hatching/cross-hatching only
-COMPLEXITY: Simplified and suggestive, not detailed
-OUTPUT: Single cohesive scene from one viewpoint`;
+// UPDATED: Centralized style guide for consistent image generation
+const STORYBOARD_STYLE_GUIDE = `
+### ART STYLE REQUIREMENTS
+You are an illustrator creating a storyboard with a single, consistent style.
 
-// Cache for bucket existence check
-let bucketExists: boolean | null = null;
+- **Medium:** MONOCHROME BLACK & WHITE INK. Absolutely no color.
+- **Technique:** Line art sketch. Use clean, defined outlines for forms.
+- **Shading:** Use only parallel hatching, cross-hatching, or solid black fills for shadows and depth. DO NOT use gradients, smudging, or photo-realistic shading.
+- **Complexity:** HIGHLY SIMPLIFIED. Focus on composition, form, and emotion. Faces, clothing details, and background elements should be suggestive and minimalist, not detailed or realistic.
+- **Output:** The entire image must be a single, cohesive scene from one viewpoint.
+`;
 
 serve(async (req) => {
   // Handle CORS
@@ -50,43 +49,25 @@ serve(async (req) => {
   try {
     // Parse request body
     const body = await req.json();
-    const DEBUG = body.debug || false;
-    
-    // Helper function for conditional logging
-    const log = (message: string, data?: any) => {
-      if (DEBUG && data) {
-        console.log(message, typeof data === 'string' ? data : JSON.stringify(data, null, 2));
-      } else {
-        console.log(message);
-      }
-    };
-    
-    // Helper for debug-only logs
-    const debugLog = (message: string, data?: any) => {
-      if (DEBUG) {
-        console.log(message, data);
-      }
-    };
-    
-    log('📦 Processing request:', body.conversationId || 'direct-input');
-    debugLog('🔍 Request details:', {
+    console.log('📦 Received request:', JSON.stringify(body, null, 2))
+    console.log('🔍 Request details:', {
       conversationId: body.conversationId,
       hasTranscript: !!body.transcript,
       generateImages: body.generateImages,
-      debugMode: DEBUG,
+      debugMode: body.debug || false,
       timestamp: new Date().toISOString()
     })
     
     // Initialize AI
     const geminiApiKey = validateEnvVar('GEMINI_API_KEY')
     const genAI = new GoogleGenerativeAI(geminiApiKey)
-    log('✅ AI initialized')
+    console.log('✅ Initialized Google Generative AI')
     
     // Initialize Supabase client for storage
     const supabaseUrl = validateEnvVar('SUPABASE_URL')
     const supabaseServiceKey = validateEnvVar('SUPABASE_SERVICE_ROLE_KEY')
     const supabase = createClient(supabaseUrl, supabaseServiceKey)
-    // Supabase client initialized
+    console.log('✅ Initialized Supabase client')
     
     const result: any = {}
     
@@ -105,14 +86,8 @@ serve(async (req) => {
       }
     } : null
     
-    // OPTIMIZED: Cached bucket existence check
+    // Helper function to ensure bucket exists and create if needed
     const ensureBucketExists = async (): Promise<boolean> => {
-      // Return cached result if available
-      if (bucketExists !== null) {
-        debugLog(`📂 Using cached bucket status: ${bucketExists}`)
-        return bucketExists
-      }
-      
       try {
         const bucketName = 'storyboard-images'
         
@@ -124,8 +99,8 @@ serve(async (req) => {
           return false
         }
         
-        bucketExists = buckets?.some(bucket => bucket.name === bucketName) || false
-        debugLog(`📂 Bucket '${bucketName}' exists: ${bucketExists}`)
+        const bucketExists = buckets?.some(bucket => bucket.name === bucketName)
+        console.log(`📂 Bucket '${bucketName}' exists: ${bucketExists}`)
         
         if (!bucketExists) {
           console.log('🔨 Creating storyboard-images bucket...')
@@ -139,18 +114,15 @@ serve(async (req) => {
           
           if (error) {
             console.error('Error creating bucket:', error)
-            bucketExists = false
             return false
           }
           
           console.log('✅ Bucket created successfully')
-          bucketExists = true
         }
         
-        return bucketExists
+        return true
       } catch (error) {
         console.error('Bucket creation error:', error)
-        bucketExists = false
         return false
       }
     }
@@ -167,7 +139,7 @@ serve(async (req) => {
         
         // Convert base64 to bytes
         const imageData = Uint8Array.from(atob(imageBase64), c => c.charCodeAt(0))
-        debugLog(`📸 Uploading image: ${fileName} (${imageData.length} bytes`)
+        console.log(`📸 Uploading image: ${fileName} (${imageData.length} bytes)`)
         
         // Upload to Supabase Storage
         const { data, error } = await supabase.storage
@@ -208,17 +180,13 @@ serve(async (req) => {
         return createErrorResponse('ELEVENLABS_API_KEY not configured', 500)
       }
       
-      // OPTIMIZED: Exponential backoff polling
-      const maxRetries = 30;
-      let retryDelay = 500; // Start at 500ms
-      const maxDelay = 3000; // Cap at 3 seconds
+      // Poll for conversation completion
+      const maxRetries = 30; // 30 retries
+      const retryDelay = 2000; // 2 seconds between retries
       let conversationData: any = null;
       
       for (let attempt = 0; attempt < maxRetries; attempt++) {
-        // Only log every 5th attempt or first/last to reduce noise
-        if (attempt === 0 || attempt === maxRetries - 1 || attempt % 5 === 0) {
-          log(`🔄 Polling attempt ${attempt + 1}/${maxRetries} (delay: ${retryDelay}ms)`)
-        }
+        console.log(`🔄 Polling attempt ${attempt + 1}/${maxRetries}`)
         
         const conversationResponse = await fetch(
           `https://api.elevenlabs.io/v1/convai/conversations/${body.conversationId}`,
@@ -255,19 +223,17 @@ serve(async (req) => {
         if (attempt < maxRetries - 1) {
           console.log(`⏳ Status is "${conversationData.status}", waiting ${retryDelay}ms before retry...`)
           await new Promise(resolve => setTimeout(resolve, retryDelay))
-          // Exponential backoff: increase delay by 50% each time, capped at maxDelay
-          retryDelay = Math.min(Math.floor(retryDelay * 1.5), maxDelay)
         }
       }
       
       // After all retries, check final status
       if (!conversationData || conversationData.status !== 'done') {
         console.error(`❌ Conversation did not complete after ${maxRetries} attempts. Current status: ${conversationData?.status || 'unknown'}`)
-        return createErrorResponse(`Conversation did not complete within timeout. Current status: ${conversationData?.status || 'unknown'}`, 408)
+        return createErrorResponse(`Conversation did not complete within ${maxRetries * retryDelay / 1000} seconds. Current status: ${conversationData?.status || 'unknown'}`, 408)
       }
       
-      debugLog('🔍 ElevenLabs API response:', conversationData)
-      log('📊 Transcript turns:', conversationData.transcript?.length || 0)
+      console.log('🔍 ElevenLabs API response:', JSON.stringify(conversationData, null, 2))
+      console.log('📊 Transcript turns:', conversationData.transcript?.length || 0)
       
       if (conversationData.transcript && Array.isArray(conversationData.transcript)) {
         // Check if transcript has actual content
@@ -275,7 +241,7 @@ serve(async (req) => {
         
         if (!hasContent) {
           console.error('❌ Transcript exists but is empty')
-          debugLog('Full conversation data:', conversationData)
+          console.error('Full conversation data:', JSON.stringify(conversationData, null, 2))
           return createErrorResponse('Transcript is empty - no conversation content found. The conversation may have ended without any exchanges.', 400)
         }
         
@@ -285,19 +251,19 @@ serve(async (req) => {
           .map((turn: any) => `${turn.role}: ${turn.message}`)
           .join('\n');
         
-        debugLog('📝 Parsed transcript from API:', transcript)
-        log('📊 Transcript length:', `${transcript.length} characters`)
+        console.log('📝 Parsed transcript from API:', transcript)
+        console.log('📊 Transcript length:', transcript.length, 'characters')
         console.log('📊 Number of turns with content:', conversationData.transcript.filter((turn: any) => turn.message && turn.message.trim().length > 0).length)
       } else {
         console.error('❌ No transcript found in response')
-        debugLog('Response structure:', conversationData)
+        console.error('Response structure:', JSON.stringify(conversationData, null, 2))
         return createErrorResponse('No transcript found in ElevenLabs conversation. The response structure may have changed.', 400)
       }
     } else if (body.transcript) {
       // Direct transcript for testing
       transcript = body.transcript;
-      debugLog('📝 Received body.transcript:', transcript)
-      log('📊 Transcript length:', `${transcript.length} characters`)
+      console.log('📝 Received body.transcript:', transcript)
+      console.log('📊 Transcript length:', transcript.length, 'characters')
     } else if (body.data_collection) {
       // Convert data collection to simulated transcript
       const dc = body.data_collection;
@@ -376,32 +342,36 @@ User: ${dc.experience || 'intermediate'}`
     
     // Create model with structured output
     const contextModel = genAI.getGenerativeModel({ 
-      model: "gemini-2.5-flash", // Optional: Change to "gemini-2.0-flash-exp" for even faster
+      model: "gemini-2.5-flash",
       generationConfig: {
         responseMimeType: "application/json",
         responseSchema: contextSchema
       }
     })
     
-    // OPTIMIZED: More concise context extraction prompt
-    const contextPrompt = `You are an AI assistant specializing in photography planning.
-Analyze this transcript and extract details into the JSON schema provided.
+    const contextPrompt = `
+    You are an AI assistant specializing in processing conversations to extract key details for a photography plan.
+    Your task is to analyze the following transcript and populate a structured JSON object with the specified fields.
 
-When information is missing, apply these defaults or infer from context:
-- location: "Mount Pleasant, Vancouver"
-- date/startTime: "flexible"
-- duration: "2 hours"
-- shootType: infer from context or use "portrait"
-- mood: infer 2-3 descriptors from conversation tone
-- experience: "intermediate"
-- locationPreference: "clustered"
-- equipment: []
-- Others: empty string
+    ### Instructions
+    1.  Read the entire transcript to understand the full context.
+    2.  Extract the information for each field defined in the JSON schema.
+    3.  If a specific detail is not mentioned, use your reasoning to infer it or apply the specified default value. For example, if the tone is happy and celebratory, the mood might be "joyful" and "candid".
+    4.  Adhere strictly to the JSON schema for the output.
 
-Focus on capturing the client's vision and requirements accurately.
+    ### Defaults for Missing Information
+    - location: "Mount Pleasant, Vancouver"
+    - date/startTime: "flexible"
+    - duration: "2 hours"
+    - shootType: infer from context or use "portrait"
+    - mood: infer 2-3 descriptors from conversation tone
+    - experience: "intermediate"
+    - locationPreference: "clustered"
+    - equipment: []
+    - secondarySubjects, mustHaveShots, specialRequirements: ""
 
-Transcript:
-${transcript}`
+    ### Transcript
+    ${transcript}`
     
     console.log('🧠 Sending to AI model - transcript preview:', transcript.substring(0, 200) + '...')
     console.log('🧠 Full prompt length:', contextPrompt.length, 'characters')
@@ -484,30 +454,33 @@ ${transcript}`
       
       // Create model with structured output for locations
       const locationModel = genAI.getGenerativeModel({ 
-        model: "gemini-2.5-flash", // Optional: Change to "gemini-2.0-flash-exp" for even faster
+        model: "gemini-2.5-flash",
         generationConfig: {
           responseMimeType: "application/json",
           responseSchema: locationSchema
         }
       })
       
-      // OPTIMIZED: More concise location prompt
-      const locationPrompt = `You are an expert location scout for photography.
-Generate 4-5 specific photo locations based on this brief:
+      const locationPrompt = `
+    You are a world-class location scout and producer for high-end photoshoots. You have a knack for finding unique, photogenic spots that are not only beautiful but also practical.
 
-Shoot: ${context.shootType} in ${location}
-Mood: ${context.mood.join(', ')}
-Schedule: ${context.date} at ${context.startTime || 'flexible'}, ${context.duration}
-Preference: ${context.locationPreference} locations
-Special: ${context.specialRequests || 'None'}
+    Your task is to generate 4-5 specific, actionable photo location ideas based on the following shoot brief.
 
-Requirements:
-- Prioritize hidden gems over tourist spots
-- Focus on publicly accessible locations (no complex permits)
-- Consider practical lighting for the time of day
-- Include realistic backup options
+    ### Shoot Brief
+    - **Shoot Type:** ${context.shootType}
+    - **Primary Location:** ${location}
+    - **Desired Mood/Aesthetic:** ${context.mood.join(', ')}
+    - **Proposed Date & Time:** ${context.date} at ${context.startTime || 'flexible'}
+    - **Duration:** ${context.duration}
+    - **Location Preference:** ${context.locationPreference} (clustered = close together, spread = logical itinerary)
+    - **Special Requirements:** ${context.specialRequests || 'None'}
 
-Provide complete details per the JSON schema.`
+    ### Instructions
+    1.  Find 4-5 distinct locations that fit the brief.
+    2.  Prioritize "hidden gems" over cliché tourist traps.
+    3.  **Crucially, prioritize locations that are publicly accessible and do not require complex permits, unless specified in the requirements.**
+    4.  For each location, provide all details as per the JSON schema, including practical notes on lighting and accessibility.
+    5.  Suggest realistic backup alternatives for each primary spot.`
       
       console.log('🏗️ Sending location request to AI')
       
@@ -552,33 +525,46 @@ Provide complete details per the JSON schema.`
         `Location ${idx + 1}: ${loc.name} - ${loc.description} (Best time: ${loc.bestTime}, Lighting: ${loc.lightingNotes})`
       ).join('\n');
       
-      // OPTIMIZED: More concise storyboard prompt
-      const storyboardPrompt = `You are an expert ${context.shootType} photographer and creative director.
-Create a cohesive shot list using these specific locations:
+      // UPDATED: The prompt for Stage 3 is now smarter.
+      const storyboardPrompt = `You are an expert wedding, portrait, and engagement photographer and creative director with 20 years of experience. You have a master's degree in fine art photography and a deep understanding of classical art, cinema, and storytelling.
 
+Your Task:
+Create a detailed shot list that makes use of the specific locations provided, creating a cohesive photo journey.
+
+### SPECIFIC LOCATIONS PROVIDED:
 ${locationDetails}
 
-Shoot Context:
-- Type: ${context.shootType}
+### Shoot Context
+- Shoot type: ${context.shootType}
 - Mood: ${context.mood.join(', ')}
 - Subjects: ${context.subject}
 
-For each shot, provide:
-1. shotNumber, locationIndex, title (must include location name)
-2. imagePrompt: 5-7 visual keywords for storyboard
-3. composition: framing, poses, environmental interaction
-4. direction: clear communication for photographer
-5. technical: camera settings, lens, lighting approach
-6. equipment: required gear
+### Instructions:
+For EACH shot, you must generate the following detailed components:
+1.  **Title:** A clear, descriptive title that INCLUDES THE SPECIFIC LOCATION.
+2.  **Location Index:** Which location from the list (0-based index).
+3.  **Image Prompt:** The core visual keywords and elements for storyboard generation (5-7 keywords).
+4.  **Composition:** Combined framing, poses, and environmental interaction details.
+5.  **Direction:** Communication cues and instructions for the photographer.
+6.  **Technical:** Camera settings, lens choice, and lighting approach.
+7.  **Equipment:** List of recommended gear for this shot.
 
-Include legacy fields for compatibility:
-- visual_Keywords (same as imagePrompt)
-- poses, blocking, communicationCues (same as direction)
+For backwards compatibility, also include:
+- **visual_Keywords:** Same as imagePrompt
+- **poses:** Subject positioning details
+- **blocking:** Movement and spatial arrangement
+- **communicationCues:** Same as direction
 
-Output: JSON array only, starting '[' ending ']'`;
+-----------------------------------
+### FINAL OUTPUT INSTRUCTIONS
+Your final output MUST be a raw JSON array.
+- Do NOT include any introductory text or markdown code fences.
+- Your entire response must start with '[' and end with ']'.
+- Each object must contain: "shotNumber", "locationIndex", "title", "imagePrompt", "composition", "direction", "technical", "equipment", "visual_Keywords", "poses", "blocking", "communicationCues".
+-----------------------------------`;
 
       const storyboardModel = genAI.getGenerativeModel({
-        model: "gemini-2.5-flash", // Optional: Change to "gemini-2.0-flash-exp" for even faster
+        model: "gemini-2.5-flash",
         generationConfig: {
           responseMimeType: "application/json"
         }
@@ -630,25 +616,36 @@ Output: JSON array only, starting '[' ending ']'`;
         const visualKeywords = shot.visual_Keywords || shot.imagePrompt || '';
         const poses = shot.poses || (shot.composition ? shot.composition.split('.')[0] : '');
         const blocking = shot.blocking || '';
-        const locationName = shot.location || (shot.locationIndex !== undefined ? result.locations?.[shot.locationIndex]?.name : result.context.location);
         
-        // OPTIMIZED: More concise image prompt
-        const imagePrompt = `${STORYBOARD_STYLE_GUIDE}
+        const imagePrompt = `
+${STORYBOARD_STYLE_GUIDE}
 
-Create a ${result.context.shootType} photography storyboard frame:
+### SHOOT CONTEXT
+**Type:** ${result.context.shootType} photography
+**Overall Mood:** ${result.context.mood.join(', ')}
+**Time of Day:** ${result.context.timeOfDay || 'flexible'}
 
-"${shot.title}"
-Location: ${locationName}
+### SCENE TO ILLUSTRATE
+Create a ${result.context.shootType} photography storyboard frame capturing this specific moment:
 
-Visual Elements: ${visualKeywords}
-Composition: ${shot.composition}
-Subjects: ${result.context.subject}
-Positioning: ${poses}
-Mood: ${result.context.mood.join(', ')}
+**Title:** "${shot.title}"
+**Location:** ${shot.location || (shot.locationIndex !== undefined ? result.locations?.[shot.locationIndex]?.name : result.context.location)}
 
-Illustrate this as a black & white storyboard sketch.`;
+**Visual Elements:** ${visualKeywords}
 
-        debugLog(`🎨 Generating image ${i + 1}/${maxImages} for shot: "${shot.title}"`);
+**Composition & Framing:**
+${shot.composition}
+
+**Subject Positioning:**
+- Subjects: ${result.context.subject}
+- Poses: ${poses}
+- Blocking: ${blocking}
+
+**Mood & Atmosphere:** ${result.context.mood.join(', ')}
+
+Create one single, cohesive illustration that brings this scene to life as a black and white ${result.context.shootType} photography storyboard sketch.`;
+
+        console.log(`🎨 Generating image ${i + 1}/${maxImages} for shot: "${shot.title}"`);
         
         // Store image prompt in debug info if enabled
         if (debugInfo) {
@@ -667,24 +664,24 @@ Illustrate this as a black & white storyboard sketch.`;
             aspectRatio: '4:3',
           },
         }).then(async (response) => {
-          debugLog(`📥 Image generation response received for shot ${i + 1}`);
+          console.log(`📥 Image generation response received for shot ${i + 1}`);
           if (response?.generatedImages?.[0]?.image?.imageBytes) {
             const imageBase64 = response.generatedImages[0].image.imageBytes;
             const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
             const conversationId = body.conversationId || 'direct';
             const fileName = `storyboard-${conversationId}-shot-${i + 1}-${timestamp}.jpg`;
             
-            debugLog(`💾 Saving image for shot ${i + 1}: ${fileName}`);
+            console.log(`💾 Saving image for shot ${i + 1}: ${fileName}`);
             const imageUrl = await saveImageToStorage(imageBase64, fileName);
             
             if (imageUrl) {
               shot.storyboardImage = imageUrl;
-              debugLog(`✅ Generated and saved image for shot ${i + 1}: ${imageUrl}`);
+              console.log(`✅ Generated and saved image for shot ${i + 1}: ${imageUrl}`);
             } else {
-              console.error(`❌ Failed to save image for shot ${i + 1}`);
+              console.log(`❌ Failed to save image for shot ${i + 1}, skipping`);
             }
           } else {
-            console.error(`⚠️ No image data in response for shot ${i + 1}`);
+            console.log(`⚠️ No image data in response for shot ${i + 1}`);
           }
         }).catch((error) => {
           console.error(`❌ Image generation error for shot ${i + 1}:`, error);
@@ -693,16 +690,16 @@ Illustrate this as a black & white storyboard sketch.`;
         imagePromises.push(imagePromise);
       }
 
-      log('⏳ Starting image generation...');
+      console.log('⏳ Waiting for all image generation to complete...');
       await Promise.all(imagePromises);
-      log('✅ Image generation complete');
+      console.log('✅ All image generation complete');
       
       // Count how many images were successfully generated
       const imagesGenerated = result.shots.filter((shot: any) => shot.storyboardImage).length;
-      log(`📊 Images created: ${imagesGenerated}/${maxImages}`);
+      console.log(`📊 Image generation summary: ${imagesGenerated}/${maxImages} images successfully created`);
     }
     
-    log('🎯 Preparing response');
+    console.log('🎯 FINAL STAGE: Preparing response');
     const response = {
       success: true,
       conversationId: body.conversationId || 'direct-input',
@@ -711,7 +708,14 @@ Illustrate this as a black & white storyboard sketch.`;
       ...(debugInfo && { debug: debugInfo })
     }
     
-    debugLog('📤 Response details:', {
+    console.log('📤 Sending response:', {
+      ...response,
+      shots: response.shots?.map((s: Shot & {storyboardImage?: string}) => ({ 
+        title: s.title,
+        hasImage: !!s.storyboardImage 
+      }))
+    })
+    console.log('📊 Response summary:', {
       hasContext: !!response.context,
       locationCount: response.locations?.length || 0,
       shotCount: response.shots?.length || 0,
