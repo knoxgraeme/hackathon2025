@@ -1,5 +1,6 @@
 # ElevenLabs Integration Guide
 
+
 This guide covers the complete ElevenLabs conversational AI integration in the PhotoAssistant project, including agent configuration, webhook setup, frontend implementation, and best practices.
 
 ## Table of Contents
