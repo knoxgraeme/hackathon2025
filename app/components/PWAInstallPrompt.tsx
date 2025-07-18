@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { usePathname } from 'next/navigation';
 import { Button } from './Button';
 
 interface BeforeInstallPromptEvent extends Event {
@@ -12,6 +13,7 @@ export function PWAInstallPrompt() {
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [showIOSPrompt, setShowIOSPrompt] = useState(false);
   const [isStandalone, setIsStandalone] = useState(false);
+  const pathname = usePathname();
 
   useEffect(() => {
     // Check if app is running in standalone mode
@@ -64,8 +66,8 @@ export function PWAInstallPrompt() {
     setShowIOSPrompt(false);
   };
 
-  // Don't show any prompt if in standalone mode
-  if (isStandalone) {
+  // Don't show any prompt if in standalone mode or not on home page
+  if (isStandalone || pathname !== '/') {
     return null;
   }
 
