@@ -4,22 +4,60 @@
 import Link from 'next/link';
 import { EdgePhotoShootContext, EdgeLocation, EdgeShot } from '../types/photo-session';
 
-// Using the Session interface from SessionProvider
+/**
+ * Session interface matching the SessionProvider structure
+ */
 interface Session {
+  /** Unique identifier for the session */
   id: string;
+  /** Current status of the photo session workflow */
   status: 'initial' | 'conversation' | 'processing' | 'complete';
+  /** ElevenLabs conversation ID for voice interactions */
   conversationId?: string;
+  /** Photo shoot context and metadata */
   context?: EdgePhotoShootContext;
+  /** Array of selected shooting locations */
   locations?: EdgeLocation[];
+  /** Array of generated photo shots */
   shots?: EdgeShot[];
+  /** ISO timestamp of session creation */
   createdAt: string;
+  /** Optional user-provided session title */
   title?: string;
 }
 
+/**
+ * Props for the SessionCard component
+ */
 interface SessionCardProps {
+  /** Session object containing all session data */
   session: Session;
 }
 
+/**
+ * SessionCard - Displays a preview card for a photo session
+ * 
+ * This component renders a clickable card that shows:
+ * - Cover image (first storyboard image if available)
+ * - Session title or formatted date
+ * - Number of locations and total shots
+ * - Creation date and time
+ * 
+ * The card links to the full session detail page when clicked.
+ * Sessions without locations are not rendered.
+ * 
+ * @param {SessionCardProps} props - The component props
+ * @param {Session} props.session - The session data to display
+ * @returns {JSX.Element | null} The rendered session card or null if no locations
+ * 
+ * @example
+ * ```tsx
+ * // In a session list
+ * {sessions.map(session => (
+ *   <SessionCard key={session.id} session={session} />
+ * ))}
+ * ```
+ */
 export function SessionCard({ session }: SessionCardProps) {
   if (!session.locations || session.locations.length === 0) {
     return null;

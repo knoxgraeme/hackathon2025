@@ -6,23 +6,62 @@ import { useState } from 'react';
 import Image from 'next/image';
 import { BottomSheet } from './BottomSheet';
 
-// Create a minimal interface for locations used in the storyboard
+/**
+ * Minimal interface for locations used in the storyboard.
+ * Allows flexibility in the location data structure while ensuring required fields.
+ */
 interface StoryboardLocation {
   name: string;
 }
 
+/**
+ * Props for the StoryboardView component
+ */
 interface StoryboardViewProps {
+  /** Array of photo shots to display in the storyboard */
   shots: EdgeShot[];
+  /** Array of locations corresponding to the shots */
   locations: StoryboardLocation[] | EdgeLocation[];
 }
 
+/**
+ * StoryboardView - Displays a grid of photo shots with AI-generated storyboard images
+ * 
+ * This component renders a visual storyboard of planned photo shots, showing generated
+ * preview images for each shot along with shot numbers and composition details.
+ * Clicking on a shot opens a bottom sheet with full details.
+ * 
+ * @param {StoryboardViewProps} props - The component props
+ * @param {EdgeShot[]} props.shots - Array of shot objects containing composition and image data
+ * @param {StoryboardLocation[] | EdgeLocation[]} props.locations - Array of location objects
+ * @returns {JSX.Element} The rendered storyboard grid
+ * 
+ * @example
+ * ```tsx
+ * <StoryboardView 
+ *   shots={generatedShots}
+ *   locations={selectedLocations}
+ * />
+ * ```
+ */
 export function StoryboardView({ shots, locations }: StoryboardViewProps) {
+  /** State to track which shot is currently selected for detail view */
   const [selectedShotIndex, setSelectedShotIndex] = useState<number | null>(null);
+  
+  /** The currently selected shot object, or null if none selected */
   const selectedShot = selectedShotIndex !== null ? shots[selectedShotIndex] : null;
+  
+  /** The location associated with the selected shot */
   const selectedLocation = selectedShot && selectedShot.locationIndex !== undefined && locations[selectedShot.locationIndex] ? 
     locations[selectedShot.locationIndex] as EdgeLocation : null;
 
-  // Extract shot title from composition (first sentence or phrase)
+  /**
+   * Extracts a concise title from the shot's composition text.
+   * Takes the first sentence and truncates if over 50 characters.
+   * 
+   * @param {EdgeShot} shot - The shot object containing composition text
+   * @returns {string} A truncated title for display
+   */
   const getShotTitle = (shot: EdgeShot) => {
     const firstSentence = shot.composition.split(/[.!?]/)[0];
     return firstSentence.length > 50 ? firstSentence.substring(0, 47) + '...' : firstSentence;

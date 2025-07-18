@@ -1,3 +1,8 @@
+/**
+ * PWAInstallPrompt - Progressive Web App installation prompt component
+ * 
+ * Handles both iOS Safari and standard browser PWA installation flows
+ */
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -5,19 +10,63 @@ import { usePathname } from 'next/navigation';
 import Image from 'next/image';
 import { Button } from './Button';
 
+/**
+ * Extended Event interface for the beforeinstallprompt event
+ * This event is fired by browsers that support PWA installation
+ */
 interface BeforeInstallPromptEvent extends Event {
+  /** Triggers the browser's native install prompt */
   prompt(): Promise<void>;
+  /** Promise that resolves with the user's choice */
   userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>;
 }
 
+/**
+ * PWAInstallPrompt - Smart PWA installation prompt for all platforms
+ * 
+ * This component handles Progressive Web App installation prompts across different platforms:
+ * - **iOS Safari**: Shows custom instructions for "Add to Home Screen"
+ * - **Other browsers**: Uses the standard beforeinstallprompt event
+ * 
+ * Features:
+ * - Detects if app is already installed (standalone mode)
+ * - Only shows on the home page
+ * - iOS prompt respects dismissal (won't show again for 7 days)
+ * - Automatic platform detection
+ * - Clean, native-styled UI
+ * 
+ * The component automatically hides if:
+ * - App is already installed
+ * - User is not on the home page
+ * - User has dismissed iOS prompt within 7 days
+ * 
+ * @returns {JSX.Element | null} Installation prompt UI or null
+ * 
+ * @example
+ * ```tsx
+ * // Simply include in your app layout or home page
+ * <PWAInstallPrompt />
+ * ```
+ */
 export function PWAInstallPrompt() {
+  /** Stores the deferred install prompt event for non-iOS browsers */
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
+  /** Controls visibility of iOS-specific install instructions */
   const [showIOSPrompt, setShowIOSPrompt] = useState(false);
+  /** Tracks if app is already installed (standalone mode) */
   const [isStandalone, setIsStandalone] = useState(false);
+  /** Current pathname for conditional rendering */
   const pathname = usePathname();
 
+  /**
+   * Effect to handle PWA detection and prompt setup
+   * Runs on mount to check platform and installation status
+   */
   useEffect(() => {
-    // Check if app is running in standalone mode
+    /**
+     * Checks if the app is running in standalone mode (already installed)
+     * Uses multiple detection methods for cross-platform compatibility
+     */
     const checkStandalone = () => {
       const standalone = window.matchMedia('(display-mode: standalone)').matches || 
                         ('standalone' in window.navigator && (window.navigator as typeof window.navigator & { standalone: boolean }).standalone) || 
@@ -54,6 +103,10 @@ export function PWAInstallPrompt() {
     };
   }, [isStandalone]);
 
+  /**
+   * Handles the PWA installation for non-iOS browsers
+   * Triggers the browser's native install prompt
+   */
   const handleInstall = async () => {
     if (!deferredPrompt) return;
 
@@ -62,6 +115,10 @@ export function PWAInstallPrompt() {
     setDeferredPrompt(null);
   };
 
+  /**
+   * Handles iOS prompt dismissal
+   * Stores dismissal timestamp to prevent showing again for 7 days
+   */
   const handleIOSDismiss = () => {
     localStorage.setItem('pwa-ios-prompt-dismissed', Date.now().toString());
     setShowIOSPrompt(false);

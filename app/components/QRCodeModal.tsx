@@ -1,20 +1,72 @@
+/**
+ * QRCodeModal - Modal for sharing photo sessions via QR code and link
+ * 
+ * Features smooth animations and backdrop blur effects
+ */
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
 import Image from 'next/image';
 
+/**
+ * Props for the QRCodeModal component
+ */
 interface QRCodeModalProps {
+  /** Controls visibility of the modal */
   isOpen: boolean;
+  /** Callback when modal should close */
   onClose: () => void;
+  /** ID of the session to share */
   sessionId: string;
+  /** Optional title to display in the modal */
   sessionTitle?: string;
 }
 
+/**
+ * QRCodeModal - A modal dialog for sharing photo sessions
+ * 
+ * This component provides multiple ways to share a photo session:
+ * - QR code generation for easy mobile scanning
+ * - Shareable link with copy-to-clipboard functionality
+ * - Smooth open/close animations with backdrop blur
+ * 
+ * Features:
+ * - Generates QR codes using qr-server.com API (no signup required)
+ * - Escape key support for closing
+ * - Click-outside-to-close functionality
+ * - Fallback clipboard support for older browsers
+ * - Responsive design that works on all screen sizes
+ * 
+ * @param {QRCodeModalProps} props - The component props
+ * @param {boolean} props.isOpen - Whether the modal is visible
+ * @param {() => void} props.onClose - Function to call when closing
+ * @param {string} props.sessionId - The session ID to generate share link
+ * @param {string} [props.sessionTitle] - Optional title to display
+ * @returns {JSX.Element | null} The rendered modal or null if closed
+ * 
+ * @example
+ * ```tsx
+ * const [showQR, setShowQR] = useState(false);
+ * 
+ * <QRCodeModal
+ *   isOpen={showQR}
+ *   onClose={() => setShowQR(false)}
+ *   sessionId={session.id}
+ *   sessionTitle="Vancouver Photoshoot"
+ * />
+ * ```
+ */
 export function QRCodeModal({ isOpen, onClose, sessionId, sessionTitle }: QRCodeModalProps) {
+  /** URL for the generated QR code image */
   const [qrCodeUrl, setQrCodeUrl] = useState<string>('');
+  /** The shareable URL for the session */
   const [shareUrl, setShareUrl] = useState<string>('');
+  /** Animation state for smooth transitions */
   const [isAnimating, setIsAnimating] = useState(false);
 
+  /**
+   * Effect to generate QR code and share URL when modal opens
+   */
   useEffect(() => {
     if (isOpen) {
       // Trigger animation after modal mounts
@@ -33,6 +85,10 @@ export function QRCodeModal({ isOpen, onClose, sessionId, sessionTitle }: QRCode
     }
   }, [isOpen, sessionId]);
 
+  /**
+   * Handles modal close with animation
+   * Waits for animation to complete before calling onClose
+   */
   const handleClose = useCallback(() => {
     setIsAnimating(false);
     // Wait for animation to complete before actually closing
@@ -41,7 +97,9 @@ export function QRCodeModal({ isOpen, onClose, sessionId, sessionTitle }: QRCode
     }, 300); // Match the transition duration
   }, [onClose]);
 
-  // Handle escape key press
+  /**
+   * Effect to handle escape key press for closing the modal
+   */
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
       if (e.key === 'Escape' && isOpen) {
@@ -55,6 +113,10 @@ export function QRCodeModal({ isOpen, onClose, sessionId, sessionTitle }: QRCode
     }
   }, [isOpen, handleClose]);
 
+  /**
+   * Copies the share URL to clipboard with fallback support
+   * Uses modern clipboard API with fallback for older browsers
+   */
   const copyToClipboard = async () => {
     try {
       await navigator.clipboard.writeText(shareUrl);

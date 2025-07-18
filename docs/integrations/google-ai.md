@@ -12,13 +12,14 @@ This guide covers the integration of Google AI services (Gemini and Imagen 3) in
 6. [Security Best Practices](#security-best-practices)
 7. [Testing Strategies](#testing-strategies)
 8. [Cost Management](#cost-management)
+9. [Troubleshooting](#troubleshooting)
 
 ## Overview
 
 The application leverages two primary Google AI services:
 
-- **Gemini 1.5 Flash**: For natural language processing, context extraction, and creative content generation
-- **Imagen 3**: For generating high-quality storyboard visualization images
+- **Gemini 2.5 Flash**: For natural language processing, context extraction, and creative content generation with structured outputs
+- **Imagen 3.0**: For generating high-quality storyboard visualization images
 
 These services work together in a multi-stage pipeline to transform conversational data into actionable photography session plans with visual storyboards.
 
@@ -34,12 +35,13 @@ Visual Storyboards ← Imagen 3 (Image Generation) ← Gemini (Shot List Creatio
 
 ### Model Selection
 
-The application uses **gemini-1.5-flash** for all text generation tasks. This model was chosen for:
+The application uses **gemini-2.5-flash** for all text generation tasks. This model was chosen for:
 
-- **Speed**: Flash variant optimizes for low latency responses
+- **Speed**: Flash variant optimizes for low latency responses  
 - **Cost Efficiency**: Lower token costs compared to Pro models
-- **Quality**: Sufficient for structured data extraction and creative tasks
-- **JSON Support**: Reliable JSON output generation with proper prompting
+- **Quality**: Excellent for structured data extraction and creative tasks
+- **Structured Output**: Native support for JSON schema validation and structured responses
+- **Improved Context Understanding**: Better at extracting nuanced information from conversations
 
 ### API Key Setup
 
@@ -67,110 +69,212 @@ The application uses **gemini-1.5-flash** for all text generation tasks. This mo
    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" })
    ```
 
-### Prompt Engineering for Context Extraction
+### Structured Output for Context Extraction
 
-The context extraction prompt is designed to parse unstructured conversation data into structured JSON:
+The application uses Gemini 2.5 Flash's structured output feature to ensure reliable JSON responses:
 
 ```typescript
-const CONTEXT_EXTRACTION_PROMPT = `Extract photography shoot details from this conversation data.
-
-Return ONLY a JSON object with these exact fields:
-{
-  "shootType": "portrait" | "landscape" | "product" | "event" | "street" | "fashion",
-  "mood": ["array of 2-3 mood descriptors"],
-  "timeOfDay": "golden hour" | "blue hour" | "midday" | "overcast" | "night" | "flexible",
-  "subject": "description of what/who is being photographed",
-  "duration": "estimated shoot duration",
-  "equipment": ["optional: mentioned camera gear"],
-  "experience": "beginner" | "intermediate" | "professional",
-  "specialRequests": "any specific requirements mentioned"
+// Define schema for context extraction
+const contextSchema = {
+  type: "object",
+  properties: {
+    location: { type: "string" },
+    date: { type: "string" },
+    startTime: { type: "string" },
+    duration: { type: "string" },
+    shootType: { type: "string" },
+    mood: { 
+      type: "array",
+      items: { type: "string" }
+    },
+    primarySubjects: { type: "string" },
+    secondarySubjects: { type: "string" },
+    locationPreference: { type: "string" },
+    mustHaveShots: { type: "string" },
+    specialRequirements: { type: "string" },
+    experience: { type: "string" },
+    timeOfDay: { type: "string" },
+    subject: { type: "string" },
+    equipment: { 
+      type: "array",
+      items: { type: "string" }
+    },
+    specialRequests: { type: "string" }
+  },
+  required: ["location", "date", "startTime", "duration", "shootType", "mood", 
+             "primarySubjects", "locationPreference", "experience", "timeOfDay", 
+             "subject", "equipment", "specialRequests"]
 }
 
-If information is not mentioned, make reasonable assumptions based on context.
+// Create model with structured output
+const contextModel = genAI.getGenerativeModel({ 
+  model: "gemini-2.5-flash",
+  generationConfig: {
+    responseMimeType: "application/json",
+    responseSchema: contextSchema
+  }
+})
+```
 
-Conversation data:
-{CONVERSATION_DATA}
+### Prompt Engineering for Context Extraction
 
-RESPOND WITH ONLY THE JSON OBJECT, NO OTHER TEXT.`
+The context extraction prompt uses role-based instructions and clear structure:
+
+```typescript
+const contextPrompt = `
+You are an AI assistant specializing in processing conversations to extract key details for a photography plan.
+Your task is to analyze the following transcript and populate a structured JSON object with the specified fields.
+
+### Instructions
+1.  Read the entire transcript to understand the full context.
+2.  Extract the information for each field defined in the JSON schema.
+3.  If a specific detail is not mentioned, use your reasoning to infer it or apply the specified default value. For example, if the tone is happy and celebratory, the mood might be "joyful" and "candid".
+4.  Adhere strictly to the JSON schema for the output.
+
+### Defaults for Missing Information
+- location: "Mount Pleasant, Vancouver"
+- date/startTime: "flexible"
+- duration: "2 hours"
+- shootType: infer from context or use "portrait"
+- mood: infer 2-3 descriptors from conversation tone
+- experience: "intermediate"
+- locationPreference: "clustered"
+- equipment: []
+- secondarySubjects, mustHaveShots, specialRequirements: ""
+
+### Transcript
+${transcript}`
 ```
 
 **Key Strategies**:
-- Explicit JSON schema definition
-- Enum values for constrained fields
-- Clear instruction to return ONLY JSON
-- Fallback behavior for missing information
+- Structured output with JSON schema validation
+- Role-based prompt ("AI assistant specializing in...")
+- Clear instructions with numbered steps
+- Explicit defaults for missing information
+- Intelligent inference guidance
 
 ### Prompt Engineering for Location Generation
 
-The location generation prompt creates specific, actionable location recommendations:
+The location generation uses structured output and detailed role-based prompting:
 
 ```typescript
-const LOCATION_GENERATION_PROMPT = `You are a professional location scout in Vancouver, BC. Based on this photography context:
-{CONTEXT}
-
-Suggest 4-5 specific locations in Vancouver area. Include lesser-known spots.
-Base suggestions on these areas but be more specific: {BASE_LOCATIONS}
-
-Return ONLY a JSON array with these exact fields for each location:
-{
-  "name": "Specific location name",
-  "address": "Approximate address or area",
-  "description": "50-word visual description focusing on {MOOD} mood",
-  "bestTime": "Optimal shooting time for this location",
-  "lightingNotes": "Natural light conditions and tips",
-  "accessibility": "Parking, transit, walking required",
-  "permits": "Any permit requirements or restrictions",
-  "alternatives": ["2 nearby backup locations"]
+// Define schema for locations
+const locationSchema = {
+  type: "array",
+  items: {
+    type: "object",
+    properties: {
+      name: { type: "string" },
+      address: { type: "string" },
+      description: { type: "string" },
+      bestTime: { type: "string" },
+      lightingNotes: { type: "string" },
+      accessibility: { type: "string" },
+      permits: { type: "string" },
+      alternatives: {
+        type: "array",
+        items: { type: "string" }
+      }
+    },
+    required: ["name", "address", "description", "bestTime", "lightingNotes", 
+               "accessibility", "permits", "alternatives"]
+  }
 }
 
-Focus on locations that match the mood: {MOOD}
-Consider {TIME_OF_DAY} lighting preferences.
+// Create model with structured output for locations
+const locationModel = genAI.getGenerativeModel({ 
+  model: "gemini-2.5-flash",
+  generationConfig: {
+    responseMimeType: "application/json",
+    responseSchema: locationSchema
+  }
+})
 
-RESPOND WITH ONLY THE JSON ARRAY, NO OTHER TEXT.`
+const locationPrompt = `
+You are a world-class location scout and producer for high-end photoshoots. You have a knack for finding unique, photogenic spots that are not only beautiful but also practical.
+
+Your task is to generate 4-5 specific, actionable photo location ideas based on the following shoot brief.
+
+### Shoot Brief
+- **Shoot Type:** ${context.shootType}
+- **Primary Location:** ${location}
+- **Desired Mood/Aesthetic:** ${context.mood.join(', ')}
+- **Proposed Date & Time:** ${context.date} at ${context.startTime || 'flexible'}
+- **Duration:** ${context.duration}
+- **Location Preference:** ${context.locationPreference} (clustered = close together, spread = logical itinerary)
+- **Special Requirements:** ${context.specialRequests || 'None'}
+
+### Instructions
+1.  Find 4-5 distinct locations that fit the brief.
+2.  Prioritize "hidden gems" over cliché tourist traps.
+3.  **Crucially, prioritize locations that are publicly accessible and do not require complex permits, unless specified in the requirements.**
+4.  For each location, provide all details as per the JSON schema, including practical notes on lighting and accessibility.
+5.  Suggest realistic backup alternatives for each primary spot.`
 ```
 
 **Key Strategies**:
-- Role assignment ("professional location scout")
-- Local context (Vancouver, BC)
-- Seed data for consistency
-- Practical details (permits, accessibility)
-- Dynamic mood and time incorporation
+- Structured output with array schema
+- Expert role assignment ("world-class location scout")
+- Contextual parameters integrated into prompt
+- Focus on practical accessibility
+- Emphasis on hidden gems vs tourist spots
 
 ### Prompt Engineering for Storyboard Creation
 
-The storyboard prompt generates detailed shot lists with technical specifications:
+The storyboard generation creates comprehensive shot lists with location awareness:
 
 ```typescript
-const STORYBOARD_GENERATION_PROMPT = `You are a photography director creating a shot list. Based on this context:
-{CONTEXT}
+const storyboardPrompt = `You are an expert wedding, portrait, and engagement photographer and creative director with 20 years of experience. You have a master's degree in fine art photography and a deep understanding of classical art, cinema, and storytelling.
 
-And these locations:
-{LOCATIONS}
+Your Task:
+Create a detailed shot list that makes use of the specific locations provided, creating a cohesive photo journey.
 
-Create 6-8 diverse shots across the locations. Mix wide, medium, and close-up shots.
+### SPECIFIC LOCATIONS PROVIDED:
+${locationDetails}
 
-Return ONLY a JSON array with these exact fields for each shot:
-{
-  "locationIndex": 0-based index matching the locations array,
-  "shotNumber": sequential number starting at 1,
-  "imagePrompt": "30-word artistic description for storyboard visualization",
-  "poseInstruction": "Clear direction for subject positioning and expression",
-  "technicalNotes": "Camera settings, lens choice, composition tips",
-  "equipment": ["Required gear for this shot"]
-}
+### Shoot Context
+- Shoot type: ${context.shootType}
+- Mood: ${context.mood.join(', ')}
+- Subjects: ${context.subject}
 
-Style: {MOOD}
-Subject: {SUBJECT}
+### Instructions:
+For EACH shot, you must generate the following detailed components:
+1.  **Title:** A clear, descriptive title that INCLUDES THE SPECIFIC LOCATION.
+2.  **Location Index:** Which location from the list (0-based index).
+3.  **Image Prompt:** The core visual keywords and elements for storyboard generation (5-7 keywords).
+4.  **Composition:** Combined framing, poses, and environmental interaction details.
+5.  **Direction:** Communication cues and instructions for the photographer.
+6.  **Technical:** Camera settings, lens choice, and lighting approach.
+7.  **Equipment:** List of recommended gear for this shot.
 
-RESPOND WITH ONLY THE JSON ARRAY, NO OTHER TEXT.`
+For backwards compatibility, also include:
+- **visual_Keywords:** Same as imagePrompt
+- **poses:** Subject positioning details
+- **blocking:** Movement and spatial arrangement
+- **communicationCues:** Same as direction
+
+-----------------------------------
+### FINAL OUTPUT INSTRUCTIONS
+Your final output MUST be a raw JSON array.
+- Do NOT include any introductory text or markdown code fences.
+- Your entire response must start with '[' and end with ']'.
+- Each object must contain: "shotNumber", "locationIndex", "title", "imagePrompt", "composition", "direction", "technical", "equipment", "visual_Keywords", "poses", "blocking", "communicationCues".
+-----------------------------------`;
+
+const storyboardModel = genAI.getGenerativeModel({
+  model: "gemini-2.5-flash",
+  generationConfig: {
+    responseMimeType: "application/json"
+  }
+});
 ```
 
 **Key Strategies**:
-- Role-based approach ("photography director")
-- Shot diversity requirements
-- Technical detail balance
-- Cross-referencing with locations
-- Concise image descriptions for Imagen
+- Expert role with credentials ("20 years experience, master's degree")
+- Location-aware shot planning
+- Comprehensive shot components
+- Backwards compatibility fields
+- Strict output format instructions
 
 ### Response Parsing Strategies
 
@@ -209,13 +313,14 @@ RESPOND WITH ONLY THE JSON ARRAY, NO OTHER TEXT.`
 
 ### Model Details
 
-- **Model ID**: `imagen-3.0-generate-002`
-- **Provider**: Google Vertex AI
-- **Capabilities**: High-quality photorealistic and artistic image generation
-- **Output Formats**: JPEG, PNG
-- **Resolution**: Up to 1024x1024 (varies by aspect ratio)
+- **Model ID**: `models/imagen-3.0-generate-002`
+- **Provider**: Google AI via GenAI SDK
+- **Capabilities**: High-quality line art, sketches, and artistic illustrations
+- **Output Formats**: JPEG (default), PNG
+- **Resolution**: Varies by aspect ratio
+- **Best Use Case**: Storyboard visualization with clear line art style
 
-### API Setup through Vertex AI
+### API Setup
 
 1. **Import the SDK**:
    ```typescript
@@ -235,32 +340,79 @@ RESPOND WITH ONLY THE JSON ARRAY, NO OTHER TEXT.`
      config: {
        numberOfImages: 1,
        outputMimeType: 'image/jpeg',
-       aspectRatio: '16:9',
+       aspectRatio: '4:3',  // Optimal for storyboards
      },
    })
    ```
 
+### Imagen 3.0 Parameters and Configuration
+
+```typescript
+interface ImageGenerationConfig {
+  numberOfImages: number;      // 1-8 images per request
+  outputMimeType: string;      // 'image/jpeg' or 'image/png'
+  aspectRatio: string;         // '1:1', '4:3', '16:9', '9:16'
+  negativePrompt?: string;     // What to avoid (optional)
+  personGeneration?: boolean;  // Allow person generation (default: true)
+  safetyFilterLevel?: string;  // 'block_low_and_above' (default)
+  includeSafetyAttributes?: boolean;
+}
+
 ### Image Prompt Optimization
 
-1. **Structure**:
+1. **Current Implementation**:
    ```typescript
-   const imagePrompt = `Professional photography storyboard illustration: ${shot.imagePrompt}. 
-   Style: Clean sketch/illustration style, ${context.mood.join(', ')} mood.
-   Show camera angle and composition clearly.`
+   const imagePrompt = `IMPORTANT: Create a SIMPLE BLACK AND WHITE LINE DRAWING (not a photo, not grayscale)
+
+   WHAT TO DRAW:
+   Shot Title: "${shot.title}"
+   Location: ${locationName} (${locationAddress})
+   Setting Details: ${locationDescription}
+   Subjects: ${result.context.subject}
+   Action/Pose: ${poses}${blocking ? ` with ${blocking}` : ''}
+
+   STRICT VISUAL RULES - MUST FOLLOW:
+   1. ONLY use pure black lines on white background
+   2. NO PHOTOGRAPHS - this must be a hand-drawn style sketch
+   3. NO GRAYSCALE - only black lines and white space
+   4. NO TEXT OR LABELS anywhere in image
+   5. NO PHOTO FILTERS OR EFFECTS
+
+   COMPOSITION TO SHOW:
+   - Subjects positioned using rule of thirds (40-60% of frame)
+   - Clear foreground, middle ground, background layers
+   - Leading lines pointing to subjects (path, railing, etc)
+   - Camera angle: ${shot.composition?.includes('low') ? 'low angle' : shot.composition?.includes('high') ? 'high angle' : 'eye level'}
+
+   DRAWING STYLE:
+   Think of this as a film director's storyboard sketch:
+   - Simple line art showing camera framing
+   - Subjects drawn as simple figures with clear poses
+   - Location shown with minimal detail (just key landmarks)
+   - Use solid black fills sparingly for contrast (hair, shadows)
+
+   SPECIFIC LOCATION ELEMENTS TO INCLUDE:
+   Based on the setting "${locationName}", include:
+   - The KEY identifying features mentioned
+   - Interactive elements (benches, railings, paths, water)
+   - Natural framing elements if described
+   - Simplify all details - show essence not every detail
+
+   Remember: This is a SKETCH to show a photographer how to frame the shot, NOT a realistic image.`
    ```
 
-2. **Best Practices**:
-   - Start with medium/style declaration
-   - Include mood and atmosphere
-   - Specify composition requirements
-   - Avoid negative prompts
-   - Keep under 100 words
+2. **Best Practices for Storyboard Generation**:
+   - **Style Enforcement**: Multiple reminders about line art style
+   - **Negative Instructions**: Explicitly state what NOT to generate
+   - **Composition Guidelines**: Rule of thirds, layering, leading lines
+   - **Location Integration**: Include specific location details
+   - **Simplification**: Focus on essence over detail
 
-3. **Storyboard-Specific Optimizations**:
-   - Use "illustration" or "sketch" style for clarity
-   - Emphasize composition over detail
-   - Include camera angle indicators
-   - Focus on mood and lighting
+3. **Key Optimization Strategies**:
+   - **Repetition**: Key requirements stated multiple times
+   - **Structure**: Clear sections with headers
+   - **Context**: Rich location and shot details
+   - **Constraints**: Strict visual rules to ensure consistency
 
 ### Aspect Ratio and Size Considerations
 
@@ -282,28 +434,61 @@ RESPOND WITH ONLY THE JSON ARRAY, NO OTHER TEXT.`
    }
    ```
 
-### Rate Limits and Costs
+### Rate Limits and Quota Management
 
-1. **Rate Limits**:
-   - Requests per minute: 60
-   - Requests per day: 1,500
-   - Concurrent requests: 10
+1. **Gemini 2.5 Flash Rate Limits**:
+   - **Requests per minute (RPM)**: 1,000
+   - **Requests per day**: 1,500,000
+   - **Tokens per minute (TPM)**: 4,000,000
+   - **Tokens per day**: Free tier has daily limits
 
-2. **Cost Structure** (as of 2024):
-   - $0.020 per image (standard quality)
-   - $0.025 per image (high quality)
-   - No charge for failed requests
+2. **Imagen 3.0 Rate Limits**:
+   - **Requests per minute**: 120
+   - **Requests per day**: Varies by tier
+   - **Concurrent requests**: 10
+   - **Images per request**: 1-8
 
-3. **Implementation Safeguards**:
+3. **Cost Structure** (as of 2025):
+   - **Gemini 2.5 Flash**: 
+     - Input: $0.000075 per 1K tokens
+     - Output: $0.00030 per 1K tokens
+     - Cached input: $0.00001875 per 1K tokens
+   - **Imagen 3.0**:
+     - $0.020 per image (standard resolution)
+     - No charge for filtered/failed requests
+
+4. **Implementation Safeguards**:
    ```typescript
-   const MAX_IMAGES_PER_REQUEST = 3
-   const RATE_LIMIT_DELAY = 1000 // 1 second between requests
+   // Parallel image generation with limits
+   const maxImages = Math.min(6, result.shots.length);
+   const imagePromises = [];
    
-   for (let i = 0; i < Math.min(MAX_IMAGES_PER_REQUEST, shots.length); i++) {
-     if (i > 0) await new Promise(resolve => setTimeout(resolve, RATE_LIMIT_DELAY))
-     // Generate image...
+   for (let i = 0; i < maxImages; i++) {
+     const imagePromise = imageAI.models.generateImages({
+       model: 'models/imagen-3.0-generate-002',
+       prompt: imagePrompt,
+       config: {
+         numberOfImages: 1,
+         outputMimeType: 'image/jpeg',
+         aspectRatio: '4:3',
+       },
+     }).catch((error) => {
+       console.error(`Image generation error for shot ${i + 1}:`, error);
+       return null; // Continue without failing entire request
+     });
+     
+     imagePromises.push(imagePromise);
    }
+   
+   await Promise.all(imagePromises);
    ```
+
+5. **Quota Management Tips**:
+   - **Batch Processing**: Generate multiple images in parallel
+   - **Error Isolation**: Don't fail entire request if one image fails
+   - **Caching**: Store successful generations for reuse
+   - **Monitoring**: Track usage patterns and implement alerts
+   - **Graceful Degradation**: Continue pipeline even if quota exceeded
 
 ## Error Handling
 
@@ -706,18 +891,136 @@ async function checkUsageAlerts() {
 }
 ```
 
+## Troubleshooting
+
+### Common Google AI Issues and Solutions
+
+1. **JSON Parsing Errors**
+   - **Issue**: Gemini returns markdown-wrapped JSON or invalid format
+   - **Solution**: Use the `parseJsonResponse` helper that strips markdown
+   ```typescript
+   const cleanedText = text
+     .replace(/```json\s*/g, '')
+     .replace(/```\s*/g, '')
+     .trim();
+   ```
+
+2. **Structured Output Failures**
+   - **Issue**: Model doesn't respect schema despite configuration
+   - **Solution**: Add explicit format instructions in prompt
+   - Fallback to manual parsing if structured output fails
+
+3. **Image Generation Quality Issues**
+   - **Issue**: Imagen generates photos instead of sketches
+   - **Solution**: Emphasize "LINE DRAWING" and "NOT A PHOTO" multiple times
+   - Use negative instructions: "NO PHOTOGRAPHS", "NO GRAYSCALE"
+
+4. **Rate Limit Errors (429)**
+   - **Issue**: Too many requests in short time
+   - **Solution**: Implement exponential backoff
+   ```typescript
+   await delay(1000 * Math.pow(2, retryCount))
+   ```
+
+5. **Timeout Errors**
+   - **Issue**: Long-running requests timeout
+   - **Solution**: Implement retry logic with shorter prompts
+   - Consider breaking complex requests into stages
+
+6. **API Key Issues (401)**
+   - **Issue**: Invalid or missing API key
+   - **Solution**: Validate environment variables on startup
+   ```typescript
+   const geminiApiKey = validateEnvVar('GEMINI_API_KEY')
+   ```
+
+7. **Empty Responses**
+   - **Issue**: Model returns empty or minimal content
+   - **Solution**: Provide richer context and examples in prompt
+   - Use role-based prompting for better engagement
+
+8. **Location Hallucinations**
+   - **Issue**: Gemini invents non-existent locations
+   - **Solution**: Provide seed locations or constraints
+   - Validate against known location database
+
+9. **Image Storage Failures**
+   - **Issue**: Supabase storage bucket doesn't exist
+   - **Solution**: Implement bucket creation on first use
+   ```typescript
+   const ensureBucketExists = async (): Promise<boolean> => {
+     // Check and create bucket if needed
+   }
+   ```
+
+10. **Conversation Polling Timeout**
+    - **Issue**: ElevenLabs conversation never completes
+    - **Solution**: Implement max retry limit (30 attempts)
+    - Provide fallback conversation ID for testing
+
+### Debug Mode
+
+Enable debug mode to capture prompts and responses:
+```typescript
+// Add to request body
+{
+  "debug": true,
+  // ... other parameters
+}
+
+// Response will include:
+{
+  "debug": {
+    "prompts": {
+      "context": "...",
+      "location": "...",
+      "storyboard": "...",
+      "images": [...]
+    },
+    "responses": {
+      "context": "...",
+      "location": "...",
+      "storyboard": "..."
+    }
+  }
+}
+```
+
+### Best Practices for Optimization
+
+1. **Optimize Token Usage**
+   - Use concise prompts without sacrificing clarity
+   - Remove redundant instructions after testing
+   - Batch similar requests when possible
+
+2. **Improve Response Quality**
+   - Use role-based prompting ("You are an expert...")
+   - Provide specific examples in prompts
+   - Include structured format instructions
+
+3. **Enhance Performance**
+   - Cache successful responses for 15 minutes
+   - Use parallel processing for independent stages
+   - Implement progressive loading for UI
+
+4. **Monitor and Alert**
+   - Track API usage against quotas
+   - Set up alerts at 80% and 90% thresholds
+   - Log all errors with context for debugging
+
 ## Conclusion
 
 This integration leverages Google's AI capabilities to transform conversational data into comprehensive photography session plans. The multi-stage pipeline approach ensures resilience, while careful prompt engineering and optimization strategies maintain quality and cost-effectiveness.
 
 Key takeaways:
-- Use structured prompts for reliable JSON output
+- Use structured output with JSON schemas for reliability
 - Implement comprehensive error handling with fallbacks
-- Optimize for performance with caching and batching
+- Optimize prompts for both quality and token efficiency
 - Monitor usage and costs proactively
 - Test thoroughly at each pipeline stage
+- Enable debug mode for troubleshooting
 
 For updates and additional resources, refer to:
 - [Google AI Studio](https://makersuite.google.com/)
-- [Vertex AI Documentation](https://cloud.google.com/vertex-ai/docs)
-- [Gemini API Reference](https://ai.google.dev/api/rest)
+- [Gemini API Documentation](https://ai.google.dev/docs)
+- [Imagen 3 Documentation](https://cloud.google.com/vertex-ai/generative-ai/docs/image/generate-images)

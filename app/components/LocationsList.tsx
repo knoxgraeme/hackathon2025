@@ -4,11 +4,50 @@
 import { EdgeLocation } from '../types/photo-session';
 import { useState } from 'react';
 
+/**
+ * Props for the LocationsList component
+ */
 interface LocationsListProps {
+  /** Array of location objects containing details about photo shoot locations */
   locations: EdgeLocation[];
 }
 
+/**
+ * LocationsList - Displays an interactive grid of photo shoot locations
+ * 
+ * This component renders location cards with detailed information including:
+ * - Location name and address
+ * - Best shooting times and lighting conditions
+ * - Accessibility and permit requirements
+ * - Alternative nearby locations (shown on expansion)
+ * 
+ * Each location card is clickable to expand/collapse additional details.
+ * The component uses staggered animations for visual appeal.
+ * 
+ * @param {LocationsListProps} props - The component props
+ * @param {EdgeLocation[]} props.locations - Array of location objects with metadata
+ * @returns {JSX.Element} The rendered locations grid
+ * 
+ * @example
+ * ```tsx
+ * const locations = [
+ *   {
+ *     name: "Stanley Park Seawall",
+ *     address: "Vancouver, BC",
+ *     description: "Scenic waterfront path...",
+ *     bestTime: "Golden hour",
+ *     lightingNotes: "Soft, diffused light",
+ *     accessibility: "Easy walk",
+ *     permits: "Not required",
+ *     alternatives: ["English Bay", "Third Beach"]
+ *   }
+ * ];
+ * 
+ * <LocationsList locations={locations} />
+ * ```
+ */
 export function LocationsList({ locations }: LocationsListProps) {
+  /** State to track which location card is currently expanded for detail view */
   const [expandedLocation, setExpandedLocation] = useState<number | null>(null);
 
   return (

@@ -1,15 +1,75 @@
+/**
+ * Button Component - A flexible button with multiple variants and states
+ * 
+ * Features iOS-inspired design with native-like touch feedback
+ */
 'use client';
 
 import { ButtonHTMLAttributes, ReactNode } from 'react';
 
+/**
+ * Props for the Button component, extending native HTML button attributes
+ */
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
+  /** Visual style variant of the button */
   variant?: 'primary' | 'secondary' | 'danger' | 'ghost';
+  /** Size variant affecting padding and minimum height */
   size?: 'sm' | 'md' | 'lg';
+  /** Optional icon to display before the button text */
   icon?: ReactNode;
+  /** Shows loading state with spinner and disables interaction */
   loading?: boolean;
+  /** Button content (typically text) */
   children: ReactNode;
 }
 
+/**
+ * Button - A versatile button component with multiple variants and states
+ * 
+ * This component provides a consistent button interface with:
+ * - Four visual variants (primary, secondary, danger, ghost)
+ * - Three size options (sm, md, lg) with touch-friendly minimum heights
+ * - Loading state with animated spinner
+ * - Optional icon support
+ * - Native-like touch feedback with scale animation
+ * - Accessibility features including focus styles and ARIA attributes
+ * 
+ * The button automatically handles disabled states when loading and
+ * includes smooth transitions for all interactive states.
+ * 
+ * @param {ButtonProps} props - The component props
+ * @param {'primary' | 'secondary' | 'danger' | 'ghost'} [props.variant='primary'] - Visual style variant
+ * @param {'sm' | 'md' | 'lg'} [props.size='md'] - Size variant
+ * @param {ReactNode} [props.icon] - Optional icon element
+ * @param {boolean} [props.loading=false] - Loading state flag
+ * @param {boolean} [props.disabled] - Disabled state flag
+ * @param {string} [props.className=''] - Additional CSS classes
+ * @param {ReactNode} props.children - Button content
+ * @returns {JSX.Element} The rendered button element
+ * 
+ * @example
+ * ```tsx
+ * // Primary button with icon
+ * <Button icon={<SaveIcon />} onClick={handleSave}>
+ *   Save Changes
+ * </Button>
+ * 
+ * // Loading state
+ * <Button loading variant="primary">
+ *   Processing...
+ * </Button>
+ * 
+ * // Danger variant for destructive actions
+ * <Button variant="danger" size="sm" onClick={handleDelete}>
+ *   Delete
+ * </Button>
+ * 
+ * // Ghost button for subtle actions
+ * <Button variant="ghost" icon="✨">
+ *   Add Effect
+ * </Button>
+ * ```
+ */
 export function Button({ 
   variant = 'primary', 
   size = 'md',

@@ -1,23 +1,78 @@
+/**
+ * BottomSheet Component - Mobile-friendly modal that slides up from bottom
+ * 
+ * Features drag-to-dismiss gesture handling and smooth animations.
+ */
 'use client';
 
 import { useEffect, useRef, useCallback } from 'react';
 import Image from 'next/image';
 import { EdgeShot, EdgeLocation } from '../types/photo-session';
 
+/**
+ * Props for the BottomSheet component
+ */
 interface BottomSheetProps {
+  /** Controls whether the bottom sheet is visible */
   isOpen: boolean;
+  /** Callback function triggered when the sheet should close */
   onClose: () => void;
+  /** The shot object to display details for, or null if none selected */
   shot: EdgeShot | null;
+  /** The location associated with the shot, or null if not available */
   location: EdgeLocation | null;
 }
 
+/**
+ * BottomSheet - A mobile-optimized modal that slides up from the bottom of the screen
+ * 
+ * This component displays detailed information about a selected photo shot.
+ * It supports:
+ * - Touch gestures for drag-to-dismiss functionality
+ * - Smooth slide animations
+ * - Body scroll locking when open
+ * - Responsive height constraints
+ * 
+ * The sheet can be dismissed by:
+ * - Clicking the backdrop
+ * - Clicking the close button
+ * - Dragging down more than 100px
+ * 
+ * @param {BottomSheetProps} props - The component props
+ * @param {boolean} props.isOpen - Whether the sheet should be displayed
+ * @param {() => void} props.onClose - Function to call when closing the sheet
+ * @param {EdgeShot | null} props.shot - Shot data to display
+ * @param {EdgeLocation | null} props.location - Associated location data
+ * @returns {JSX.Element | null} The rendered bottom sheet or null if closed
+ * 
+ * @example
+ * ```tsx
+ * const [selectedShot, setSelectedShot] = useState(null);
+ * 
+ * <BottomSheet
+ *   isOpen={selectedShot !== null}
+ *   onClose={() => setSelectedShot(null)}
+ *   shot={selectedShot}
+ *   location={shotLocation}
+ * />
+ * ```
+ */
 export function BottomSheet({ isOpen, onClose, shot, location }: BottomSheetProps) {
+  /** Reference to the bottom sheet container for animation and gesture handling */
   const sheetRef = useRef<HTMLDivElement>(null);
+  /** Reference to the content container for scroll management */
   const contentRef = useRef<HTMLDivElement>(null);
+  /** Starting Y position of touch gesture */
   const startY = useRef(0);
+  /** Current Y position during drag gesture */
   const currentY = useRef(0);
+  /** Flag to track if user is currently dragging */
   const isDragging = useRef(false);
 
+  /**
+   * Effect to manage body scroll locking when sheet is open.
+   * Prevents background content from scrolling while the sheet is visible.
+   */
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = 'hidden';
@@ -29,11 +84,24 @@ export function BottomSheet({ isOpen, onClose, shot, location }: BottomSheetProp
     };
   }, [isOpen]);
 
+  /**
+   * Handles the start of a touch gesture.
+   * Records the initial Y position for drag calculations.
+   * 
+   * @param {TouchEvent} e - The touch event
+   */
   const handleTouchStart = (e: TouchEvent) => {
     startY.current = e.touches[0].clientY;
     isDragging.current = true;
   };
 
+  /**
+   * Handles touch movement during a drag gesture.
+   * Translates the sheet vertically based on drag distance.
+   * Only allows downward dragging.
+   * 
+   * @param {TouchEvent} e - The touch event
+   */
   const handleTouchMove = (e: TouchEvent) => {
     if (!isDragging.current || !sheetRef.current) return;
     currentY.current = e.touches[0].clientY;
@@ -43,6 +111,11 @@ export function BottomSheet({ isOpen, onClose, shot, location }: BottomSheetProp
     }
   };
 
+  /**
+   * Handles the end of a touch gesture.
+   * Determines whether to close the sheet (if dragged > 100px)
+   * or snap it back to the open position.
+   */
   const handleTouchEnd = useCallback(() => {
     if (!isDragging.current || !sheetRef.current) return;
     isDragging.current = false;
