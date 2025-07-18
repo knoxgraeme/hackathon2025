@@ -248,21 +248,17 @@ serve(async (req) => {
       transcript = body.transcript;
       console.log('📝 Received body.transcript:', transcript)
       console.log('📊 Transcript length:', transcript.length, 'characters')
-I prefer ${dc.locationPreference} locations.
-${dc.mustHaveShots ? `Must-have shots: ${dc.mustHaveShots}.` : ''}
-${dc.specialRequirements ? `Special requirements: ${dc.specialRequirements}.` : ''}
-My experience level is ${dc.experience}.`;
-      
-      console.log('📝 Converted data_collection to transcript:', transcript);
     } else {
-      return createErrorResponse('Either webhook payload, conversationId, transcript, or data_collection is required', 400)
+      return createErrorResponse('Either webhook payload, conversationId, or transcript is required', 400)
     }
     
     // Extract all 12 data collection fields from conversational transcript
-    console.log('🎯 Extracting context from transcript with structured output')
     console.log('🎯 STAGE 2: Extracting context from transcript with structured output')
     console.log('📊 Transcript stats:', {
       length: transcript.length,
+      lines: transcript.split('\n').length,
+      hasContent: transcript.trim().length > 0
+    })
     
     // Define schema for context extraction
     const contextSchema = {
@@ -329,8 +325,6 @@ My experience level is ${dc.experience}.`;
     ### Transcript
     ${transcript}`
     
-    // Enhanced logging for context extraction
-    console.log('---END CONTEXT PROMPT---')
     console.log('🧠 Sending to AI model - transcript preview:', transcript.substring(0, 200) + '...')
     console.log('🧠 Full prompt length:', contextPrompt.length, 'characters')
     
