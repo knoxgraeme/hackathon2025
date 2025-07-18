@@ -230,7 +230,7 @@ export default function SessionPage() {
       <div className="relative z-10 max-w-6xl mx-auto p-4 sm:p-8 mobile-safe">
         {/* Header */}
         <div className="mb-8 animate-fade-in">
-                    <button 
+          <button 
             onClick={() => router.push('/')}
             className="text-secondary hover:text-primary mb-4 flex items-center gap-2 transition-colors hover:scale-105 active:scale-95"
           >

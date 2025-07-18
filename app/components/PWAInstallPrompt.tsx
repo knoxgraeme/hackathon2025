@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { usePathname } from 'next/navigation';
+import Image from 'next/image';
 import { Button } from './Button';
 
 interface BeforeInstallPromptEvent extends Event {
@@ -77,10 +78,12 @@ export function PWAInstallPrompt() {
       <div className="fixed bottom-4 left-4 right-4 z-50 bg-white rounded-lg shadow-lg border border-gray-200 p-4">
         <div className="flex items-start space-x-3">
           <div className="flex-shrink-0">
-            <img
+            <Image
               src="/icon.png"
               alt="PixieDirector"
-              className="w-12 h-12 rounded-lg"
+              width={48}
+              height={48}
+              className="rounded-lg"
             />
           </div>
           <div className="flex-1">
@@ -117,10 +120,12 @@ export function PWAInstallPrompt() {
     <div className="fixed bottom-4 left-4 right-4 z-50 bg-white rounded-lg shadow-lg border border-gray-200 p-4">
       <div className="flex items-start space-x-3">
         <div className="flex-shrink-0">
-          <img
+          <Image
             src="/icon.png"
             alt="PixieDirector"
-            className="w-12 h-12 rounded-lg"
+            width={48}
+            height={48}
+            className="rounded-lg"
           />
         </div>
         <div className="flex-1">

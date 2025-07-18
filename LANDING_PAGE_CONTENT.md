@@ -71,6 +71,148 @@ graph LR
 
 ---
 
+## Detailed Generation Pipeline
+
+### Stage 1: Voice Conversation & Transcript Retrieval
+**Duration:** 30-60 seconds conversation + 2-5 seconds processing
+
+The journey begins when a photographer initiates a conversation with our AI assistant powered by ElevenLabs. The AI engages in natural dialogue, asking contextual questions about:
+- Shoot location preferences and constraints
+- Time of day and duration
+- Subject type (portraits, couples, families, etc.)
+- Mood and aesthetic goals
+- Equipment available
+- Experience level
+
+Once the conversation completes, the Supabase Edge Function receives a webhook notification and polls the ElevenLabs API to retrieve the full conversation transcript.
+
+### Stage 2: Context Extraction with Gemini AI
+**Duration:** 3-5 seconds | **Output:** Structured JSON with 12 key fields
+
+Google Gemini 2.5 Flash processes the raw conversation transcript using a carefully crafted prompt with structured output schema. The AI extracts:
+
+```json
+{
+  "location": "Vancouver area preference",
+  "date": "Planned shoot date",
+  "startTime": "Preferred start time",
+  "duration": "Expected session length",
+  "shootType": "Portrait/Wedding/Commercial/etc",
+  "mood": "Aesthetic and emotional tone",
+  "subject": "Who/what is being photographed",
+  "equipment": ["Camera", "Lenses", "Lighting"],
+  "experience": "Photographer skill level",
+  "specialRequests": "Unique requirements",
+  "weatherConsiderations": "Indoor/outdoor preferences",
+  "mobilityConsiderations": "Accessibility needs"
+}
+```
+
+The structured output ensures consistent, reliable data extraction regardless of conversation flow.
+
+### Stage 3: Location Generation
+**Duration:** 5-8 seconds | **Output:** 4-5 detailed location objects
+
+Using the extracted context, Gemini generates location recommendations with Vancouver-specific knowledge. Each location includes:
+
+```json
+{
+  "name": "Queen Elizabeth Park Rose Garden",
+  "description": "Beautifully manicured rose garden with mountain views",
+  "address": "4600 Cambie St, Vancouver, BC",
+  "coordinates": { "lat": 49.2417, "lng": -123.1127 },
+  "bestTime": "Golden hour (1 hour before sunset)",
+  "lightingNotes": "Soft, diffused light through rose arbors",
+  "accessibility": "Wheelchair accessible paths available",
+  "permits": "No permits required for small shoots",
+  "parkingInfo": "Free parking available on-site",
+  "alternativeNearby": "VanDusen Botanical Garden (5 min drive)"
+}
+```
+
+Locations are selected based on:
+- Time of day optimization for lighting
+- Weather/season considerations
+- Accessibility requirements
+- Permit regulations
+- Travel time between locations
+
+### Stage 4: Shot List Generation
+**Duration:** 8-10 seconds | **Output:** 15-20 detailed shot specifications
+
+For each location, Gemini creates specific shot recommendations:
+
+```json
+{
+  "shotNumber": 1,
+  "locationIndex": 0,
+  "title": "Romantic Garden Portrait",
+  "description": "Couple seated on ornate bench with roses",
+  "composition": {
+    "framing": "Medium shot, rule of thirds",
+    "angle": "Slightly elevated, 45-degree angle",
+    "foreground": "Soft rose blooms for depth",
+    "background": "Blurred garden pathway"
+  },
+  "subjectDirection": {
+    "positioning": "Seated close, angled toward each other",
+    "expressions": "Natural smiles, looking at each other",
+    "hands": "His arm around her, her hand on his knee"
+  },
+  "technicalSettings": {
+    "aperture": "f/2.8 for background separation",
+    "focalLength": "85mm for flattering compression",
+    "iso": "400-800 depending on light"
+  },
+  "communicationCues": "Tell them to whisper a secret to each other",
+  "alternativeOptions": "Try standing pose by rose arbor"
+}
+```
+
+### Stage 5: Storyboard Visualization
+**Duration:** 15-20 seconds | **Output:** Up to 6 storyboard images
+
+Google Imagen 3 generates black and white line-art storyboards in parallel batches. The prompt engineering ensures:
+
+```
+Style: "Simple black and white line drawing, storyboard style"
+Composition: Matches the shot specification exactly
+Details: Clear subject positioning and framing
+Format: 3:4 aspect ratio for mobile viewing
+```
+
+Images are generated with specific constraints:
+- No complex textures or shading
+- Clear composition guidelines
+- Simplified but recognizable subjects
+- Professional storyboard aesthetic
+
+### Stage 6: Storage & Delivery
+**Duration:** 2-3 seconds | **Output:** Complete session object
+
+All generated content is assembled and stored:
+1. Storyboard images uploaded to Supabase Storage with public URLs
+2. Complete session data structured and returned to client
+3. Data persisted in browser localStorage for offline access
+4. Share links generated for client collaboration
+
+### Error Handling & Fallbacks
+
+The pipeline includes robust error handling:
+- **Transcript Timeout:** Falls back to test conversation after 60 seconds
+- **AI Generation Failures:** Retries with exponential backoff
+- **Image Generation Limits:** Processes up to 6 images maximum
+- **Partial Success:** Returns completed stages even if later stages fail
+
+### Performance Optimization
+
+- **Parallel Processing:** Image generation runs concurrently
+- **Streaming Responses:** UI updates as each stage completes
+- **Caching:** Conversation IDs prevent duplicate processing
+- **Edge Computing:** Runs close to users via Supabase Edge Functions
+
+---
+
 ## Technology Stack
 
 ### Frontend

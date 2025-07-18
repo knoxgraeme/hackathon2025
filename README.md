@@ -1,11 +1,18 @@
-# 📸 AI Photography Assistant Director
+# 📸 PixieDirector - AI Photography Assistant Director
 
 An innovative hackathon project that revolutionizes photography shoot planning through AI-powered voice conversations, intelligent location scouting, and automated storyboard generation.
 
+## 🔗 Live Demo & Installation
+
+- **[Live Demo](https://pixiedirector.example.com)** - Try PixieDirector in your browser
+- **[Install PWA on Mobile](https://pixiedirector.example.com)** - Add to your home screen for native app experience
+- **Note**: PWA installation is available for mobile users - visit the site on your phone and look for the install prompt!
+
 ## ✨ Key Features
 
-- **🎙️ Voice-Based Planning** - Natural conversations with an AI assistant using ElevenLabs for voice synthesis
-- **📍 Location Scouting** - Vancouver-specific location recommendations with detailed shoot information
+- **📱 Progressive Web App** - Install on your mobile device for a native app experience with offline capabilities
+- **🎙️ Voice-First Interface** - Natural conversations with an AI assistant using ElevenLabs for voice synthesis
+- **📍 Vancouver-Specific Locations** - Expert local knowledge with curated location recommendations and detailed shoot information
 - **🎨 AI Storyboards** - Automatically generated visual storyboards with Google Imagen 3
 - **📋 Shot Lists** - Comprehensive shot planning with mood, lighting, and composition details
 - **💾 Session Management** - Persistent session storage for ongoing projects
@@ -130,7 +137,7 @@ Data Flow:
 
 ## 🤝 Contributing
 
-We welcome contributions to improve the Photography Assistant Director! Here's how you can help:
+We welcome contributions to improve PixieDirector! Here's how you can help:
 
 1. **Fork the repository**
 2. **Create a feature branch**

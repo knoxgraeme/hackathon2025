@@ -37,14 +37,6 @@ serve(async (req) => {
   try {
     // Parse request body
     const body = await req.json();
-    console.log('📦 Received request:', JSON.stringify(body, null, 2))
-    console.log('🔍 Request details:', {
-      conversationId: body.conversationId,
-      hasTranscript: !!body.transcript,
-      generateImages: body.generateImages,
-      debugMode: body.debug || false,
-      timestamp: new Date().toISOString()
-    })
     
     // Initialize AI
     const geminiApiKey = validateEnvVar('GEMINI_API_KEY')
@@ -88,7 +80,6 @@ serve(async (req) => {
         }
         
         const bucketExists = buckets?.some(bucket => bucket.name === bucketName)
-        console.log(`📂 Bucket '${bucketName}' exists: ${bucketExists}`)
         
         if (!bucketExists) {
           console.log('🔨 Creating storyboard-images bucket...')
@@ -105,7 +96,6 @@ serve(async (req) => {
             return false
           }
           
-          console.log('✅ Bucket created successfully')
         }
         
         return true
@@ -127,7 +117,6 @@ serve(async (req) => {
         
         // Convert base64 to bytes
         const imageData = Uint8Array.from(atob(imageBase64), c => c.charCodeAt(0))
-        console.log(`📸 Uploading image: ${fileName} (${imageData.length} bytes)`)
         
         // Upload to Supabase Storage
         const { data, error } = await supabase.storage
@@ -147,7 +136,6 @@ serve(async (req) => {
           .from('storyboard-images')
           .getPublicUrl(fileName)
         
-        console.log(`✅ Image saved successfully: ${publicURL.publicUrl}`)
         return publicURL.publicUrl
       } catch (error) {
         console.error('Image storage error:', error)
@@ -220,8 +208,6 @@ serve(async (req) => {
         return createErrorResponse(`Conversation did not complete within ${maxRetries * retryDelay / 1000} seconds. Current status: ${conversationData?.status || 'unknown'}`, 408)
       }
       
-      console.log('🔍 ElevenLabs API response:', JSON.stringify(conversationData, null, 2))
-      console.log('📊 Transcript turns:', conversationData.transcript?.length || 0)
       
       if (conversationData.transcript && Array.isArray(conversationData.transcript)) {
         // Check if transcript has actual content
@@ -278,9 +264,6 @@ serve(async (req) => {
             .map((turn: any) => `${turn.role}: ${turn.message}`)
             .join('\n');
           
-          console.log('📝 Parsed transcript from API:', transcript)
-          console.log('📊 Transcript length:', transcript.length, 'characters')
-          console.log('📊 Number of turns with content:', conversationData.transcript.filter((turn: any) => turn.message && turn.message.trim().length > 0).length)
         }
       } else {
         console.error('❌ No transcript found in response')
@@ -290,19 +273,12 @@ serve(async (req) => {
     } else if (body.transcript) {
       // Direct transcript for testing
       transcript = body.transcript;
-      console.log('📝 Received body.transcript:', transcript)
-      console.log('📊 Transcript length:', transcript.length, 'characters')
     } else {
       return createErrorResponse('Either conversationId or transcript is required', 400)
     }
     
     // Extract all 12 data collection fields from conversational transcript
     console.log('🎯 STAGE 2: Extracting context from transcript with structured output')
-    console.log('📊 Transcript stats:', {
-      length: transcript.length,
-      lines: transcript.split('\n').length,
-      hasContent: transcript.trim().length > 0
-    })
     
     // Define schema for context extraction
     const contextSchema = {
@@ -369,8 +345,7 @@ serve(async (req) => {
     ### Transcript
     ${transcript}`
     
-    console.log('🧠 Sending to AI model - transcript preview:', transcript.substring(0, 200) + '...')
-    console.log('🧠 Full prompt length:', contextPrompt.length, 'characters')
+    console.log('🧠 Sending context extraction to AI model')
     
     // Store prompt in debug info if enabled
     if (debugInfo) {
@@ -379,7 +354,6 @@ serve(async (req) => {
     
     const contextResult = await contextModel.generateContent(contextPrompt)
     const contextText = contextResult.response.text()
-    console.log('🤖 AI response received, length:', contextText.length)
     
     // Store response in debug info if enabled
     if (debugInfo) {
@@ -415,12 +389,6 @@ serve(async (req) => {
     // STAGE 2: Generate 4-5 specific photo locations based on context
     if (result.context) {
       console.log('🎯 STAGE 3: Generating locations based on context')
-      console.log('📍 Context summary:', {
-        shootType: result.context.shootType,
-        mood: result.context.mood,
-        location: result.context.location,
-        duration: result.context.duration
-      })
       
       const context = result.context
       const location = context.location || 'the local area'
@@ -487,7 +455,6 @@ serve(async (req) => {
       
       const locationResult = await locationModel.generateContent(locationPrompt)
       const locationText = locationResult.response.text()
-      console.log('🤖 Location AI response received, length:', locationText.length)
       
       // Store response in debug info if enabled
       if (debugInfo) {
@@ -497,7 +464,6 @@ serve(async (req) => {
       try {
         result.locations = JSON.parse(locationText)
         console.log(`✅ Generated ${result.locations.length} locations`)
-        console.log('📍 Location names:', result.locations.map((loc: any) => loc.name).join(', '))
       } catch (error) {
         console.error('Location parsing error:', error)
         // Fallback to helper if needed
@@ -575,7 +541,6 @@ Your final output MUST be a raw JSON array.
       
       const storyboardResult = await storyboardModel.generateContent(storyboardPrompt);
       const storyboardText = storyboardResult.response.text();
-      console.log('🤖 Storyboard AI response received, length:', storyboardText.length);
       
       // Store response in debug info if enabled
       if (debugInfo) {
@@ -585,7 +550,6 @@ Your final output MUST be a raw JSON array.
       try {
         result.shots = parseJsonResponse(storyboardText);
         console.log(`✅ Generated ${result.shots.length} detailed shots`);
-        console.log('📸 Shot titles:', result.shots.map((shot: any) => shot.title).join(' | '));
       } catch (error) {
         console.error('Storyboard parsing error:', error, storyboardText);
         return createErrorResponse('Failed to generate storyboard', 500);
@@ -595,11 +559,6 @@ Your final output MUST be a raw JSON array.
     // STAGE 4: Generate storyboard visualizations (now up to 6, in parallel)
     if (body.generateImages && result.shots) {
       console.log('🎯 STAGE 5: Generating storyboard images in parallel');
-      console.log('🎨 Image generation requested:', {
-        totalShots: result.shots.length,
-        maxImages: Math.min(6, result.shots.length),
-        bucketCreated: await ensureBucketExists()
-      });
 
       const imageAI = new GoogleGenAI({ apiKey: geminiApiKey });
       const maxImages = Math.min(6, result.shots.length);
@@ -657,7 +616,6 @@ Based on the setting "${locationName}", include:
 
 Remember: This is a SKETCH to show a photographer how to frame the shot, NOT a realistic image.`;
 
-        console.log(`🎨 Generating image ${i + 1}/${maxImages} for shot: "${shot.title}"`);
         
         // Store image prompt in debug info if enabled
         if (debugInfo) {
@@ -676,19 +634,16 @@ Remember: This is a SKETCH to show a photographer how to frame the shot, NOT a r
             aspectRatio: '4:3',
           },
         }).then(async (response) => {
-          console.log(`📥 Image generation response received for shot ${i + 1}`);
           if (response?.generatedImages?.[0]?.image?.imageBytes) {
             const imageBase64 = response.generatedImages[0].image.imageBytes;
             const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
             const conversationId = body.conversationId || 'direct';
             const fileName = `storyboard-${conversationId}-shot-${i + 1}-${timestamp}.jpg`;
             
-            console.log(`💾 Saving image for shot ${i + 1}: ${fileName}`);
             const imageUrl = await saveImageToStorage(imageBase64, fileName);
             
             if (imageUrl) {
               shot.storyboardImage = imageUrl;
-              console.log(`✅ Generated and saved image for shot ${i + 1}: ${imageUrl}`);
             } else {
               console.log(`❌ Failed to save image for shot ${i + 1}, skipping`);
             }
@@ -706,9 +661,6 @@ Remember: This is a SKETCH to show a photographer how to frame the shot, NOT a r
       await Promise.all(imagePromises);
       console.log('✅ All image generation complete');
       
-      // Count how many images were successfully generated
-      const imagesGenerated = result.shots.filter((shot: any) => shot.storyboardImage).length;
-      console.log(`📊 Image generation summary: ${imagesGenerated}/${maxImages} images successfully created`);
     }
     
     console.log('🎯 FINAL STAGE: Preparing response');
@@ -720,19 +672,6 @@ Remember: This is a SKETCH to show a photographer how to frame the shot, NOT a r
       ...(debugInfo && { debug: debugInfo })
     }
     
-    console.log('📤 Sending response:', {
-      ...response,
-      shots: response.shots?.map((s: Shot & {storyboardImage?: string}) => ({ 
-        title: s.title,
-        hasImage: !!s.storyboardImage 
-      }))
-    })
-    console.log('📊 Response summary:', {
-      hasContext: !!response.context,
-      locationCount: response.locations?.length || 0,
-      shotCount: response.shots?.length || 0,
-      imagesGenerated: response.shots?.filter((s: any) => s.storyboardImage).length || 0
-    })
     
     return createSuccessResponse(response)
     
