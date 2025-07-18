@@ -394,25 +394,40 @@ export default function ConversationFlow({ onComplete, sessionId, dynamicVariabl
         </p>
       </div>
 
-      {/* Audio Waveform Visualization - Only show when conversation is active */}
+      {/* Agent Speaking Indicator - Only show when conversation is active */}
       {conversationStarted && (
         <div className="absolute left-1/2 top-1/2 transform -translate-x-1/2 -translate-y-1/2">
-          <div className="relative w-[338px] h-[190px] flex items-center justify-center">
-            {/* Animated waveform using CSS */}
-            <div className="flex items-center justify-center gap-1">
-              {[...Array(20)].map((_, i) => (
-                <div
-                  key={i}
-                  className="bg-black rounded-full animate-pulse"
-                  style={{
-                    width: '4px',
-                    height: `${Math.random() * 40 + 10}px`,
-                    animationDelay: `${i * 0.1}s`,
-                    animationDuration: `${0.8 + Math.random() * 0.4}s`
-                  }}
-                />
-              ))}
+          <div className="relative w-[338px] h-[190px] flex flex-col items-center justify-center">
+            {/* Speaking Animation */}
+            <div className="flex items-center justify-center mb-4">
+              {/* Central speaking icon */}
+              <div className="relative">
+                <div className="w-16 h-16 bg-[#00a887] rounded-full flex items-center justify-center shadow-lg">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2">
+                    <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
+                    <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+                    <line x1="12" y1="19" x2="12" y2="23"/>
+                    <line x1="8" y1="23" x2="16" y2="23"/>
+                  </svg>
+                </div>
+                
+                {/* Animated sound waves */}
+                <div className="absolute inset-0 -m-2">
+                  <div className="w-20 h-20 border-2 border-[#00a887] rounded-full animate-ping opacity-75"></div>
+                </div>
+                <div className="absolute inset-0 -m-4">
+                  <div className="w-24 h-24 border-2 border-[#00a887] rounded-full animate-ping opacity-50" style={{animationDelay: '0.5s'}}></div>
+                </div>
+                <div className="absolute inset-0 -m-6">
+                  <div className="w-28 h-28 border-2 border-[#00a887] rounded-full animate-ping opacity-25" style={{animationDelay: '1s'}}></div>
+                </div>
+              </div>
             </div>
+
+            {/* Speaking text */}
+            <p className="text-[#00a887] text-sm font-medium mt-4 animate-pulse">
+              Agent is speaking...
+            </p>
           </div>
         </div>
       )}
