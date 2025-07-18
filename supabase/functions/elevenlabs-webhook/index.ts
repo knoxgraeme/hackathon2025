@@ -34,10 +34,14 @@ import {
 import type { PhotoShootContext, Location, Shot } from "../_shared/types.ts"
 
 // OPTIMIZED: Concise style guide for consistent image generation
-const STORYBOARD_STYLE_GUIDE = `STYLE: Monochrome black & white ink sketch
-TECHNIQUE: Clean line art with hatching/cross-hatching only
-COMPLEXITY: Simplified and suggestive, not detailed
-OUTPUT: Single cohesive scene from one viewpoint`;
+const STORYBOARD_STYLE_GUIDE = `STYLE: Professional black & white storyboard illustration
+TECHNIQUE: Clean line art with minimal hatching, no shading
+HUMAN FIGURES: Simplified forms with basic body shapes and clothing silhouettes
+FACES: Blank or minimal - no ethnic features, eyes, nose, or mouth details
+CLOTHING: Simple outlines showing garment shape only (dress, suit, etc.)
+ENVIRONMENT: Clear architectural and landscape elements with clean lines
+PERSPECTIVE: Professional composition with proper depth and scale
+OUTPUT: Single cohesive scene like a film storyboard frame`;
 
 // Cache for bucket existence check
 let bucketExists: boolean | null = null;
@@ -496,9 +500,9 @@ ${transcript}`
         }
       })
       
-      // OPTIMIZED: More concise location prompt
-      const locationPrompt = `You are an expert location scout for photography.
-Generate 4-5 specific photo locations based on this brief:
+      // OPTIMIZED: More concise location prompt with real-world emphasis
+      const locationPrompt = `You are an expert location scout with deep knowledge of ${location}.
+Generate 4-5 REAL, SPECIFIC photo locations based on this brief:
 
 Shoot: ${context.shootType} in ${location}
 Mood: ${context.mood.join(', ')}
@@ -506,13 +510,15 @@ Schedule: ${context.date} at ${context.startTime || 'flexible'}, ${context.durat
 Preference: ${context.locationPreference} locations
 Special: ${context.specialRequests || 'None'}
 
-Requirements:
-- Prioritize hidden gems over tourist spots
-- Focus on publicly accessible locations (no complex permits)
-- Consider practical lighting for the time of day
-- Include realistic backup options
+CRITICAL Requirements:
+- Use ACTUAL locations that exist in ${location} (real streets, parks, landmarks)
+- Provide exact addresses or cross-streets when possible
+- Consider realistic travel times between locations (5-15 min if clustered)
+- Base lighting notes on real-world conditions for that specific location
+- Include only publicly accessible spots or note permit requirements
+- If unsure about a location, use well-known landmarks as references
 
-Provide complete details per the JSON schema.`
+Focus on authenticity over creativity - real places that photographers actually use.`
       
       console.log('🏗️ Sending location request to AI')
       
@@ -638,21 +644,27 @@ Output: JSON array only, starting '[' ending ']'`;
         const blocking = shot.blocking || '';
         const locationName = shot.location || (shot.locationIndex !== undefined ? result.locations?.[shot.locationIndex]?.name : result.context.location);
         
-        // OPTIMIZED: More concise image prompt
+        // OPTIMIZED: More concise image prompt with professional storyboard aesthetic
         const imagePrompt = `${STORYBOARD_STYLE_GUIDE}
 
-Create a ${result.context.shootType} photography storyboard frame:
+Create a professional storyboard frame for: "${shot.title}"
 
-"${shot.title}"
+SCENE DETAILS:
 Location: ${locationName}
-
-Visual Elements: ${visualKeywords}
 Composition: ${shot.composition}
-Subjects: ${result.context.subject}
-Positioning: ${poses}
+Visual Elements: ${visualKeywords}
+Subject Positioning: ${poses}
 Mood: ${result.context.mood.join(', ')}
 
-Illustrate this as a black & white storyboard sketch.`;
+CRITICAL REQUIREMENTS:
+- Draw people as simplified figures with basic body shapes
+- Faces must be blank or extremely minimal (no features)
+- Show clothing as simple silhouettes (wedding dress, suit, etc.)
+- Include environmental context with clean architectural lines
+- Professional film storyboard quality with proper perspective
+- Black and white line art only
+
+Focus on clear composition, depth, and spatial relationships.`;
 
         debugLog(`🎨 Generating image ${i + 1}/${maxImages} for shot: "${shot.title}"`);
         

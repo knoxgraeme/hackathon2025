@@ -168,11 +168,14 @@ export default function ConversationFlow({ onComplete, sessionId, dynamicVariabl
    * - API rate limiting or service unavailable
    */
   const startConversation = useCallback(async () => {
+    console.log('[ConversationFlow] startConversation called');
     try {
       // Detect if running as PWA and on iOS
       const isStandalone = window.matchMedia('(display-mode: standalone)').matches ||
                           window.navigator.standalone === true; // iOS specific
       const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+      
+      console.log('[ConversationFlow] Environment:', { isStandalone, isIOS });
 
       // Request wake lock to prevent screen sleep (iOS 18.4+ PWA support)
       if ('wakeLock' in navigator) {
@@ -184,6 +187,7 @@ export default function ConversationFlow({ onComplete, sessionId, dynamicVariabl
       }
 
       // Request microphone with specific constraints for iOS PWA
+      console.log('[ConversationFlow] Requesting microphone access...');
       const stream = await navigator.mediaDevices.getUserMedia({
         audio: {
           echoCancellation: true,
@@ -192,6 +196,7 @@ export default function ConversationFlow({ onComplete, sessionId, dynamicVariabl
           sampleRate: 44100
         }
       });
+      console.log('[ConversationFlow] Microphone access granted, stream:', stream);
 
       // Store the stream reference for cleanup
       mediaStreamRef.current = stream;
@@ -205,13 +210,23 @@ export default function ConversationFlow({ onComplete, sessionId, dynamicVariabl
 
       // For iOS PWA, ensure audio session is properly activated
       if (isIOS && isStandalone) {
+        console.log('[ConversationFlow] Activating iOS audio session...');
         // Create a silent audio element to activate iOS audio session
         const audio = new Audio();
         audio.src = 'data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAAAAAAAA';
         await audio.play().catch(() => {
           // Silent audio might fail but that's okay
+          console.log('[ConversationFlow] Silent audio playback failed (expected on some devices)');
         });
       }
+      
+      // Stop the test stream tracks before starting ElevenLabs
+      // This prevents conflicts with ElevenLabs trying to access the microphone
+      console.log('[ConversationFlow] Releasing test audio stream...');
+      stream.getTracks().forEach(track => {
+        track.stop();
+      });
+      mediaStreamRef.current = null;
 
       // PRIMARY CAPTURE STRATEGY: Get conversation ID from startSession return value
       const sessionConfig: Record<string, string | Record<string, string | number | boolean>> = {
