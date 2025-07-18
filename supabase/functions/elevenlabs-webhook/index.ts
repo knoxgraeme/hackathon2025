@@ -522,12 +522,16 @@ Special: ${context.specialRequests || 'None'}
 CRITICAL Requirements:
 - Use ACTUAL locations that exist in ${location} (real streets, parks, landmarks)
 - Provide exact addresses or cross-streets when possible
+- In the description, include SPECIFIC visual details:
+  * Architectural features (e.g., "red brick building with arched windows")
+  * Landscape elements (e.g., "row of cherry trees along the path")
+  * Distinctive landmarks (e.g., "historic clock tower visible in background")
+  * Materials and textures (e.g., "cobblestone street", "wrought iron gates")
 - Consider realistic travel times between locations (5-15 min if clustered)
 - Base lighting notes on real-world conditions for that specific location
 - Include only publicly accessible spots or note permit requirements
-- If unsure about a location, use well-known landmarks as references
 
-Focus on authenticity over creativity - real places that photographers actually use.`
+Focus on authenticity with visual specificity - describe what photographers will actually see.`
       
       console.log('🏗️ Sending location request to AI')
       
@@ -651,17 +655,34 @@ Output: JSON array only, starting '[' ending ']'`;
         const visualKeywords = shot.visual_Keywords || shot.imagePrompt || '';
         const poses = shot.poses || (shot.composition ? shot.composition.split('.')[0] : '');
         const blocking = shot.blocking || '';
-        const locationName = shot.location || (shot.locationIndex !== undefined ? result.locations?.[shot.locationIndex]?.name : result.context.location);
+        
+        // Get full location details for better adherence
+        const locationIndex = shot.locationIndex;
+        const fullLocation = locationIndex !== undefined ? result.locations?.[locationIndex] : null;
+        const locationName = fullLocation?.name || shot.location || result.context.location;
+        const locationDescription = fullLocation?.description || '';
+        const locationAddress = fullLocation?.address || '';
+        
+        // Extract key architectural/environmental features from location description
+        const locationDetails = fullLocation ? 
+          `ACTUAL LOCATION: ${locationName}
+ADDRESS: ${locationAddress}
+DESCRIPTION: ${locationDescription}` : 
+          `LOCATION: ${locationName}`;
         
         // OPTIMIZED: More concise image prompt with professional storyboard aesthetic
         const imagePrompt = `${STORYBOARD_STYLE_GUIDE}
 
 ### SCENE TO ILLUSTRATE
-Create a storyboard frame showing this moment:
+Create a storyboard frame showing this SPECIFIC REAL LOCATION:
 
 Title: "${shot.title}"
-Location: ${locationName}
-Shot Type: ${result.context.shootType} photography
+${locationDetails}
+
+### IMPORTANT: LOCATION ACCURACY
+You MUST depict the actual architectural and environmental features of ${locationName}.
+Include recognizable elements from the location description above.
+This is a REAL PLACE - show its actual characteristics.
 
 ### COMPOSITION
 ${shot.composition}
@@ -673,13 +694,14 @@ ${shot.composition}
 - Mood: ${result.context.mood.join(', ')}
 
 ### REMEMBER
-- This is a PROFESSIONAL ILLUSTRATION, not a photo
+- This is a PROFESSIONAL ILLUSTRATION of a REAL location
+- Include accurate architectural/landscape details from the description
 - NO text, labels, or captions in the image
 - Faces should have MINIMAL features (simple profile lines only)
 - Use high contrast - solid blacks for suits, clean whites
-- Show the scene from a single clear viewpoint
+- Show the actual location, not a generic setting
 
-Create ONE cohesive black & white line art illustration.`;
+Create ONE cohesive black & white illustration showing the REAL ${locationName}.`;
 
         debugLog(`🎨 Generating image ${i + 1}/${maxImages} for shot: "${shot.title}"`);
         
