@@ -232,6 +232,11 @@ export default function ConversationFlow({ onComplete, sessionId, dynamicVariabl
 
       // PRIMARY CAPTURE STRATEGY: Get conversation ID from startSession return value
       const sessionConfig: Record<string, string | Record<string, string | number | boolean>> = {
+        // ElevenLabs agent ID for PixieDirector - a photography assistant AI that:
+        // - Gathers user preferences for photo shoots (style, mood, locations)
+        // - Creates structured context data for shot planning
+        // - Speaks in a professional yet friendly tone tailored for photographers
+        // This agent was specifically trained to understand photography terminology
         agentId: 'agent_01k0616fckfdzrnt2g2fwq2r2h',
       };
 

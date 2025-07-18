@@ -68,16 +68,27 @@ export function PWAInstallPrompt() {
      * Uses multiple detection methods for cross-platform compatibility
      */
     const checkStandalone = () => {
-      const standalone = window.matchMedia('(display-mode: standalone)').matches || 
-                        ('standalone' in window.navigator && (window.navigator as typeof window.navigator & { standalone: boolean }).standalone) || 
-                        document.referrer.includes('android-app://');
+      const standalone = 
+        // Standard PWA detection - works on Chrome, Edge, Firefox
+        // Checks CSS media query for apps launched from home screen
+        window.matchMedia('(display-mode: standalone)').matches || 
+        // iOS Safari specific - navigator.standalone is Apple's proprietary property
+        // Only exists on iOS devices and is true when launched from home screen
+        ('standalone' in window.navigator && (window.navigator as typeof window.navigator & { standalone: boolean }).standalone) || 
+        // Android TWA (Trusted Web Activity) detection
+        // When launched as Android app, referrer contains this special protocol
+        document.referrer.includes('android-app://');
       setIsStandalone(standalone);
     };
 
     checkStandalone();
 
     // Check if iOS Safari
+    // Detects iOS devices by checking for Apple device names in user agent
+    // Excludes IE11 on Windows Phone which falsely claims to be iPhone
     const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !('MSStream' in window);
+    // Safari detection must exclude Chrome since Chrome on iOS includes "Safari" in UA
+    // Real Safari has "Safari" but not "Chrome" in its user agent string
     const isSafari = /Safari/.test(navigator.userAgent) && !/Chrome/.test(navigator.userAgent);
     
     if (isIOS && isSafari && !isStandalone) {

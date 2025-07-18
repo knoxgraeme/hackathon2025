@@ -400,6 +400,9 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
       try {
         // Clean up old sessions if we have too many
         const sessionEntries = Object.entries(sessions);
+        // Limit sessions to prevent localStorage quota overflow (typically 5-10MB limit)
+        // Each session with full shot data can be 100KB+, so we keep only recent ones
+        // This prevents "QuotaExceededError" and ensures smooth app performance
         const MAX_SESSIONS = 10; // Keep only the 10 most recent sessions
         
         if (sessionEntries.length > MAX_SESSIONS) {

@@ -2,11 +2,6 @@
 
 An innovative hackathon project that revolutionizes photography shoot planning through AI-powered voice conversations, intelligent location scouting, and automated storyboard generation.
 
-## 🔗 Live Demo & Installation
-
-- **[Live Demo](https://pixiedirector.example.com)** - Try PixieDirector in your browser
-- **[Install PWA on Mobile](https://pixiedirector.example.com)** - Add to your home screen for native app experience
-- **Note**: PWA installation is available for mobile users - visit the site on your phone and look for the install prompt!
 
 ## ✨ Key Features
 
@@ -135,7 +130,6 @@ Data Flow:
 4. Results stored in session for persistence
 ```
 
-## 🤝 Contributing
 
 We welcome contributions to improve PixieDirector! Here's how you can help:
 
@@ -152,19 +146,7 @@ We welcome contributions to improve PixieDirector! Here's how you can help:
    ```bash
    git push origin feature/amazing-feature
    ```
-5. **Open a Pull Request**
 
-### Development Guidelines
-- Follow the existing code style
-- Write TypeScript with strict mode compliance
-- Use Tailwind CSS utilities for styling
-- Add appropriate type definitions
-- Test your changes thoroughly
-- Update documentation as needed
-
-## 📄 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
 ---
 
